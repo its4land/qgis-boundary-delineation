@@ -1,0 +1,12 @@
+<RCC>
+    <qresource prefix="/plugins/BoundaryDelineation" >
+        <file>icon.png</file>
+		<file>icon_AcceptLine.png</file>
+		<file>icon_DeleteLine.png</file>
+		<file>icon_EditLine.png</file>
+		<file>icon_its4land.png</file>
+		<file>icon_ManualDelineation.png</file>
+		<file>icon_SelectNode.png</file>
+		<file>icon_SimplifyLine.png</file>
+    </qresource>
+</RCC>
