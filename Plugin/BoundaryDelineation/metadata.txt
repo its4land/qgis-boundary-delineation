@@ -1,0 +1,39 @@
+# This file contains metadata for your plugin. Since 
+# version 2.0 of QGIS this is the proper way to supply 
+# information about a plugin. The old method of 
+# embedding metadata in __init__.py will 
+# is no longer supported since version 2.0.
+
+# This file should be included when you package your plugin.# Mandatory items:
+
+[general]
+name=BoundaryDelineation
+qgisMinimumVersion=2.0
+description=Supports semi-automatic delineation of boundaries
+version=0.1
+author=Sophie Crommelinck
+email=s.crommelinck@utwente.nl
+
+about=The Plugin is designed to support the semi-automatic delineation of visible cadastral boundaries from UAV data. For visualization and digitization purposes, an orthoimage captured with an unmanned aerial vehicle (UAV) is required. Further, a vectorized output of gPb contour detection and SLIC superpixels are required. The plugin combines the two vectorized datasets to network and nodes aiming to support the digitalization of visible cadastral boundaries from UAV data.
+
+tracker=https://github.com/SCrommelinck/BoundaryDelineation/issues
+repository=https://github.com/SCrommelinck/BoundaryDelineation
+# End of mandatory metadata
+
+# Recommended items:
+
+# Uncomment the following line and add your changelog:
+# changelog=
+
+# Tags are comma separated with spaces allowed
+tags=analysis, cadastre, digitizing, processing, remote sensing, vector
+
+homepage=https://its4land.com/
+category=Plugins
+icon=icon.png
+# experimental flag
+experimental=True
+
+# deprecated flag (applies to the whole plugin, not just a single version)
+deprecated=False
+
