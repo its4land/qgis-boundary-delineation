@@ -1,5 +1,5 @@
 # BoundaryDelineation
-This is the repository for the QGIS Plugin Boundary Delineation. Provided here are the source code (folder: Plugin source code), a manual on its use (file: QGIS Plugin BoundaryDelineation Manual.pdf), as well as test data (folder: Test data).
+This is the repository for the QGIS Plugin Boundary Delineation. Provided here are the source code (folder: BoundaryDelineation), as well as test data (folder:  BoundaryDelineation/test). A manual as well as a YouTube video on its use can be found on the project website (https://its4land.com/automate-it-wp5/).
 
 The Plugin is designed to support the semi-automatic delineation of visible cadastral boundaries from UAV data. For visualization and digitization purposes, an orthoimage captured with an unmanned aerial vehicle (UAV) is required. Further, a vectorized output of gPb contour detection and SLIC superpixels are required. The plugin combines the two vectorized datasets to network and nodes aiming to support the digitalization of visible cadastral boundaries from UAV data.
 
