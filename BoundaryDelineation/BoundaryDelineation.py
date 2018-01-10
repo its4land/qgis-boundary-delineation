@@ -219,11 +219,27 @@ class BoundaryDelineation:
             if LayerInput_2:
                 # Load layer
                 global network_layer
-                network_layer = QgsVectorLayer(LayerInput_2, "network_layer", "ogr")
+                # network_layer = QgsVectorLayer(LayerInput_2, "network_layer", "ogr")
+
+                # Load lines file to canvas
+                if LayerInput_2 and not QgsMapLayerRegistry.instance().mapLayersByName('Input lines'):
+                    network_layer = iface.addVectorLayer(LayerInput_2, 'Input lines', 'ogr')
+                    network_layer.setLayerName('Input lines')
+
+                    # Change symbology of current boundary layer
+                    symbols = iface.activeLayer().rendererV2().symbols()
+                    symbol = symbols[0]
+                    symbol.setColor(QColor.fromRgb(0, 225, 0))
+                    symbol.setWidth(0.2)
+                    qgis.utils.iface.mapCanvas().refresh()
+                    qgis.utils.iface.legendInterface().refreshLayerSymbology(iface.activeLayer())
+                    iface.legendInterface().setLayerVisible(network_layer, False)
+
+                # Inform user
                 if not network_layer.isValid():
-                    txtFeedback.append(">!> Input network: Could not open %s\n" % LayerInput_2)
+                    txtFeedback.append(">!> Input lines: Could not open %s\n" % LayerInput_2)
                 else:
-                    txtFeedback.append(">+> Input network: Successfully loaded\n")
+                    txtFeedback.append(">+> Input lines: Successfully loaded\n")
                 count += 1
 
             # Define output shapefile
@@ -558,7 +574,7 @@ class BoundaryDelineation:
                     # Inform the user
                     txtFeedback_2.append(
                         ">!> Selected nodes could not be connected. Please select nodes that are connected via the "
-                        "'Input network' layer.\n")
+                        "'Input lines' layer.\n")
             else:
                 txtFeedback_2.append(">>> Please select nodes from 'Input nodes'")
 
