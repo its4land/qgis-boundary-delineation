@@ -199,7 +199,7 @@ class DelineationController:
         layer = DelineationController.getLayerByName(DelineationController.candidateBoundaryLayerName, showError)
         if create and layer is None:
             layer = DelineationController.createMemoryLayer(DelineationController.candidateBoundaryLayerName)
-        DelineationController.addLayerToMap(layer, DelineationController.candidateBoundaryLayerName, 0, 255, 255, 0.5)
+        DelineationController.addLayerToMap(layer, DelineationController.candidateBoundaryLayerName)
         return layer
 
     @staticmethod
@@ -462,19 +462,23 @@ class DelineationController:
                                       "output": networkLayerFilename})
 
                     # Check if nodes could be connected
-                    tempLayer = QgsVectorLayer(networkLayerFilename, "Network Steiner", 'ogr')
-                    if tempLayer is not None:
-                        if tempLayer.featureCount() <= 0:
+                    DelineationController.initialview()
+                    candidatesLayer = QgsVectorLayer(networkLayerFilename, "Network Steiner", 'ogr')
+                    if candidatesLayer is not None:
+                        if candidatesLayer.featureCount() <= 0:
                             DelineationController.showMessage("Could not connect these nodes to boundaries! Please "
                                                               "select nodes that are connected via %s."
                                                               %DelineationController.lineLayerName,
                                                               Qgis.Warning)
                         else:
-                            DelineationController.checkVectorLayer(DelineationController.candidateBoundaryLayerName,
-                                                                    networkLayerFilename, False)
-                            candidateBoundaryLayer = DelineationController.getActiveLayer()
-                            candidateBoundaryLayer.setName(DelineationController.candidateBoundaryLayerName)
-                            DelineationController.updateSymbology(candidateBoundaryLayer, 255, 0, 0, 0.3)
+                            DelineationController.addLayerToMap(candidatesLayer,
+                                                                DelineationController.candidateBoundaryLayerName,
+                                                                255, 255, 0, 1)
+                            # DelineationController.checkVectorLayer(DelineationController.candidateBoundaryLayerName,
+                            #                                         networkLayerFilename, False)
+                            # candidateBoundaryLayer = DelineationController.getActiveLayer()
+                            # candidateBoundaryLayer.setName(DelineationController.candidateBoundaryLayerName)
+                            # DelineationController.updateSymbology(tempLayer, 255, 0, 0, 0.3)
                             return True
 
                 except Exception as exc:
