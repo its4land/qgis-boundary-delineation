@@ -161,6 +161,7 @@ class DelineationController:
     def removeLayer(layer):
         if layer is not None:
             QgsProject.instance().removeMapLayer(layer.id())
+            iface.mapCanvas().refresh()
             return True
         return False
 
