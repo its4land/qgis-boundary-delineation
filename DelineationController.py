@@ -212,6 +212,15 @@ class DelineationController:
             if layer is None and create:
                 layer = DelineationController.createVectorLayer(DelineationController.finalBoundaryLayerName,
                                                                 DelineationController.outputFileName)
+                if len(layer.attributeList()) <= 0:
+                    prov = layer.dataProvider()
+                    candidates = DelineationController.getCandidatesLayer(create = False, showError = False)
+                    if candidates is not None:
+                        prov.addAttributes(candidates.fields())
+                    else:
+                        prov.addAttributes([QgsField("cat",  QVariant.Int)])
+                    layer.updateFields()
+                    return QgsVectorLayer(DelineationController.outputFileName, DelineationController.finalBoundaryLayerName, 'ogr')
             DelineationController.addLayerToMap(layer, DelineationController.finalBoundaryLayerName, 0, 0, 255, 0.5)
         return layer
 
@@ -378,10 +387,11 @@ class DelineationController:
         layer = DelineationController.getLayerByName(layerName)
         if layer is None and bool(fileName):
             crs = DelineationController._getCrs()
-            layerPath = DelineationController._getLineVectorPath(crs)
             layer = DelineationController.addVectorLayer(layerName, fileName, create = True)
             QgsVectorFileWriter.writeAsVectorFormat(layer, fileName, "utf-8", crs, "ESRI Shapefile")
             layer = DelineationController.addVectorLayer(layerName, fileName, create = False)
+            if layer is not None:
+                layer.setCrs(crs)
         return layer
 
     @staticmethod
@@ -550,8 +560,16 @@ class DelineationController:
 
     # Manually delineated lines should be added
     @staticmethod
-    def manualDelineation():
-        layer = DelineationController.getFinalBoundaryLayer(create = True, showError = True)
+    def manualDelineation(count = 0):
+        layer = DelineationController.getLayerByName(DelineationController.finalBoundaryLayerName, False)
+        if layer is None and count < 2:
+            DelineationController.getFinalBoundaryLayer(create = True, showError = True)
+            return DelineationController.manualDelineation(count + 1)
+        # Reload layer to be able to add features
+        layer.setDataSource(layer.source(), layer.name(), layer.providerType())
+        DelineationController.setActiveLayer(DelineationController.finalBoundaryLayerName)
+        DelineationController.updateSymbology(layer, 0, 0, 255, 0.5)
+        layer.triggerRepaint()
         return DelineationController._setLayerEditable(layer, True)
 
     # Boundary delineation is finished
