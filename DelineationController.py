@@ -512,6 +512,9 @@ class DelineationController:
             # Enable feature selection
             DelineationController.setActiveLayer(DelineationController.nodeLayerName)
             iface.actionSelect().trigger()
+        finalLayer = DelineationController.getFinalBoundaryLayer(create = False, showError = False)
+        if finalLayer is not None:
+            DelineationController.updateSymbology(finalLayer, 0, 0, 255, 0.5)
 
     # Candidate boundary should be accepted
     @staticmethod
@@ -527,14 +530,14 @@ class DelineationController:
                                          "FIELD": [],
                                          "OUTPUT": 'memory:collect'})
                 tempLayer = result['OUTPUT']
+
             finally:
                 DelineationController.hideBusyCursor()
 
             if isinstance(tempLayer, QgsMapLayer):
-                finalLayer = DelineationController.getFinalBoundaryLayer(create = True, showError = True)  
+                finalLayer = DelineationController.getFinalBoundaryLayer(create = True, showError = True)
                 # Add features to existing shapefile
                 if DelineationController.copyFeatures(tempLayer, finalLayer):
-                    finalLayer.triggerRepaint()
                     candidates.startEditing()
                     if candidates.isEditable():
                         candidates.selectAll()
@@ -581,6 +584,7 @@ class DelineationController:
             layer.commitChanges()
             # Change layer visibility
             DelineationController.setLayerVisibility(layer, True)
+            DelineationController.updateSymbology(layer, 0, 0, 255, 0.5)
             DelineationController.removeLayer(DelineationController.getNodeLayer(False))
             DelineationController.removeLayer(DelineationController.getLineLayer(False))
             # Zoom to full extent
