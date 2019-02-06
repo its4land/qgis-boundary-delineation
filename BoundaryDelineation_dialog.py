@@ -40,10 +40,10 @@ FORM_CLASS, _ = uic.loadUiType(os.path.join(
 
 
 class BoundaryDelineationDialog(QDialog, FORM_CLASS):
-    
-    
+
+
     dialog = None
-    
+
     def __init__(self, parent=None):
         """Constructor."""
         super(BoundaryDelineationDialog, self).__init__(parent)
@@ -81,18 +81,18 @@ class BoundaryDelineationDialog(QDialog, FORM_CLASS):
         self._setIcon(self.editBoundaryButton, "/icon_EditLine.png")
         self._setIcon(self.deleteBoundaryButton, "/icon_DeleteLine.png")
         self._setIcon(self.finishDelineationButton, "/icon_FinishFlag.png")
-        
+
         self.lineEdit1.setText(DelineationController.currentInputRasterUri())
         self.lineEdit2.setText(DelineationController.currentInputLineUri())
         self.lineEdit3.setText(DelineationController.currentOutputLineUri())
-        
+
         if not self.lineEdit2.text() or DelineationController.getNodeLayer(showError = False) is None:
             self.tabWidget.setCurrentWidget(self.StepI)
         else:
             self.tabWidget.setCurrentWidget(self.StepII)
         self._checkButtons()
 
-    
+
     def closeEvent(self, event):
         BoundaryDelineationDialog.dialog = None
 
@@ -101,30 +101,30 @@ class BoundaryDelineationDialog(QDialog, FORM_CLASS):
 
     def _setIcon(self, button, fileName):
         button.setIcon(QIcon(os.path.dirname(os.path.realpath(__file__)) + fileName))
-        
+
     def _checkButtons(self):
-        self.vectorInputButton.setEnabled(bool(DelineationController.inputRaster))
-        self.vectorOutputButton.setEnabled(bool(DelineationController.inputRaster))
-        self.createNodesButton.setEnabled(DelineationController.getLineLayer(showError = False) is not None)
-        self.connectNodesButton.setEnabled(DelineationController.getNodeLayer(showError = False) is not None)
+        self.vectorInputButton.setEnabled(True)
+        self.vectorOutputButton.setEnabled(True)
+        self.createNodesButton.setEnabled(True)
+        self.connectNodesButton.setEnabled(True)
         candidatesExist = DelineationController.getCandidatesLayer(create = False, showError = False) is not None
         self.acceptBoundaryButton.setEnabled(candidatesExist and bool(DelineationController.outputFileName))
         self.editBoundaryButton.setEnabled(candidatesExist)
         self.deleteBoundaryButton.setEnabled(candidatesExist)
         self.manualDelineationButtton.setEnabled(bool(DelineationController.outputFileName))
         self.finishDelineationButton.setEnabled(DelineationController.getFinalBoundaryLayer(create = False, showError = False) is not None)
-       
+
     ### Step I ###
     # Open raster file provided by user in GUI
     def openRasterInput(self, fileName, lineEdit=None):
-        if lineEdit is not None: 
+        if lineEdit is not None:
             lineEdit.setText(fileName)
         DelineationController.openRaster(fileName)
         self._checkButtons()
 
     # Open vector file provided by user in GUI
     def openVectorInput(self, fileName, lineEdit=None):
-        if lineEdit is not None: 
+        if lineEdit is not None:
             lineEdit.setText(fileName)
         DelineationController.openInputVector(fileName)
         self._checkButtons()
@@ -135,7 +135,7 @@ class BoundaryDelineationDialog(QDialog, FORM_CLASS):
             lineEdit.setText(fileName)
         DelineationController.openOutputVector(fileName)
         self._checkButtons()
-        
+
     # Open raster file provided by user in GUI
     def endEditRasterInput(self):
         self.openRasterInput(self.lineEdit1.text())
@@ -169,46 +169,53 @@ class BoundaryDelineationDialog(QDialog, FORM_CLASS):
     # Create nodes where two or more input lines intersect
     def createNodes(self):
         lineLayer = DelineationController.getLineLayer()
-        
+
+        self.createNodesButton.setEnabled(False)
+
         if lineLayer is not None:
             self.progressBar.setValue(50)
-            
+
             # Create nodes
             DelineationController.extractVertices(lineLayer)
-            
+
+            self.progressBar.setValue(75)
+
+            DelineationController.createPolygonLayer(lineLayer)
+
             self.progressBar.setValue(100)
 
             # Enable feature selection
             iface.actionSelect().trigger()
-            
+
             if DelineationController.getNodeLayer(showError = False) is not None:
                 self.tabWidget.setCurrentWidget(self.StepII)
 
             self._checkButtons()
-            
+
+        self.createNodesButton.setEnabled(True)
+
     ### Step II ###
     def connectNodes(self):
         if DelineationController.connectNodes():
             self._checkButtons()
-    
+
     def acceptCandidate(self):
-        if DelineationController.acceptCandidate():    
+        if DelineationController.acceptCandidate():
             self._checkButtons()
-    
+
     def editCandidate(self):
-        if DelineationController.editCandidate():    
+        if DelineationController.editCandidate():
             self._checkButtons()
-    
+
     def deleteCandidate(self):
-        DelineationController.deleteCandidate()    
+        DelineationController.deleteCandidate()
         self._checkButtons()
-    
+
     def manualDelineation(self):
         DelineationController.manualDelineation()
         self._checkButtons()
-        
+
     def finishDelineation(self):
         DelineationController.finishDelineation()
         self.lineEdit2.setText("")
         self._checkButtons()
-        
