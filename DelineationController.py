@@ -37,7 +37,7 @@ import processing
 import os
 
 class DelineationController:
-    
+
     # Define layer and plugin name
     appName = 'BoundaryDelineation'
     pluginName = appName + ' plugin'
@@ -48,7 +48,7 @@ class DelineationController:
     boundaryColumnName = 'boundary'
     finalBoundaryLayerName = 'final boundary'
     pluginPath = os.path.dirname(__file__)
-    
+
     mainWidget = None
 
     inputRaster = None
@@ -56,11 +56,11 @@ class DelineationController:
     outputFileName = None
     edgesGraph = None
     metricClosureGraph = None
-    
+
     @staticmethod
     def showMessage(message, level = Qgis.Info, duration=5):
         iface.messageBar().pushMessage(DelineationController.pluginName, message, level, duration)
-        
+
     @staticmethod
     def showBusyCursor():
         QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
@@ -74,14 +74,14 @@ class DelineationController:
     @staticmethod
     def getActiveLayer():
         return iface.activeLayer()
-    
+
     @staticmethod
     def setActiveLayer(layer):
         if not isinstance(layer, QgsMapLayer):
             layer = DelineationController.getLayerByName(layer)
         if layer is not None:
             iface.setActiveLayer(layer)
-    
+
     @staticmethod
     def setLayerVisibility (layer, visible):
         if layer is not None:
@@ -117,7 +117,7 @@ class DelineationController:
         if showMsg:
             DelineationController.showMessage("%s already loaded" % layerName, Qgis.Warning)
         return layer
-    
+
     @staticmethod
     def _getCrs():
         layer = DelineationController.getLineLayer()
@@ -134,7 +134,7 @@ class DelineationController:
 
     @staticmethod
     def addVectorLayer (layerName, fileName, create = True):
-        if bool(fileName) and os.path.isfile(fileName): 
+        if bool(fileName) and os.path.isfile(fileName):
             layer = QgsVectorLayer(fileName, layerName, 'ogr')
         elif create:
             layer = QgsVectorLayer(DelineationController._getLineVectorPath(), layerName, 'ogr')
@@ -170,7 +170,7 @@ class DelineationController:
         # Check if layer is already loaded
         layer = DelineationController.getLayerByName (layerName, False)
         if layer is not None:
-            return DelineationController.replaceLayerUri(layer, DelineationController.getLayerUri(layer), newUri) 
+            return DelineationController.replaceLayerUri(layer, DelineationController.getLayerUri(layer), newUri)
         return None
 
     @staticmethod
@@ -186,11 +186,11 @@ class DelineationController:
     @staticmethod
     def getRasterLayer(showError = True):
         return DelineationController.getLayerByName(DelineationController.rasterLayerName, showError)
-    
+
     @staticmethod
     def getLineLayer(showError = True):
         return DelineationController.getLayerByName(DelineationController.lineLayerName, showError)
-    
+
     @staticmethod
     def getNodeLayer(showError = True):
         return DelineationController.getLayerByName(DelineationController.nodeLayerName, showError)
@@ -234,9 +234,9 @@ class DelineationController:
             uri = layer.dataProvider().dataSourceUri(expandAuthConfig = False)
             if uri:
                 return uri.split('|')[0]
-            return 
+            return
         return None
-    
+
     @staticmethod
     def _setLayerEditable(layer, activateAdd):
         if layer is not None:
@@ -258,7 +258,7 @@ class DelineationController:
                 prov = toLayer.dataProvider()
                 if len(toLayer.attributeList()) <= 0:
                     prov.addAttributes(fromLayer.fields())
-                    toLayer.updateFields() 
+                    toLayer.updateFields()
                 toLayer.startEditing()
                 if toLayer.isEditable():
                     prov.addFeatures(fromLayer.getFeatures())
@@ -267,7 +267,7 @@ class DelineationController:
                     return False
             return True
         return False
-    
+
     # Set symbology for vector layer (lines and points)
     @staticmethod
     def addLayerToMap(layer, name = None, red = None, green = None, blue = None, size = None):
@@ -304,25 +304,25 @@ class DelineationController:
 
 
     ### Step I ###
-    
+
     @staticmethod
     def currentInputRasterUri():
         return DelineationController.getLayerNameUri(DelineationController.rasterLayerName)
-    
+
     @staticmethod
     def currentInputLineUri():
         if DelineationController.getLineLayer(False) is None:
             DelineationController.inputFileName = None
         return DelineationController.inputFileName
         #return DelineationController.getLayerNameUri(DelineationController.lineLayerName)
-    
+
     @staticmethod
     def currentOutputLineUri():
         layer = DelineationController.getFinalBoundaryLayer(create = False, showError = False)
         if layer is not None:
             DelineationController.outputFileName = DelineationController.getLayerUri(layer)
         return DelineationController.outputFileName
-    
+
     # Load layer to canvas
     @staticmethod
     def openRaster(rasterFile):
@@ -341,10 +341,12 @@ class DelineationController:
     def openInputVector(vectorFile):
         # Check if layer is already loaded
         layer = DelineationController.replaceLayerUri(DelineationController.getLineLayer(False), DelineationController.inputFileName, vectorFile)
+
         if layer is None:
             DelineationController.inputFileName = None
             DelineationController.edgesGraph = None
             DelineationController.metricClosureGraph = None
+
             try:
                 DelineationController.showBusyCursor()
                 # Douglas-Peucker line simplification
@@ -354,6 +356,7 @@ class DelineationController:
                                               "TOLERANCE": 1.0,
                                               "OUTPUT": 'memory:simplifygeometries'})
                 layer = result['OUTPUT']
+
                 if isinstance(layer, QgsMapLayer):
                     DelineationController.removeLayer(DelineationController.getNodeLayer(False))
                     DelineationController.removeLayer(DelineationController.getCandidatesLayer(create = False, showError = False))
@@ -401,7 +404,7 @@ class DelineationController:
         if layer is None:
             layerPath = DelineationController._getLineVectorPath()
             layer = QgsVectorLayer(path = layerPath, baseName = layerName, providerLib = "memory")
-        return layer        
+        return layer
 
     # Get layer extent
     @staticmethod
@@ -417,7 +420,7 @@ class DelineationController:
     @staticmethod
     def extractVertices(layer):
         DelineationController.removeLayer(DelineationController.getNodeLayer(False))
-        
+
         try:
             DelineationController.showBusyCursor()
             #processing.runAndLoadResults('qgis:extractspecificvertices',
@@ -427,7 +430,7 @@ class DelineationController:
                                           "OUTPUT": 'memory:nodes'})
         finally:
             DelineationController.hideBusyCursor()
-            
+
         nodeLayer = DelineationController.checkVectorLayer("Vertices", None, False)
         DelineationController.addLayerToMap(nodeLayer, DelineationController.nodeLayerName, 255, 0, 0, 1.3)
 
@@ -438,14 +441,14 @@ class DelineationController:
     ### Step II ###
     @staticmethod
     def connectNodes():
-        lineLayer = DelineationController.getLineLayer() 
+        lineLayer = DelineationController.getLineLayer()
         nodeLayer = DelineationController.getNodeLayer()
         if lineLayer is not None and nodeLayer is not None:
             # Check if user has selected 2 or more nodes
             if nodeLayer.selectedFeatureCount() > 1:
                 try:
                     DelineationController.showBusyCursor()
-                    
+
                     # Save selected nodes in new layer
                     nodesLayerFilename = QgsProcessingUtils.generateTempFilename('nodeLayer.shp')
                     processing.run('native:saveselectedfeatures',
@@ -498,7 +501,7 @@ class DelineationController:
                 finally:
                     DelineationController.hideBusyCursor()
             else:
-                DelineationController.showMessage("Please select two or more nodes to be connected from %s"% DelineationController.nodeLayerName,  
+                DelineationController.showMessage("Please select two or more nodes to be connected from %s"% DelineationController.nodeLayerName,
                                                   Qgis.Warning)
         return False
 
@@ -550,7 +553,7 @@ class DelineationController:
         return False
 
     # Candidate boundary should be edited
-    
+
     @staticmethod
     def editCandidate():
         layer = DelineationController.getCandidatesLayer(create = False, showError = True)
@@ -589,5 +592,5 @@ class DelineationController:
             DelineationController.removeLayer(DelineationController.getLineLayer(False))
             # Zoom to full extent
             iface.actionZoomFullExtent().trigger()
-            
+
 
