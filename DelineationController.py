@@ -423,17 +423,16 @@ class DelineationController:
 
         try:
             DelineationController.showBusyCursor()
-            result1 = processing.run('qgis:extractspecificvertices',
+            verticesResult = processing.run('qgis:extractspecificvertices',
                                          {"INPUT": layer,
                                           "VERTICES": '0',
                                           "OUTPUT": 'memory:extract'})
-            tempLayer = result1['OUTPUT']
 
-            if isinstance(tempLayer, QgsMapLayer):
-                result2 = processing.run('qgis:deleteduplicategeometries',
-                                             {"INPUT": tempLayer,
-                                              "OUTPUT": 'memory:nodes'})
-                nodes = result2['OUTPUT']
+            verticesNoDuplicatesResult = processing.run('qgis:deleteduplicategeometries',
+                                         {"INPUT": verticesResult['OUTPUT'],
+                                          "OUTPUT": 'memory:nodes'})
+
+            nodes = verticesNoDuplicatesResult['OUTPUT']
         finally:
             DelineationController.hideBusyCursor()
 
