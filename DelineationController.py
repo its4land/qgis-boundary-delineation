@@ -220,7 +220,7 @@ class DelineationController:
                     else:
                         prov.addAttributes([QgsField("cat",  QVariant.Int)])
                     layer.updateFields()
-                    return QgsVectorLayer(DelineationController.outputFileName, DelineationController.finalBoundaryLayerName, 'ogr')
+                    layer.commitChanges()
             DelineationController.addLayerToMap(layer, DelineationController.finalBoundaryLayerName, 0, 0, 255, 0.5)
         return layer
 
@@ -423,16 +423,22 @@ class DelineationController:
 
         try:
             DelineationController.showBusyCursor()
-            #processing.runAndLoadResults('qgis:extractspecificvertices',
-            processing.runAndLoadResults('qgis:extractvertices',
+            result1 = processing.run('qgis:extractspecificvertices',
                                          {"INPUT": layer,
-                                          #"VERTICES": '0',
-                                          "OUTPUT": 'memory:nodes'})
+                                          "VERTICES": '0',
+                                          "OUTPUT": 'memory:extract'})
+            tempLayer = result1['OUTPUT']
+
+            if isinstance(tempLayer, QgsMapLayer):
+                result2 = processing.run('qgis:deleteduplicategeometries',
+                                             {"INPUT": tempLayer,
+                                              "OUTPUT": 'memory:nodes'})
+                nodes = result2['OUTPUT']
         finally:
             DelineationController.hideBusyCursor()
 
         nodeLayer = DelineationController.checkVectorLayer("Vertices", None, False)
-        DelineationController.addLayerToMap(nodeLayer, DelineationController.nodeLayerName, 255, 0, 0, 1.3)
+        DelineationController.addLayerToMap(nodes, DelineationController.nodeLayerName, 255, 0, 0, 1.3)
 
     @staticmethod
     def _xy2str(point):
@@ -481,8 +487,10 @@ class DelineationController:
                     if candidatesLayer is not None:
                         if candidatesLayer.featureCount() <= 0:
                             DelineationController.showMessage("Could not connect these nodes to boundaries! Please "
-                                                              "select nodes that are connected via %s."
-                                                              %DelineationController.lineLayerName,
+                                                              "select nodes that are connected via %s. The layer "
+                                                              "should contain a 'boundary' attribute that represents its "
+                                                              "boundary likelikhood."
+                                                              % DelineationController.lineLayerName,
                                                               Qgis.Warning)
                         else:
                             DelineationController.addLayerToMap(candidatesLayer,
@@ -553,7 +561,6 @@ class DelineationController:
         return False
 
     # Candidate boundary should be edited
-
     @staticmethod
     def editCandidate():
         layer = DelineationController.getCandidatesLayer(create = False, showError = True)
