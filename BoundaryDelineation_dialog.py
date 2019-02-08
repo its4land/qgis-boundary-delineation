@@ -173,19 +173,19 @@ class BoundaryDelineationDialog(QDialog, FORM_CLASS):
         self.createNodesButton.setEnabled(False)
 
         if lineLayer is not None:
-            self.progressBar.setValue(50)
+            self.progressBar.setValue(25)
 
             # Create nodes
             DelineationController.extractVertices(lineLayer)
 
-            self.progressBar.setValue(75)
+            self.progressBar.setValue(50)
 
-            DelineationController.createPolygonLayer(lineLayer)
+            DelineationController.polygonizeSegmentsLayer(lineLayer)
 
             self.progressBar.setValue(100)
 
             # Enable feature selection
-            iface.actionSelect().trigger()
+            # iface.actionSelect().trigger()
 
             if DelineationController.getNodeLayer(showError = False) is not None:
                 self.tabWidget.setCurrentWidget(self.StepII)
@@ -193,6 +193,8 @@ class BoundaryDelineationDialog(QDialog, FORM_CLASS):
             self._checkButtons()
 
         self.createNodesButton.setEnabled(True)
+
+        DelineationController.init(self)
 
     ### Step II ###
     def connectNodes(self):

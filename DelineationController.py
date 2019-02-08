@@ -30,8 +30,11 @@ from PyQt5.QtWidgets import QApplication, QAction, QFileDialog, QToolBar
 
 from qgis.core import QgsProject, Qgis, QgsMapLayer, QgsVectorLayer, QgsVectorFileWriter, \
     QgsLineSymbol, QgsMarkerSymbol, QgsProcessingUtils, QgsFeature, QgsGeometry, QgsField, \
-    QgsSingleSymbolRenderer, QgsLineSymbol, QgsProperty, QgsCoordinateReferenceSystem
+    QgsSingleSymbolRenderer, QgsLineSymbol, QgsProperty, QgsCoordinateReferenceSystem, QgsRectangle
 from qgis.utils import iface
+
+from qgis.gui import QgsMapToolIdentify, QgsMapToolEmitPoint
+
 
 import processing
 import os
@@ -56,6 +59,18 @@ class DelineationController:
     outputFileName = None
     edgesGraph = None
     metricClosureGraph = None
+
+    mapSelectionIsEnabled = False
+
+    # TODO one day I should rewrite this to something more meaningful... no idea who put everything into static methods, but defintitely has lack of experience with OOP paradigm
+    @staticmethod
+    def init(pluginInstance):
+        DelineationController.canvas = iface.mapCanvas()
+        DelineationController.pointTool = QgsMapToolEmitPoint(DelineationController.canvas)
+        DelineationController.canvas.setMapTool(DelineationController.pointTool)
+
+        DelineationController.triggerMapSelection(True)
+
 
     @staticmethod
     def showMessage(message, level = Qgis.Info, duration=5):
@@ -423,17 +438,16 @@ class DelineationController:
 
         try:
             DelineationController.showBusyCursor()
-            result1 = processing.run('qgis:extractspecificvertices',
+            verticesResult = processing.run('qgis:extractspecificvertices',
                                          {"INPUT": layer,
                                           "VERTICES": '0',
                                           "OUTPUT": 'memory:extract'})
-            tempLayer = result1['OUTPUT']
 
-            if isinstance(tempLayer, QgsMapLayer):
-                result2 = processing.run('qgis:deleteduplicategeometries',
-                                             {"INPUT": tempLayer,
-                                              "OUTPUT": 'memory:nodes'})
-                nodes = result2['OUTPUT']
+            verticesNoDuplicatesResult = processing.run('qgis:deleteduplicategeometries',
+                                         {"INPUT": verticesResult['OUTPUT'],
+                                          "OUTPUT": 'memory:nodes'})
+
+            nodes = verticesNoDuplicatesResult['OUTPUT']
         finally:
             DelineationController.hideBusyCursor()
 
@@ -522,10 +536,12 @@ class DelineationController:
             DelineationController.removeLayer(layer)
             # Enable feature selection
             DelineationController.setActiveLayer(DelineationController.nodeLayerName)
-            iface.actionSelect().trigger()
+            # iface.actionSelect().trigger()
         finalLayer = DelineationController.getFinalBoundaryLayer(create = False, showError = False)
         if finalLayer is not None:
             DelineationController.updateSymbology(finalLayer, 0, 0, 255, 0.5)
+
+        DelineationController.triggerMapSelection(True)
 
     # Candidate boundary should be accepted
     @staticmethod
@@ -600,4 +616,111 @@ class DelineationController:
             # Zoom to full extent
             iface.actionZoomFullExtent().trigger()
 
+    # TODO whatcha gonna do on error?
+    @staticmethod
+    def polygonizeSegmentsLayer(segmentsLayer):
+        polygonizedResult = processing.run('qgis:polygonize',
+                     {"INPUT": segmentsLayer,
+                      "OUTPUT": 'memory:polygonize'})
 
+        DelineationController.polygonizedLayer = polygonizedResult['OUTPUT']
+
+        QgsProject.instance().addMapLayer(DelineationController.polygonizedLayer)
+
+    @staticmethod
+    def onMapMouseClick(point):
+        DelineationController.syntheticFeatureSelection(point, point)
+
+        pass
+
+    @staticmethod
+    def triggerMapSelection(triggerTo = None):
+        if triggerTo is None:
+            triggerTo = not DelineationController.mapSelectionIsEnabled
+
+
+        if triggerTo:
+            DelineationController.pointTool.canvasClicked.connect(DelineationController.onMapMouseClick)
+            # DelineationController.pointTool.canvasClicked.connect(DelineationController.onMapMousePress)
+        else:
+            DelineationController.pointTool.canvasClicked.disconnect(DelineationController.onMapMouseClick)
+            # DelineationController.pointTool.canvasClicked.disconnect(DelineationController.onMapMouseRelease)
+
+        DelineationController.mapSelectionIsEnabled = triggerTo
+
+    @staticmethod
+    def syntheticFeatureSelection(startPoint, endPoint):
+        if startPoint is None or endPoint is None:
+            raise Exception('Something went very bad, unable to create selection without start or end point')
+
+        nodesLayer = DelineationController.getLayerByName(DelineationController.nodeLayerName)
+        polygonizedLayer = DelineationController.polygonizedLayer
+        isControlPressed = False
+
+        if isControlPressed:
+            selectBehaviour = QgsVectorLayer.AddToSelection
+        else:
+            selectBehaviour = QgsVectorLayer.SetSelection
+
+        # TODO make a bigger rectangle/tollerance
+        rect = QgsRectangle(startPoint, endPoint)
+        nodesLayer.selectByRect(rect, selectBehaviour)
+
+        rect = QgsRectangle(startPoint, endPoint)
+        polygonizedLayer.selectByRect(rect, selectBehaviour)
+
+        # DelineationController.showMessage('Found: ' + str(nodesSelection))
+        DelineationController.showMessage('Found: ' + str(polygonsSelection))
+
+
+
+
+# class MovePointTool(QgsMapToolIdentify):
+
+#     def __init__(self, mapCanvas, layer, database):
+#         self.ready = True
+
+#         print("Creating move instance")
+
+#         # QgsMapToolIdentify.__init__(self, mapCanvas)
+
+#         self.setCursor(Qt.CrossCursor)
+
+#         self.layer    = layer
+#         self.dragging = False
+#         self.feature  = None
+#         self.database = database
+
+#     #CHANGE: Allow processing when the canvas has been refreshed
+#     def setReady(self):
+#         self.ready = True
+
+#     def canvasPressEvent(self, event):
+#         print("press")
+#         found_features = self.identify(event.x(), event.y(),
+#                                        [self.layer],
+#                                        self.TopDownAll)
+#         if len(found_features) > 0:
+#             self.dragging = True
+#             self.feature  = found_features[0].mFeature
+#         else:
+#             self.dragging = False
+#             self.feature  = None
+
+#     def canvasMoveEvent(self, event):
+#         if self.dragging and self.ready:
+#             self.ready = False
+#             point = self.toLayerCoordinates(self.layer, event.pos())
+#             geometry = QgsGeometry.fromPoint(point)
+#             self.layer.changeGeometry(self.feature.id(), geometry)
+#             self.database.moveIP(self.feature.id(), self.toLayerCoordinates(self.layer, event.pos()))
+#             self.database.display()
+#             self.canvas().refresh()
+#             #CHANGE: Call setReady when the canvas has been refreshed
+#             self.canvas().mapCanvasRefreshed.connect( self.setReady )
+
+
+#     def canvasReleaseEvent(self, event):
+#         print("release")
+#         self.dragging = False
+#         self.feature  = None
