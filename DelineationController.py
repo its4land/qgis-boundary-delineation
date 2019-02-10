@@ -34,10 +34,17 @@ from qgis.core import QgsProject, Qgis, QgsMapLayer, QgsVectorLayer, QgsVectorFi
 from qgis.utils import iface
 
 from qgis.gui import QgsMapToolIdentify, QgsMapToolEmitPoint
+from .MapSelectionTool import MapSelectionTool
 
 
 import processing
 import os
+
+
+BD_SELECT_NONE = 0
+BD_SELECT_NODES = 1
+BD_SELECT_POLYGONS = 2
+BD_SELECT_DEFAULT = BD_SELECT_NODES
 
 class DelineationController:
 
@@ -60,16 +67,12 @@ class DelineationController:
     edgesGraph = None
     metricClosureGraph = None
 
-    mapSelectionIsEnabled = False
-
     # TODO one day I should rewrite this to something more meaningful... no idea who put everything into static methods, but defintitely has lack of experience with OOP paradigm
     @staticmethod
-    def init(pluginInstance):
+    def init():
         DelineationController.canvas = iface.mapCanvas()
-        DelineationController.pointTool = QgsMapToolEmitPoint(DelineationController.canvas)
-        DelineationController.canvas.setMapTool(DelineationController.pointTool)
-
-        DelineationController.triggerMapSelection(True)
+        DelineationController.mapSelectionTool = MapSelectionTool(DelineationController.canvas)
+        DelineationController.mapSelectionTool.polygonCreated.connect(DelineationController.onPolygonSelectionCreated)
 
 
     @staticmethod
@@ -541,7 +544,7 @@ class DelineationController:
         if finalLayer is not None:
             DelineationController.updateSymbology(finalLayer, 0, 0, 255, 0.5)
 
-        DelineationController.triggerMapSelection(True)
+        DelineationController.toggleSelectionSwitcher(BD_SELECT_NODES)
 
     # Candidate boundary should be accepted
     @staticmethod
@@ -625,28 +628,12 @@ class DelineationController:
 
         DelineationController.polygonizedLayer = polygonizedResult['OUTPUT']
 
-        QgsProject.instance().addMapLayer(DelineationController.polygonizedLayer)
+        # QgsProject.instance().addMapLayer(DelineationController.polygonizedLayer)
 
     @staticmethod
-    def onMapMouseClick(point):
-        DelineationController.syntheticFeatureSelection(point, point)
-
+    def onPolygonSelectionCreated(startPoint, endPoint):
+        DelineationController.syntheticFeatureSelection(startPoint, endPoint)
         pass
-
-    @staticmethod
-    def triggerMapSelection(triggerTo = None):
-        if triggerTo is None:
-            triggerTo = not DelineationController.mapSelectionIsEnabled
-
-
-        if triggerTo:
-            DelineationController.pointTool.canvasClicked.connect(DelineationController.onMapMouseClick)
-            # DelineationController.pointTool.canvasClicked.connect(DelineationController.onMapMousePress)
-        else:
-            DelineationController.pointTool.canvasClicked.disconnect(DelineationController.onMapMouseClick)
-            # DelineationController.pointTool.canvasClicked.disconnect(DelineationController.onMapMouseRelease)
-
-        DelineationController.mapSelectionIsEnabled = triggerTo
 
     @staticmethod
     def syntheticFeatureSelection(startPoint, endPoint):
@@ -666,61 +653,62 @@ class DelineationController:
         rect = QgsRectangle(startPoint, endPoint)
         nodesLayer.selectByRect(rect, selectBehaviour)
 
+        if polygonizedLayer.selectedFeatureCount() > 1:
+            # go for rectangles only
+            pass
+        else:
+            # go for 
+            pass
+
         rect = QgsRectangle(startPoint, endPoint)
         polygonizedLayer.selectByRect(rect, selectBehaviour)
 
-        # DelineationController.showMessage('Found: ' + str(nodesSelection))
-        DelineationController.showMessage('Found: ' + str(polygonsSelection))
+        selectedPolygonsLayer = selectedFeaturesToNewLayer(polygonizedLayer)
+        dissolvedPolygonsLayer = dissolveLayer(selectedPolygonsLayer)
+        linesLayer = polygonLayerToPolylines(dissolvedPolygonsLayer)
 
+        DelineationController.addLayerToMap(linesLayer,
+                                        DelineationController.candidateBoundaryLayerName,
+                                        255, 255, 0, 1)
 
+    @staticmethod
+    def toggleSelectionSwitcher(selectionMode = BD_SELECT_NONE):
+        if selectionMode == BD_SELECT_NONE:
+            iface.mapCanvas().unsetMapTool(DelineationController.mapSelectionTool)
+        else:
+            iface.mapCanvas().setMapTool(DelineationController.mapSelectionTool)
 
+def selectedFeaturesToNewLayer(vectorLayer, name=None):
+    if name is None:
+        name = 'SelectedFeatures'
 
-# class MovePointTool(QgsMapToolIdentify):
+    result = processing.run('native:saveselectedfeatures', {
+        'INPUT': vectorLayer,
+        'OUTPUT': 'memory:%s' % name
+    })
 
-#     def __init__(self, mapCanvas, layer, database):
-#         self.ready = True
+    return result['OUTPUT']
 
-#         print("Creating move instance")
+def dissolveLayer(vectorLayer, name=None):
+    if name is None:
+        name = 'DissolvedFeatures'
 
-#         # QgsMapToolIdentify.__init__(self, mapCanvas)
+    result = processing.run('native:dissolve', {
+        'INPUT': vectorLayer,
+        'FIELD': [],
+        'OUTPUT': 'memory:%s' % name
+        })
 
-#         self.setCursor(Qt.CrossCursor)
+    return result['OUTPUT']
 
-#         self.layer    = layer
-#         self.dragging = False
-#         self.feature  = None
-#         self.database = database
+def polygonLayerToPolylines(vectorLayer, name=None):
+    if name is None:
+        name = 'DissolvedFeatures'
 
-#     #CHANGE: Allow processing when the canvas has been refreshed
-#     def setReady(self):
-#         self.ready = True
+    result = processing.run('qgis:polygonstolines', {
+        'INPUT': vectorLayer,
+        'OUTPUT': 'memory:%s' % name
+        })
 
-#     def canvasPressEvent(self, event):
-#         print("press")
-#         found_features = self.identify(event.x(), event.y(),
-#                                        [self.layer],
-#                                        self.TopDownAll)
-#         if len(found_features) > 0:
-#             self.dragging = True
-#             self.feature  = found_features[0].mFeature
-#         else:
-#             self.dragging = False
-#             self.feature  = None
+    return result['OUTPUT']
 
-#     def canvasMoveEvent(self, event):
-#         if self.dragging and self.ready:
-#             self.ready = False
-#             point = self.toLayerCoordinates(self.layer, event.pos())
-#             geometry = QgsGeometry.fromPoint(point)
-#             self.layer.changeGeometry(self.feature.id(), geometry)
-#             self.database.moveIP(self.feature.id(), self.toLayerCoordinates(self.layer, event.pos()))
-#             self.database.display()
-#             self.canvas().refresh()
-#             #CHANGE: Call setReady when the canvas has been refreshed
-#             self.canvas().mapCanvasRefreshed.connect( self.setReady )
-
-
-#     def canvasReleaseEvent(self, event):
-#         print("release")
-#         self.dragging = False
-#         self.feature  = None

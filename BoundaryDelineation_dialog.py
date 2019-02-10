@@ -33,7 +33,9 @@ from PyQt5.QtWidgets import QDialog, QAction, QFileDialog, QToolBar
 
 from qgis.utils import iface
 
-from .DelineationController import *
+from .DelineationController import DelineationController, BD_SELECT_NONE, BD_SELECT_NODES, BD_SELECT_POLYGONS
+from .MapSelectionTool import MapSelectionTool
+
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'BoundaryDelineation_dialog_base.ui'))
@@ -71,6 +73,9 @@ class BoundaryDelineationDialog(QDialog, FORM_CLASS):
         self.deleteBoundaryButton.clicked.connect(self.deleteCandidate)
         self.manualDelineationButtton.clicked.connect(self.manualDelineation)
         self.finishDelineationButton.clicked.connect(self.finishDelineation)
+
+        self.selectionPolygonsButton.clicked.connect(self.onSelectionPolygonsButtonClicked)
+        self.selectionNodesButton.clicked.connect(self.onSelectionNodesButtonClicked)
 
         # Connect labels to images
         self._setImage(self.label0, "/icon_its4land.png")
@@ -166,6 +171,43 @@ class BoundaryDelineationDialog(QDialog, FORM_CLASS):
         if result:
             self.openVectorOutput(result[0], self.lineEdit3)
 
+    def onMapToolSet(self, newTool, oldTool):
+        if isinstance(oldTool, MapSelectionTool) and not isinstance(newTool, MapSelectionTool):
+            DelineationController.toggleSelectionSwitcher(BD_SELECT_NONE)
+            self.updateSelectionModeButtons(BD_SELECT_NONE)
+
+    def onSelectionPolygonsButtonClicked(self):
+        mode = self.getSelectionMode()
+        self.updateSelectionModeButtons(mode)
+
+        DelineationController.toggleSelectionSwitcher(mode)
+
+    def onSelectionNodesButtonClicked(self):
+        mode = self.getSelectionMode()
+        self.updateSelectionModeButtons(mode)
+
+        DelineationController.toggleSelectionSwitcher(mode)
+
+    def updateSelectionModeButtons(self, mode):
+        nodes = False
+        polygons = False
+
+        if mode == BD_SELECT_NODES:
+            nodes = True
+        elif mode == BD_SELECT_POLYGONS:
+            polygons = True
+
+        self.selectionNodesButton.setChecked(bool(nodes))
+        self.selectionPolygonsButton.setChecked(bool(polygons))
+
+    def getSelectionMode(self):
+        if self.selectionNodesButton.isChecked():
+            return BD_SELECT_NODES
+        elif self.selectionPolygonsButton.isChecked():
+            return BD_SELECT_POLYGONS
+        else:
+            return BD_SELECT_NONE
+
     # Create nodes where two or more input lines intersect
     def createNodes(self):
         lineLayer = DelineationController.getLineLayer()
@@ -194,7 +236,9 @@ class BoundaryDelineationDialog(QDialog, FORM_CLASS):
 
         self.createNodesButton.setEnabled(True)
 
-        DelineationController.init(self)
+        DelineationController.init()
+
+        DelineationController.canvas.mapToolSet.connect(self.onMapToolSet)
 
     ### Step II ###
     def connectNodes(self):
