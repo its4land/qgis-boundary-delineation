@@ -72,10 +72,6 @@ class DelineationController:
         QApplication.processEvents()
 
     @staticmethod
-    def getActiveLayer():
-        return iface.activeLayer()
-
-    @staticmethod
     def setActiveLayer(layer):
         if not isinstance(layer, QgsMapLayer):
             layer = DelineationController.getLayerByName(layer)
@@ -101,16 +97,12 @@ class DelineationController:
             return None
 
     @staticmethod
-    def addRasterLayer (layerName, fileName):
-        return iface.addRasterLayer(fileName, layerName)
-
-    @staticmethod
     def checkRasterLayer (layerName, fileName, showMsg = False):
         layer = DelineationController.getLayerByName (layerName)
         if layer is None:
             if fileName:
                 try:
-                    return DelineationController.addRasterLayer(layerName, fileName)
+                    return iface.addRasterLayer(fileName, layerName)
                 except:
                     DelineationController.showMessage("Unable to open %s" % fileName, Qgis.Critical)
             return None
