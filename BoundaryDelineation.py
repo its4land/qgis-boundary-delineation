@@ -26,6 +26,7 @@
 # Import required modules
 from PyQt5.QtCore import QSettings, QTranslator, qVersion, Qt
 from PyQt5.QtWidgets import QAction, QToolBar
+from PyQt5.QtGui import QIcon
 import qgis
 from qgis.core import *
 from qgis.utils import *
@@ -35,7 +36,7 @@ import os
 # Initialize Qt resources from file resources.py
 from .resources import *
 
-from .DelineationController import *
+from .DelineationController import DelineationController
 # Import the code for the dialog
 from .BoundaryDelineation_dialog import BoundaryDelineationDialog
 
@@ -56,10 +57,7 @@ class BoundaryDelineation:
 
         # Initialize locale
         locale = QSettings().value('locale/userLocale')[0:2]
-        locale_path = os.path.join(
-            self.plugin_dir,
-            'i18n',
-            DelineationController.appName + '_{}.qm'.format(locale))
+        locale_path = os.path.join(self.plugin_dir, 'i18n', '{}_{}.qm'.format(DelineationController.appName, locale))
 
         if os.path.exists(locale_path):
             self.translator = QTranslator()
@@ -71,19 +69,20 @@ class BoundaryDelineation:
 
         # Declare instance attributes
         self.actions = []
-        self.menu = self.tr(u'&'+DelineationController.appName)
-        self.toolbar = self.iface.addToolBar(DelineationController.appName)
-        self.toolbar.setObjectName(DelineationController.appName)
+        self.menu = self.tr(DelineationController.appName)
         self.canvas = qgis.utils.iface.mapCanvas()
 
         # Define visible toolbars
         iface.mainWindow().findChild(QToolBar, 'mDigitizeToolBar').setVisible(True)
         iface.mainWindow().findChild(QToolBar, 'mAdvancedDigitizeToolBar').setVisible(True)
         iface.mainWindow().findChild(QToolBar, 'mSnappingToolBar').setVisible(True)
-        iface.mapCanvas().snappingUtils().toggleEnabled()
+
+        snappingConfig = iface.mapCanvas().snappingUtils().config()
+        snappingConfig.setEnabled(True)
+        iface.mapCanvas().snappingUtils().setConfig(snappingConfig)
 
         # Set projections settings for newly created layers, possible values are: prompt, useProject, useGlobal
-        QSettings().setValue("/Projections/defaultBehaviour", "useProject")
+        QSettings().setValue('/Projections/defaultBehaviour', 'useProject')
 
         DelineationController.mainWidget = self
 
@@ -103,10 +102,9 @@ class BoundaryDelineation:
 
     def initGui(self):
         # Create action that will start plugin configuration
-        action = QAction(QIcon(os.path.dirname(os.path.realpath(__file__)) +
-                                    "/icon.png"), DelineationController.appName, self.iface.mainWindow())
+        action = QAction(QIcon(os.path.join(self.plugin_dir, 'icon.png')), DelineationController.appName, self.iface.mainWindow())
         self.actions.append(action)
-        
+
         # Add information
         action.setWhatsThis(DelineationController.appName)
 
@@ -114,7 +112,7 @@ class BoundaryDelineation:
         self.iface.addToolBarIcon(action)
 
         # Add menu item to the Plugins menu
-        self.iface.addPluginToMenu("&"+DelineationController.appName, action)
+        self.iface.addPluginToMenu(DelineationController.appName, action)
 
         # Connect the action to the run method
         action.triggered.connect(self.run)
@@ -123,11 +121,8 @@ class BoundaryDelineation:
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
-            self.iface.removePluginMenu(
-                self.tr(u'&'+DelineationController.appName),
-                action)
+            self.iface.removePluginMenu(self.tr(DelineationController.appName), action)
             self.iface.removeToolBarIcon(action)
-        del self.toolbar
 
     def run(self):
         dlg = BoundaryDelineationDialog.dialog
