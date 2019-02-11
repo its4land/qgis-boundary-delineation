@@ -76,7 +76,10 @@ class BoundaryDelineation:
         iface.mainWindow().findChild(QToolBar, 'mDigitizeToolBar').setVisible(True)
         iface.mainWindow().findChild(QToolBar, 'mAdvancedDigitizeToolBar').setVisible(True)
         iface.mainWindow().findChild(QToolBar, 'mSnappingToolBar').setVisible(True)
-        iface.mapCanvas().snappingUtils().toggleEnabled()
+
+        snappingConfig = iface.mapCanvas().snappingUtils().config()
+        snappingConfig.setEnabled(True)
+        iface.mapCanvas().snappingUtils().setConfig(snappingConfig)
 
         # Set projections settings for newly created layers, possible values are: prompt, useProject, useGlobal
         QSettings().setValue('/Projections/defaultBehaviour', 'useProject')
