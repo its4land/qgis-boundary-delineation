@@ -1,6 +1,6 @@
 import networkx as nx
 from networkx.algorithms.approximation.steinertree import steiner_tree
-import qgis.core.QgsWkbTypes as QgsWkbTypes
+from qgis.core import QgsWkbTypes
 from collections.abc import Collection
 from typing import Collection as CollectionT
 
@@ -40,8 +40,10 @@ def prepareLinesGraph(layer, weight_expr_str=None):
 
     return G
 
-terminal_nodes = [2, 4, 5]
-connected_subgraphs = tuple(nx.connected_component_subgraphs(G))
+# terminal_nodes = [2, 4, 5]
+# 
+def prepareSubgraphs(G):
+    return tuple(nx.connected_component_subgraphs(G))
 
 def getSteinerTree(graphs:CollectionT, terminal_nodes:CollectionT):
     terminal_graph = None

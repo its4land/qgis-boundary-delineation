@@ -36,6 +36,8 @@ from qgis.utils import iface
 import processing
 import os
 
+from .BoundaryGraph import prepareLinesGraph, prepareSubgraphs
+
 class DelineationController:
 
     # Define layer and plugin name
@@ -430,6 +432,13 @@ class DelineationController:
 
         nodeLayer = DelineationController.checkVectorLayer("Vertices", None, False)
         DelineationController.addLayerToMap(nodes, DelineationController.nodeLayerName, 255, 0, 0, 1.3)
+
+    @staticmethod
+    def buildGraph(lineLayer):
+        DelineationController.G = prepareLinesGraph(lineLayer)
+        DelineationController.subgraphs = prepareSubgraphs(DelineationController.G)
+
+        return DelineationController.G
 
     @staticmethod
     def _xy2str(point):

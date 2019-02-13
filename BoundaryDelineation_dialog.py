@@ -178,6 +178,10 @@ class BoundaryDelineationDialog(QDialog, FORM_CLASS):
             # Create nodes
             DelineationController.extractVertices(lineLayer)
 
+            self.progressBar.setValue(75)
+
+            DelineationController.buildGraph(lineLayer)
+
             self.progressBar.setValue(100)
 
             # Enable feature selection
