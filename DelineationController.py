@@ -39,6 +39,8 @@ from pprint import pprint
 
 from .BoundaryGraph import prepareLinesGraph, prepareSubgraphs, steinerTree, printGraph
 
+from .utils import processing_cursor
+
 class DelineationController:
 
     # Define layer and plugin name
@@ -63,16 +65,6 @@ class DelineationController:
     @staticmethod
     def showMessage(message, level = Qgis.Info, duration=5):
         iface.messageBar().pushMessage(DelineationController.pluginName, message, level, duration)
-
-    @staticmethod
-    def showBusyCursor():
-        QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
-        QApplication.processEvents()
-
-    @staticmethod
-    def hideBusyCursor():
-        QApplication.restoreOverrideCursor()
-        QApplication.processEvents()
 
     @staticmethod
     def setActiveLayer(layer):
@@ -333,6 +325,7 @@ class DelineationController:
 
     # Load layer to canvas
     @staticmethod
+    @processing_cursor()
     def openInputVector(vectorFile):
         # Check if layer is already loaded
         layer = DelineationController.replaceLayerUri(DelineationController.getLineLayer(False), DelineationController.inputFileName, vectorFile)
@@ -343,7 +336,6 @@ class DelineationController:
             DelineationController.metricClosureGraph = None
 
             try:
-                DelineationController.showBusyCursor()
                 # Douglas-Peucker line simplification
                 result = processing.run('qgis:simplifygeometries',
                                              {"INPUT": vectorFile,
@@ -366,7 +358,8 @@ class DelineationController:
                     styleFilepath = DelineationController.pluginPath + "/style.qml"
                     layer.loadNamedStyle(styleFilepath)
             finally:
-                DelineationController.hideBusyCursor()
+                pass
+
         return layer
 
     @staticmethod
@@ -413,11 +406,11 @@ class DelineationController:
 
     # Create nodes where two or more input lines intersect
     @staticmethod
+    @processing_cursor()
     def extractVertices(layer):
         DelineationController.removeLayer(DelineationController.getNodeLayer(False))
 
         try:
-            DelineationController.showBusyCursor()
             verticesResult = processing.run('qgis:extractspecificvertices',
                                          {"INPUT": layer,
                                           "VERTICES": '0',
@@ -429,7 +422,7 @@ class DelineationController:
 
             nodes = verticesNoDuplicatesResult['OUTPUT']
         finally:
-            DelineationController.hideBusyCursor()
+            pass
 
         nodeLayer = DelineationController.checkVectorLayer("Vertices", None, False)
         DelineationController.addLayerToMap(nodes, DelineationController.nodeLayerName, 255, 0, 0, 1.3)
@@ -447,6 +440,7 @@ class DelineationController:
 
     ### Step II ###
     @staticmethod
+    @processing_cursor()
     def connectNodes():
         lineLayer = DelineationController.getLineLayer()
         nodeLayer = DelineationController.getNodeLayer()
@@ -518,21 +512,20 @@ class DelineationController:
 
     # Candidate boundary should be accepted
     @staticmethod
+    @processing_cursor()
     def acceptCandidate():
         candidates = DelineationController.getCandidatesLayer(create = False, showError = True)
         if candidates is not None and candidates.featureCount() > 0:
             tempLayer = None
             # Merge layer geometries into multipart geometry
             try:
-                DelineationController.showBusyCursor()
                 result = processing.run('native:dissolve',
                                         {"INPUT": candidates,
                                          "FIELD": [],
                                          "OUTPUT": 'memory:collect'})
                 tempLayer = result['OUTPUT']
-
             finally:
-                DelineationController.hideBusyCursor()
+                pass
 
             if isinstance(tempLayer, QgsMapLayer):
                 finalLayer = DelineationController.getFinalBoundaryLayer(create = True, showError = True)
