@@ -453,8 +453,6 @@ class DelineationController:
             DelineationController.showMessage('Please select two or more nodes to be connected from %s'% DelineationController.nodeLayerName, Qgis.Warning)
             return
 
-        DelineationController.showBusyCursor()
-
         selectedPoints = [f.geometry().asPoint() for f in nodeLayer.selectedFeatures()]
 
         # keep in mind that his can thow any other exception that occurs
@@ -483,7 +481,6 @@ class DelineationController:
 
         # Check if nodes could be connected
         DelineationController.initialview()
-        DelineationController.hideBusyCursor()
 
         if candidatesLayer.featureCount() <= 0:
             DelineationController.showMessage('Could not connect these nodes to boundaries! Please '
