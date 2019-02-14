@@ -32,7 +32,6 @@ from qgis.core import *
 from qgis.utils import *
 import processing
 import os
-import sys
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -40,11 +39,6 @@ from .resources import *
 from .DelineationController import DelineationController
 # Import the code for the dialog
 from .BoundaryDelineation_dialog import BoundaryDelineationDialog
-
-LOCAL_NETWORKX_PATH = './lib/networkx/networkx'
-
-if LOCAL_NETWORKX_PATH not in sys.path:
-    sys.path.insert(0, LOCAL_NETWORKX_PATH)
 
 class BoundaryDelineation:
     """Functions created by Plugin Builder"""

@@ -30,13 +30,14 @@ from PyQt5.QtWidgets import QApplication, QAction, QFileDialog, QToolBar
 
 from qgis.core import QgsProject, Qgis, QgsMapLayer, QgsVectorLayer, QgsVectorFileWriter, \
     QgsLineSymbol, QgsMarkerSymbol, QgsProcessingUtils, QgsFeature, QgsGeometry, QgsField, \
-    QgsSingleSymbolRenderer, QgsLineSymbol, QgsProperty, QgsCoordinateReferenceSystem
+    QgsSingleSymbolRenderer, QgsLineSymbol, QgsProperty, QgsCoordinateReferenceSystem, QgsFeatureSink, QgsWkbTypes
 from qgis.utils import iface
 
 import processing
 import os
+from pprint import pprint
 
-from .BoundaryGraph import prepareLinesGraph, prepareSubgraphs
+from .BoundaryGraph import prepareLinesGraph, prepareSubgraphs, steinerTree, printGraph
 
 class DelineationController:
 
@@ -449,69 +450,57 @@ class DelineationController:
     def connectNodes():
         lineLayer = DelineationController.getLineLayer()
         nodeLayer = DelineationController.getNodeLayer()
-        if lineLayer is not None and nodeLayer is not None:
-            # Check if user has selected 2 or more nodes
-            if nodeLayer.selectedFeatureCount() > 1:
-                try:
-                    DelineationController.showBusyCursor()
 
-                    # Save selected nodes in new layer
-                    nodesLayerFilename = QgsProcessingUtils.generateTempFilename('nodeLayer.shp')
-                    processing.run('native:saveselectedfeatures',
-                                      {"INPUT": nodeLayer,
-                                       "OUTPUT": nodesLayerFilename})
+        # TODO ask @SCrommelinck why we need to return False, as we don't check it later?
+        if lineLayer is None and nodeLayer is None:
+            return
 
-                    # Create output file names
-                    networkLayerFilename = QgsProcessingUtils.generateTempFilename('networkLayer.shp')
-                    # Steiner least-cost path calculation
-                    processing.run('grass7:v.net.steiner',
-                                     {"input": lineLayer,
-                                      "points": nodesLayerFilename,
-                                      "threshold": 50,
-                                      "arc_type": [0, 1],
-                                      "terminal_cats": '1-100000',
-                                      "acolumn": DelineationController.boundaryColumnName,
-                                      "npoints": -1,
-                                      "-g": False,
-                                      "GRASS_REGION_PARAMETER": DelineationController.getExtent(lineLayer),
-                                      "GRASS_OUTPUT_TYPE_PARAMETER": 0,
-                                      "GRASS_SNAP_TOLERANCE_PARAMETER": -1,
-                                      "GRASS_MIN_AREA_PARAMETER": 0.0001,
-                                      "GRASS_VECTOR_DSCO": '',
-                                      "GRASS_VECTOR_LCO": '',
-                                      "output": networkLayerFilename})
+        if nodeLayer.selectedFeatureCount() <= 1:
+            DelineationController.showMessage('Please select two or more nodes to be connected from %s'% DelineationController.nodeLayerName, Qgis.Warning)
+            return
 
-                    # Check if nodes could be connected
-                    DelineationController.initialview()
-                    candidatesLayer = QgsVectorLayer(networkLayerFilename, "Network Steiner", 'ogr')
-                    if candidatesLayer is not None:
-                        if candidatesLayer.featureCount() <= 0:
-                            DelineationController.showMessage("Could not connect these nodes to boundaries! Please "
-                                                              "select nodes that are connected via %s. The layer "
-                                                              "should contain a 'boundary' attribute that represents its "
-                                                              "boundary likelikhood."
-                                                              % DelineationController.lineLayerName,
-                                                              Qgis.Warning)
-                        else:
-                            DelineationController.addLayerToMap(candidatesLayer,
-                                                                DelineationController.candidateBoundaryLayerName,
-                                                                255, 255, 0, 1)
-                            # DelineationController.checkVectorLayer(DelineationController.candidateBoundaryLayerName,
-                            #                                         networkLayerFilename, False)
-                            # candidateBoundaryLayer = DelineationController.getActiveLayer()
-                            # candidateBoundaryLayer.setName(DelineationController.candidateBoundaryLayerName)
-                            # DelineationController.updateSymbology(tempLayer, 255, 0, 0, 0.3)
-                            return True
+        DelineationController.showBusyCursor()
 
-                except Exception as exc:
-                    DelineationController.showMessage("Error in running Steiner algorithm: {0}".format(exc),
-                                                      Qgis.Critical)
-                finally:
-                    DelineationController.hideBusyCursor()
-            else:
-                DelineationController.showMessage("Please select two or more nodes to be connected from %s"% DelineationController.nodeLayerName,
-                                                  Qgis.Warning)
-        return False
+        selectedPoints = [f.geometry().asPoint() for f in nodeLayer.selectedFeatures()]
+
+        # keep in mind that his can thow any other exception that occurs
+        T = None
+        try:
+            T = steinerTree(DelineationController.subgraphs, selectedPoints)
+        except NoResultsGraphError:
+            DelineationController.showMessage('No paths connecting the selected nodes found')
+            return
+
+        lineIds = [edge[2] for edge in T.edges(keys=True)]
+        lineFeatures = [f for f in lineLayer.getFeatures(lineIds)]
+
+        candidatesLayer = QgsVectorLayer('LineString?crs=epsg:32737', 'BD_candidates', 'memory')
+        lineLayerFields = lineLayer.dataProvider().fields().toList()
+        candidatesLayerFields= [QgsField(field.name(),field.type()) for field in lineLayerFields]
+        candidatesLayer.dataProvider().addAttributes(candidatesLayerFields)
+        candidatesLayer.updateFields()
+        candidatesLayer.startEditing()
+
+        if not candidatesLayer.addFeatures(lineFeatures):
+            DelineationController.showMessage('Unable to create candidates layer')
+            return
+
+        candidatesLayer.commitChanges()
+
+        # Check if nodes could be connected
+        DelineationController.initialview()
+        DelineationController.hideBusyCursor()
+
+        if candidatesLayer.featureCount() <= 0:
+            DelineationController.showMessage('Could not connect these nodes to boundaries! Please '
+                                              'select nodes that are connected via %s. The layer '
+                                              'should contain a `boundary` attribute that represents its '
+                                              'boundary likelikhood.'
+                                              % DelineationController.lineLayerName,
+                                              Qgis.Warning)
+        else:
+            DelineationController.addLayerToMap(candidatesLayer, DelineationController.candidateBoundaryLayerName, 255, 255, 0, 1)
+
 
     # Restore canvas view to its initial state
     @staticmethod
