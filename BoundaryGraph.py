@@ -7,7 +7,7 @@ if LOCAL_NETWORKX_PATH not in sys.path:
     sys.path.insert(0, LOCAL_NETWORKX_PATH)
 
 import networkx as nx
-from networkx.algorithms.approximation.steinertree import steiner_tree
+from networkx.algorithms.approximation.steinertree import steiner_tree, metric_closure
 from qgis.core import QgsWkbTypes
 from collections.abc import Collection
 from typing import Collection as CollectionT
@@ -62,23 +62,36 @@ def prepareLinesGraph(layer, weight_expr_str=None):
 def prepareSubgraphs(G):
     return tuple(nx.connected_component_subgraphs(G))
 
-def steinerTree(graphs:CollectionT, terminal_nodes:CollectionT):
+def steinerTree(graphs:CollectionT, terminal_nodes:CollectionT, metric_closures=None):
     terminal_graph = None
+    terminal_metric_closure = None
 
-    for g in graphs:
+    for idx, g in enumerate(graphs):
         # print('terminals', printGraph(g))
         # print('terminals', terminal_nodes[0], terminal_nodes[0] in g, nx.is_connected(g))
         if not all(node in g for node in terminal_nodes):
             continue
 
         terminal_graph = g
+        terminal_metric_closure = metric_closures[idx] if metric_closures else None
 
     if not terminal_graph:
         raise NoSuitableGraphError()
 
-    T = steiner_tree(terminal_graph, terminal_nodes)
+
+    T = steiner_tree(terminal_graph, terminal_nodes, metric_closure=terminal_metric_closure)
 
     return T
+
+
+def calculateMetricClosures(graphs:CollectionT):
+    metric_closures = []
+
+    for g in graphs:
+        metric_closures.append(metric_closure(g))
+
+    return metric_closures
+
 
 # TODO I think it would be much easier if I just don't have any multipart geometries
 def getFeaturesFromSteinerTree(layer, steinerTree):

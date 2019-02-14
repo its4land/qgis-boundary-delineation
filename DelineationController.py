@@ -9,7 +9,7 @@
         git sha              : $Format:%H$
         copyright            : (C) 2018 by Sophie Crommelinck
         email                : s.crommelinck@utwente.nl
-        development          : Reiner Borchert, Hansa Luftbild AG Münster
+        development          : Reiner Borchert, Hansa Luftbild AG Münster, Ivan Ivanov <ivan.ivanov@suricactus.com> ITC, University of Twente
         email                : borchert@hansaluftbild.de
  ***************************************************************************/
 
@@ -35,9 +35,8 @@ from qgis.utils import iface
 
 import processing
 import os
-from pprint import pprint
 
-from .BoundaryGraph import prepareLinesGraph, prepareSubgraphs, steinerTree, printGraph
+from .BoundaryGraph import prepareLinesGraph, prepareSubgraphs, calculateMetricClosures, steinerTree, printGraph
 
 from .utils import processing_cursor
 
@@ -294,14 +293,13 @@ class DelineationController:
 
     @staticmethod
     def currentInputRasterUri():
-        return DelineationController.getLayerNameUri(DelineationController.rasterLayerName)
+        return DelineationController.getLayerUri(DelineationController.getLayerByName(DelineationController.rasterLayerName))
 
     @staticmethod
     def currentInputLineUri():
         if DelineationController.getLineLayer(False) is None:
             DelineationController.inputFileName = None
         return DelineationController.inputFileName
-        #return DelineationController.getLayerNameUri(DelineationController.lineLayerName)
 
     @staticmethod
     def currentOutputLineUri():
@@ -431,6 +429,7 @@ class DelineationController:
     def buildGraph(lineLayer):
         DelineationController.G = prepareLinesGraph(lineLayer)
         DelineationController.subgraphs = prepareSubgraphs(DelineationController.G)
+        DelineationController.metricClosureGraphs = calculateMetricClosures(DelineationController.subgraphs)
 
         return DelineationController.G
 
@@ -442,10 +441,13 @@ class DelineationController:
     @staticmethod
     @processing_cursor()
     def connectNodes():
+        # TODO ask @SCrommelinck why we are missing the self here, would be
+        # much nicer to have access to this with self.linesLayer && self.nodesLayer?
         lineLayer = DelineationController.getLineLayer()
         nodeLayer = DelineationController.getNodeLayer()
 
-        # TODO ask @SCrommelinck why we need to return False, as we don't check it later?
+        # TODO ask @SCrommelinck why we need to return False (used to be like this), as we don't check it later?
+        # TODO ask @SCrommelinck why we need this check here in the first place?
         if lineLayer is None and nodeLayer is None:
             return
 
@@ -456,9 +458,8 @@ class DelineationController:
         selectedPoints = [f.geometry().asPoint() for f in nodeLayer.selectedFeatures()]
 
         # keep in mind that his can thow any other exception that occurs
-        T = None
         try:
-            T = steinerTree(DelineationController.subgraphs, selectedPoints)
+            T = steinerTree(DelineationController.subgraphs, selectedPoints, metric_closures=DelineationController.metricClosureGraphs)
         except NoResultsGraphError:
             DelineationController.showMessage('No paths connecting the selected nodes found')
             return
@@ -466,8 +467,9 @@ class DelineationController:
         lineIds = [edge[2] for edge in T.edges(keys=True)]
         lineFeatures = [f for f in lineLayer.getFeatures(lineIds)]
 
-        candidatesLayer = QgsVectorLayer('LineString?crs=epsg:32737', 'BD_candidates', 'memory')
         lineLayerFields = lineLayer.dataProvider().fields().toList()
+        # TODO fix the hardcoded part here: the epsg and the name
+        candidatesLayer = QgsVectorLayer('LineString?crs=epsg:32737', 'BD_candidates', 'memory')
         candidatesLayerFields= [QgsField(field.name(),field.type()) for field in lineLayerFields]
         candidatesLayer.dataProvider().addAttributes(candidatesLayerFields)
         candidatesLayer.updateFields()
