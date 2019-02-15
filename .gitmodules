@@ -1,0 +1,4 @@
+[submodule "lib/networkx"]
+	path = lib/networkx
+	url = git@github.com:suricactus/networkx.git
+	branch = steiner_multigraph

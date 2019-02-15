@@ -223,6 +223,7 @@ class BoundaryDelineationDialog(QDialog, FORM_CLASS):
             self.progressBar.setValue(50)
 
             DelineationController.polygonizeSegmentsLayer(lineLayer)
+            DelineationController.buildGraph(lineLayer)
 
             self.progressBar.setValue(100)
 
