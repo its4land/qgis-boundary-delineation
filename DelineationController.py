@@ -40,6 +40,8 @@ from .BoundaryGraph import prepareLinesGraph, prepareSubgraphs, calculateMetricC
 
 from .utils import processing_cursor
 
+PRECALCULATE_METRIC_CLOSURES = False
+
 class DelineationController:
 
     # Define layer and plugin name
@@ -429,7 +431,7 @@ class DelineationController:
     def buildGraph(lineLayer):
         DelineationController.G = prepareLinesGraph(lineLayer)
         DelineationController.subgraphs = prepareSubgraphs(DelineationController.G)
-        DelineationController.metricClosureGraphs = calculateMetricClosures(DelineationController.subgraphs)
+        DelineationController.metricClosureGraphs = calculateMetricClosures(DelineationController.subgraphs) if PRECALCULATE_METRIC_CLOSURES else None
 
         return DelineationController.G
 
@@ -459,6 +461,8 @@ class DelineationController:
 
         # keep in mind that his can thow any other exception that occurs
         try:
+            if DelineationController.metricClosureGraphs is None:
+                DelineationController.metricClosureGraphs = calculateMetricClosures(DelineationController.subgraphs)
             T = steinerTree(DelineationController.subgraphs, selectedPoints, metric_closures=DelineationController.metricClosureGraphs)
         except NoResultsGraphError:
             DelineationController.showMessage('No paths connecting the selected nodes found')
