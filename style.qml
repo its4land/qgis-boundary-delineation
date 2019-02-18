@@ -2,11 +2,11 @@
 <qgis labelsEnabled="0" simplifyLocal="1" hasScaleBasedVisibilityFlag="0" simplifyDrawingHints="1" maxScale="0" simplifyAlgorithm="0" readOnly="0" simplifyMaxScale="1" version="3.2.2-Bonn" minScale="1e+8" simplifyDrawingTol="1">
   <renderer-v2 forceraster="0" graduatedMethod="GraduatedSize" type="graduatedSymbol" attr="boundary" symbollevels="0" enableorderby="0">
     <ranges>
-      <range render="true" label=" 0.0 - 3.3 " symbol="0" upper="3.331000000000000" lower="0.000000000000000"/>
-      <range render="true" label=" 3.3 - 9.7 " symbol="1" upper="9.734999999999999" lower="3.331000000000000"/>
-      <range render="true" label=" 9.7 - 20.9 " symbol="2" upper="20.879000000000001" lower="9.734999999999999"/>
-      <range render="true" label=" 20.9 - 43.4 " symbol="3" upper="43.417999999999999" lower="20.879000000000001"/>
-      <range render="true" label=" 43.4 - 86.0 " symbol="4" upper="85.998999999999995" lower="43.417999999999999"/>
+      <range render="true" label=" 0.00 - 0.2 " symbol="0" upper="0.2" lower="0.00"/>
+      <range render="true" label=" 0.21 - 0.4 " symbol="1" upper="0.4" lower="0.21"/>
+      <range render="true" label=" 0.41 - 0.6 " symbol="2" upper="0.6" lower="0.41"/>
+      <range render="true" label=" 0.61 - 0.8 " symbol="3" upper="0.8" lower="0.61"/>
+      <range render="true" label=" 0.81 - 1.0 " symbol="4" upper="1.0" lower="0.81"/>
     </ranges>
     <symbols>
       <symbol type="line" alpha="1" name="0" clip_to_extent="1">
