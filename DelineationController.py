@@ -42,6 +42,7 @@ from .utils import processing_cursor
 
 PRECALCULATE_METRIC_CLOSURES = False
 
+
 class DelineationController:
 
     # Define layer and plugin name
