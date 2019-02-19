@@ -36,7 +36,7 @@ from qgis.utils import iface
 import processing
 import os
 
-from .BoundaryGraph import prepareLinesGraph, prepareSubgraphs, calculateMetricClosures, steinerTree, printGraph
+from .BoundaryGraph import prepareLinesGraph, prepareSubgraphs, calculateMetricClosures, steinerTree, printGraph, NoResultsGraphError
 
 from .utils import processing_cursor
 
