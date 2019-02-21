@@ -29,8 +29,8 @@ from PyQt5.QtGui import QIcon, QColor, QPixmap, QCursor
 from PyQt5.QtWidgets import QApplication, QAction, QFileDialog, QToolBar
 
 from qgis.core import QgsProject, Qgis, QgsMapLayer, QgsVectorLayer, QgsVectorFileWriter, \
-    QgsLineSymbol, QgsMarkerSymbol, QgsProcessingUtils, QgsFeature, QgsGeometry, QgsField, \
-    QgsSingleSymbolRenderer, QgsLineSymbol, QgsProperty, QgsCoordinateReferenceSystem, QgsFeatureSink, QgsWkbTypes, QgsRectangle
+    QgsMarkerSymbol, QgsFeature, QgsField, QgsLineSymbol, QgsCoordinateReferenceSystem, \
+    QgsFeatureSink, QgsWkbTypes, QgsRectangle
 from qgis.utils import iface
 
 from qgis.gui import QgsMapToolIdentify, QgsMapToolEmitPoint
@@ -71,7 +71,9 @@ class DelineationController:
     inputFileName = None
     outputFileName = None
     edgesGraph = None
+    subgraphs = None
     metricClosureGraph = None
+    candidatesLayer = None
 
     # TODO one day I should rewrite this to something more meaningful... no idea who put everything into static methods, but defintitely has lack of experience with OOP paradigm
     @staticmethod
@@ -208,6 +210,48 @@ class DelineationController:
             layer = DelineationController.createMemoryLayer(DelineationController.candidateBoundaryLayerName)
         DelineationController.addLayerToMap(layer, DelineationController.candidateBoundaryLayerName)
         return layer
+
+    @staticmethod
+    def getCandidatesLayer2():
+        if DelineationController.candidatesLayer:
+            return DelineationController.candidatesLayer
+
+        if not DelineationController.getLineLayer():
+            raise Exception('Cannot create candidate layer without line layer!')
+
+        lineLayerFields = DelineationController.getLineLayer().dataProvider().fields().toList()
+        # TODO fix the hardcoded part here: the epsg and the name
+        candidatesLayer = QgsVectorLayer('MultiLineString?crs=epsg:32737', 'BD_candidates', 'memory')
+        candidatesLayerFields= [QgsField(field.name(),field.type()) for field in lineLayerFields]
+        # candidatesLayer.dataProvider().addAttributes(candidatesLayerFields)
+        # candidatesLayer.updateFields()
+
+        QgsProject.instance().addMapLayer(candidatesLayer)
+
+        DelineationController.candidatesLayer = candidatesLayer
+
+        return candidatesLayer
+
+    def addCandidates(lineFeatures, revertUncommited=True):
+        candidatesLayer = DelineationController.getCandidatesLayer2()
+
+        if revertUncommited == True:
+            candidatesLayer.rollBack()
+
+        candidatesLayer.startEditing()
+        features = []
+
+        for f in lineFeatures:
+            features.append(f)
+
+        if not candidatesLayer.addFeatures(features):
+            DelineationController.showMessage('Unable to add features as candidates')
+            return False
+
+        candidatesLayer.commitChanges()
+
+        return True
+
 
     @staticmethod
     def getFinalBoundaryLayer(create = True, showError = True):
@@ -481,6 +525,7 @@ class DelineationController:
         try:
             if DelineationController.metricClosureGraphs is None:
                 DelineationController.metricClosureGraphs = calculateMetricClosures(DelineationController.subgraphs)
+
             T = steinerTree(DelineationController.subgraphs, selectedPoints, metric_closures=DelineationController.metricClosureGraphs)
         except NoResultsGraphError:
             DelineationController.showMessage('No paths connecting the selected nodes found')
@@ -489,24 +534,12 @@ class DelineationController:
         lineIds = [edge[2] for edge in T.edges(keys=True)]
         lineFeatures = [f for f in lineLayer.getFeatures(lineIds)]
 
-        lineLayerFields = lineLayer.dataProvider().fields().toList()
-        # TODO fix the hardcoded part here: the epsg and the name
-        candidatesLayer = QgsVectorLayer('LineString?crs=epsg:32737', 'BD_candidates', 'memory')
-        candidatesLayerFields= [QgsField(field.name(),field.type()) for field in lineLayerFields]
-        candidatesLayer.dataProvider().addAttributes(candidatesLayerFields)
-        candidatesLayer.updateFields()
-        candidatesLayer.startEditing()
-
-        if not candidatesLayer.addFeatures(lineFeatures):
-            DelineationController.showMessage('Unable to create candidates layer')
-            return
-
-        candidatesLayer.commitChanges()
+        DelineationController.addCandidates(lineFeatures)
 
         # Check if nodes could be connected
         DelineationController.initialview()
 
-        if candidatesLayer.featureCount() <= 0:
+        if DelineationController.candidatesLayer.featureCount() <= 0:
             DelineationController.showMessage('Could not connect these nodes to boundaries! Please '
                                               'select nodes that are connected via %s. The layer '
                                               'should contain a `boundary` attribute that represents its '
@@ -514,8 +547,19 @@ class DelineationController:
                                               % DelineationController.lineLayerName,
                                               Qgis.Warning)
         else:
-            DelineationController.addLayerToMap(candidatesLayer, DelineationController.candidateBoundaryLayerName, 255, 255, 0, 1)
+            DelineationController.addLayerToMap(DelineationController.candidatesLayer, DelineationController.candidateBoundaryLayerName, 255, 255, 0, 1)
 
+    def simplifyFeatures(layer, selectedOnly=False):
+        # QgsProject.instance().addMapLayer(layer, False)
+
+        result = processing.run('qgis:polygonstolines', {
+            'INPUT': QgsProcessingFeatureSourceDefinition(layer.id(), selectedOnly),
+            'OUTPUT': 'memory:'
+        })
+
+        # QgsProject.instance().removeMapLayer(layer)
+
+        return result['OUTPUT']
 
     # Restore canvas view to its initial state
     @staticmethod
@@ -651,11 +695,9 @@ class DelineationController:
 
         selectedPolygonsLayer = selectedFeaturesToNewLayer(polygonizedLayer)
         dissolvedPolygonsLayer = dissolveLayer(selectedPolygonsLayer)
-        linesLayer = polygonLayerToPolylines(dissolvedPolygonsLayer)
+        lines = polygonLayerToPolylines(dissolvedPolygonsLayer).getFeatures()
 
-        DelineationController.addLayerToMap(linesLayer,
-                                        DelineationController.candidateBoundaryLayerName,
-                                        255, 255, 0, 1)
+        DelineationController.addCandidates(lines)
 
     @staticmethod
     def toggleSelectionSwitcher(selectionMode = BD_SELECT_NONE):
