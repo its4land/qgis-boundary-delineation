@@ -1,7 +1,7 @@
 import os
 import sys
 
-LOCAL_NETWORKX_PATH = os.path.join(os.path.dirname(__file__) + '/lib/networkx')
+LOCAL_NETWORKX_PATH = os.path.join(os.path.dirname(__file__) + '/lib')
 
 if LOCAL_NETWORKX_PATH not in sys.path:
     sys.path.insert(0, LOCAL_NETWORKX_PATH)
