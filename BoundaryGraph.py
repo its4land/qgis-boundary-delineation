@@ -16,13 +16,13 @@ from pprint import pprint
 class BoundaryDelineationError(Exception):
     pass
 
-class NoResultsGraphError(BoundaryDelineationError):
+class NoSuitableGraphError(BoundaryDelineationError):
     def __init__(self, expression, message):
         self.expression = expression
         self.message = message
 
 
-def prepareLinesGraph(layer, weight_expr_str=None):
+def prepare_graph_from_lines(layer, weight_expr_str=None):
     if layer.geometryType() != QgsWkbTypes.LineGeometry:
         raise Exception('Only line layers are accepted')
 
@@ -59,16 +59,14 @@ def prepareLinesGraph(layer, weight_expr_str=None):
 
     return G
 
-def prepareSubgraphs(G):
+def prepare_subgraphs(G):
     return tuple(nx.connected_component_subgraphs(G))
 
-def steinerTree(graphs:CollectionT, terminal_nodes:CollectionT, metric_closures=None):
+def find_steiner_tree(graphs:CollectionT, terminal_nodes:CollectionT, metric_closures=None):
     terminal_graph = None
     terminal_metric_closure = None
 
     for idx, g in enumerate(graphs):
-        # print('terminals', printGraph(g))
-        # print('terminals', terminal_nodes[0], terminal_nodes[0] in g, nx.is_connected(g))
         if not all(node in g for node in terminal_nodes):
             continue
 
@@ -84,27 +82,13 @@ def steinerTree(graphs:CollectionT, terminal_nodes:CollectionT, metric_closures=
     return T
 
 
-def calculateMetricClosures(graphs:CollectionT):
+def calculate_subgraphs_metric_closures(graphs:CollectionT):
     metric_closures = []
 
     for g in graphs:
         metric_closures.append(metric_closure(g))
 
     return metric_closures
-
-
-# TODO I think it would be much easier if I just don't have any multipart geometries
-def getFeaturesFromSteinerTree(layer, steinerTree):
-    edges = steinerTree.edges(keys=True)
-    edgeKeys = map(lambda e: e[2], edges)
-    featureIds = edgeKeys
-
-    if isinstance(edgeKeys[0], Collection):
-        featureIds = map(lambda e: e[0], edgeKeys)
-
-    features = layer.getFeatures(featureIds)
-
-    return features
 
 def printGraph(G, keysOnly=False):
     edges = G.edges(data=True,keys=True)
