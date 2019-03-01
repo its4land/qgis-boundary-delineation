@@ -93,7 +93,6 @@ class BoundaryDelineation:
         self.actions = []
         self.canvas = self.iface.mapCanvas()
 
-        self.pluginIsActive = False
         self.isMapSelectionToolEnabled = False
         self.isEditCandidatesToggled = False
         self.shouldAddLengthAttribute = False
@@ -155,8 +154,8 @@ class BoundaryDelineation:
         action = QAction(QIcon(os.path.join(self.pluginDir, 'icons/icon.png')), self.appName, self.iface.mainWindow())
         self.actions.append(action)
 
-        # Add information
         action.setWhatsThis(self.appName)
+        action.setCheckable(True)
 
         # Add toolbar button to the Plugins toolbar
         self.iface.addToolBarIcon(action)
@@ -167,8 +166,12 @@ class BoundaryDelineation:
         # Connect the action to the run method
         action.triggered.connect(self.run)
 
-        self.canvas.mapToolSet.connect(self.onMapToolSet)
-
+        # Create the dockwidget (after translation) and keep reference
+        self.dockWidget = BoundaryDelineationDock(self)
+        # connect to provide cleanup on closing of dockwidget
+        self.dockWidget.closingPlugin.connect(self.onClosePlugin)
+        # show the dockwidget
+        self.iface.addDockWidget(Qt.BottomDockWidgetArea, self.dockWidget)
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
@@ -197,30 +200,15 @@ class BoundaryDelineation:
         utils.remove_layer(self.verticesLayer)
         utils.remove_layer(self.candidatesLayer)
 
-    def run(self):
-        if self.pluginIsActive:
+    def run(self, checked: bool) -> None:
+        if checked:
+            self.canvas.mapToolSet.connect(self.onMapToolSet)
             self.dockWidget.show()
-            return
+        else:
+            self.canvas.mapToolSet.disconnect(self.onMapToolSet)
+            self.dockWidget.hide()
 
-        self.pluginIsActive = True
-
-        #print "** STARTING PCRasterShell"
-
-        # dockwidget may not exist if:
-        #    first run of plugin
-        #    removed on close (see self.onClosePlugin method)
-        if self.dockWidget == None:
-            # Create the dockwidget (after translation) and keep reference
-            self.dockWidget = BoundaryDelineationDock(self)
-
-        # connect to provide cleanup on closing of dockwidget
-        self.dockWidget.closingPlugin.connect(self.onClosePlugin)
-
-        # show the dockwidget
-        self.iface.addDockWidget(Qt.BottomDockWidgetArea, self.dockWidget)
-        self.dockWidget.show()
-
-    def showMessage(self, message, level = Qgis.Info, duration = 5):
+    def showMessage(self, message, level = Qgis.Info, duration: int = 5):
         self.iface.messageBar().pushMessage(self.appName, message, level, duration)
 
     def toggleMapSelectionTool(self, toggle: bool = None):
@@ -287,8 +275,7 @@ class BoundaryDelineation:
         # Commented next statement since it causes QGIS crashe
         # when closing the docked window:
         # self.dockWidget = None
-
-        self.pluginIsActive = False
+        pass
 
     @processing_cursor()
     def processFirstStep(self):
