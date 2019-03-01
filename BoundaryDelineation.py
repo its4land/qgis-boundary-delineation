@@ -95,7 +95,7 @@ class BoundaryDelineation:
         self.pluginIsActive = False
         self.isMapSelectionToolEnabled = False
         self.isEditCandidatesToggled = False
-        self.shouldAddLengthAttribute = True
+        self.shouldAddLengthAttribute = False
         self.wasBaseRasterLayerInitiallyInLegend = True
         self.wasSegmentsLayerInitiallyInLegend = True
         self.previousMapTool = None
