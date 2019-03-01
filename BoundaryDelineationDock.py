@@ -31,10 +31,7 @@ from PyQt5.QtCore import pyqtSignal, QSettings, QTranslator, qVersion, Qt
 from PyQt5.QtGui import QIcon, QColor, QPixmap
 from PyQt5.QtWidgets import QDockWidget, QAction, QFileDialog, QToolBar
 
-from qgis.core import QgsMapLayerProxyModel
-
-
-from qgis.utils import iface
+from qgis.core import QgsMapLayerProxyModel, QgsFieldProxyModel
 
 from .utils import SelectionModes
 
@@ -70,11 +67,16 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.modeEnclosingRadio.toggled.connect(self.onModeEnclosingRadioToggled)
         self.modeNodesRadio.toggled.connect(self.onModeNodesRadioToggled)
         self.modeManualRadio.toggled.connect(self.onModeManualRadioToggled)
+        self.addLengthAttributeCheckBox.toggled.connect(self.onAddLengthAttributeCheckBoxToggled)
         self.processButton.clicked.connect(self.onProcessButtonClicked)
+
+        self.weightComboBox.fieldChanged.connect(self.onWeightComboBoxChanged)
 
         self.acceptButton.clicked.connect(self.onAcceptButtonClicked)
         self.rejectButton.clicked.connect(self.onRejectButtonClicked)
         self.editButton.toggled.connect(self.onEditButtonToggled)
+
+        self.weightComboBox.setFilters(QgsFieldProxyModel.Numeric)
 
         self.__setImage(self.its4landLabel, 'its4landLogo.png')
         self.__setIcon(self.acceptButton, 'accept.png')
@@ -116,11 +118,11 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         # normalize layer if it's filepath instead of layer instance
         layer = self.plugin.setSegmentsLayer(layer)
 
-        self.weightExpressionField.setLayer(layer)
+        self.weightComboBox.setLayer(layer)
         self.processButton.setEnabled(True)
 
     def onModeNodesRadioToggled(self, checked):
-        self.weightExpressionField.setEnabled(checked)
+        self.weightComboBox.setEnabled(checked)
 
         if checked:
             self.plugin.setSelectionMode(SelectionModes.NODES)
@@ -132,6 +134,9 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
     def onModeManualRadioToggled(self, checked):
         if checked:
             self.plugin.setSelectionMode(SelectionModes.MANUAL)
+
+    def onAddLengthAttributeCheckBoxToggled(self, checked):
+        self.plugin.shouldAddLengthAttribute = checked
 
     def onAcceptButtonClicked(self) -> None:
         self.plugin.acceptCandidates()
@@ -164,6 +169,9 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.updateSelectionModeButtons()
 
         self.isAlreadyProcessed = True
+
+    def onWeightComboBoxChanged(self, name: str) -> None:
+        self.plugin.edgesWeight = name
 
     def updateSelectionModeButtons(self):
         if self.plugin.isMapSelectionToolEnabled and self.plugin.selectionMode == SelectionModes.ENCLOSING:

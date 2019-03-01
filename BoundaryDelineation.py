@@ -92,9 +92,10 @@ class BoundaryDelineation:
         self.actions = []
         self.canvas = self.iface.mapCanvas()
 
-        self.pluginIsActive = None
+        self.pluginIsActive = False
         self.isMapSelectionToolEnabled = False
         self.isEditCandidatesToggled = False
+        self.shouldAddLengthAttribute = True
         self.wasBaseRasterLayerInitiallyInLegend = True
         self.wasSegmentsLayerInitiallyInLegend = True
         self.previousMapTool = None
@@ -274,6 +275,10 @@ class BoundaryDelineation:
         self.dockWidget.step1ProgressBar.setValue(5)
 
         self.simplifySegmentsLayer()
+
+        if self.shouldAddLengthAttribute:
+            # TODO actually add the length attribute
+            pass
 
         self.createCandidatesLayer()
 
