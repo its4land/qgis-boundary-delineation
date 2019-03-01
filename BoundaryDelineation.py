@@ -147,7 +147,7 @@ class BoundaryDelineation:
 
     def initGui(self):
         # Create action that will start plugin configuration
-        action = QAction(QIcon(os.path.join(self.pluginDir, 'icon.png')), self.appName, self.iface.mainWindow())
+        action = QAction(QIcon(os.path.join(self.pluginDir, 'icons/icon.png')), self.appName, self.iface.mainWindow())
         self.actions.append(action)
 
         # Add information
