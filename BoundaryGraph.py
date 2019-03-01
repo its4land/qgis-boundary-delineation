@@ -11,7 +11,7 @@ from networkx.algorithms.approximation.steinertree import steiner_tree, metric_c
 from qgis.core import QgsWkbTypes
 from collections.abc import Collection
 from typing import Collection as CollectionT
-from pprint import pprint
+
 
 class BoundaryDelineationError(Exception):
     pass
@@ -89,16 +89,3 @@ def calculate_subgraphs_metric_closures(graphs:CollectionT):
         metric_closures.append(metric_closure(g))
 
     return metric_closures
-
-def printGraph(G, keysOnly=False):
-    edges = G.edges(data=True,keys=True)
-
-    if keysOnly:
-        pprint(e[2] for e in edges)
-    else:
-        pprint(edges)
-
-
-
-
-
