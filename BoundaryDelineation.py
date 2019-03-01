@@ -213,7 +213,7 @@ class BoundaryDelineation:
         self.iface.addDockWidget(Qt.BottomDockWidgetArea, self.dockWidget)
         self.dockWidget.show()
 
-    def showMessage(message, level = Qgis.Info, duration = 5):
+    def showMessage(self, message, level = Qgis.Info, duration = 5):
         self.iface.messageBar().pushMessage(self.appName, message, level, duration)
 
     def toggleMapSelectionTool(self, toggle: bool = None):
