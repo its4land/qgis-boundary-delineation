@@ -28,10 +28,10 @@ import os
 
 from PyQt5 import uic
 from PyQt5.QtCore import pyqtSignal, QSettings, QTranslator, qVersion, Qt
-from PyQt5.QtGui import QIcon, QColor, QPixmap
-from PyQt5.QtWidgets import QDockWidget, QAction, QFileDialog, QToolBar
+from PyQt5.QtGui import QIcon, QColor, QPixmap, QCloseEvent
+from PyQt5.QtWidgets import QDockWidget, QAction, QFileDialog, QToolBar, QMessageBox
 
-from qgis.core import QgsMapLayerProxyModel, QgsFieldProxyModel
+from qgis.core import QgsMapLayerProxyModel, QgsFieldProxyModel, QgsVectorLayer
 
 from .utils import SelectionModes
 
@@ -118,7 +118,6 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         # normalize layer if it's filepath instead of layer instance
         layer = self.plugin.setSegmentsLayer(layer)
 
-        self.weightComboBox.setLayer(layer)
         self.processButton.setEnabled(True)
 
     def onModeNodesRadioToggled(self, checked):
@@ -171,7 +170,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.isAlreadyProcessed = True
 
     def onWeightComboBoxChanged(self, name: str) -> None:
-        self.plugin.edgesWeight = name
+        self.plugin.setWeightField(name)
 
     def updateSelectionModeButtons(self):
         if self.plugin.isMapSelectionToolEnabled and self.plugin.selectionMode == SelectionModes.ENCLOSING:
@@ -184,8 +183,27 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
 
         self.modeManualRadio.setChecked(True)
 
+    def toggleAddLengthAttributeCheckBoxEnabled(self, enabled: bool = None):
+        if enabled is None:
+            enabled = not self.addLengthAttributeCheckBox.enabled()
 
-    def closeEvent(self, event):
+        self.addLengthAttributeCheckBox.setEnabled(enabled)
+
+    # def closeEvent(self, event: QCloseEvent):
+    #     reply = QMessageBox.question(self,
+    #         self.plugin.tr('Message'),
+    #         self.plugin.tr('Are you sure you want to quit? All the layers execpt the results will be removed.'),
+    #         QMessageBox.Yes,
+    #         QMessageBox.No
+    #         )
+
+    #     if reply == QMessageBox.Yes:
+    #         self.closingPlugin.emit()
+    #         event.accept()
+    #     else:
+    #         event.ignore()
+
+    def closeEvent(self, event: QCloseEvent):
         self.closingPlugin.emit()
         event.accept()
 
@@ -195,6 +213,9 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.acceptButton.setEnabled(enableButtons)
         self.rejectButton.setEnabled(enableButtons)
         self.editButton.setEnabled(enableButtons)
+
+    def setComboboxLayer(self, layer: QgsVectorLayer) -> None:
+        self.weightComboBox.setLayer(layer)
 
     def __setImage(self, label, icon: str) -> None:
         label.setPixmap(QPixmap(os.path.join(self.plugin.pluginDir, 'icons', icon)))

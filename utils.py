@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QApplication
 
 import processing
 
-from qgis.core import QgsProject, QgsMarkerSymbol, QgsLineSymbol, QgsSingleSymbolRenderer, QgsGraduatedSymbolRenderer
+from qgis.core import QgsProject, QgsMarkerSymbol, QgsLineSymbol, QgsSingleSymbolRenderer, QgsGraduatedSymbolRenderer, QgsLayerTree
 from qgis.utils import iface
 
 
@@ -47,14 +47,19 @@ def remove_layer(layer):
 
     return True
 
-def add_vector_layer(layer, name=None, colors=None, size = None, legend: bool = True, file: str = None) -> None:
+def add_vector_layer(layer, name=None, colors=None, size = None, legend: bool = True, file: str = None, parent: QgsLayerTree = None) -> None:
     if name:
         layer.setName(name)
 
     if colors or size or file:
         update_symbology(layer, colors=colors, size=size, file=file)
 
-    QgsProject.instance().addMapLayer(layer, legend)
+    if parent:
+        # assert parent.isGroup()
+
+        parent.addLayer(layer)
+    else:
+        QgsProject.instance().addMapLayer(layer, legend)
 
 def update_symbology(layer, colors=None, size=None, file: str = None) -> None:
     assert layer, 'Layer is not defined'

@@ -12,6 +12,8 @@ from qgis.core import QgsWkbTypes
 from collections.abc import Collection
 from typing import Collection as CollectionT
 
+DEFAULT_WEIGHT_NAME = 'weight'
+DEFAULT_WEIGHT_VALUE = 1
 
 class BoundaryDelineationError(Exception):
     pass
@@ -33,6 +35,12 @@ def prepare_graph_from_lines(layer, weight_expr_str=None):
     if weight_expr_str:
         weight_expr = QgsExpression(weight_expr_str)
 
+    numeric_fields_names = []
+
+    for field in layer.fields():
+        if field.isNumeric():
+            numeric_fields_names.append(field.name())
+
     for f in layer.getFeatures():
         geom = f.geometry()
         is_multipart = geom.isMultipart()
@@ -45,17 +53,22 @@ def prepare_graph_from_lines(layer, weight_expr_str=None):
         for idx, line in enumerate(lines):
             startPoint = line[0]
             endPoint = line[-1]
-            # due to buggy behaviour, weight should never be None (for now)
-            weight = 1
             fid = f.id()
 
             if is_multipart:
                 fid = (fid, idx)
 
-            if weight_expr:
-                weight = expression.evaluate(f)
+            # due to buggy behaviour, weight should never be None (for now)
+            data = { DEFAULT_WEIGHT_NAME: DEFAULT_WEIGHT_VALUE }
 
-            G.add_edge(startPoint, endPoint, fid, weight=weight, length=geom.length())
+            if weight_expr:
+                expression.evaluate(f)
+                data[weight_expr_str] = res if res is not None else DEFAULT_WEIGHT_VALUE
+
+            for field_name in numeric_fields_names:
+                data[field_name] = 1 / f[field_name] if f[field_name] else f[field_name] or DEFAULT_WEIGHT_VALUE
+
+            G.add_edge(startPoint, endPoint, fid, **data)
 
     return G
 
@@ -82,10 +95,10 @@ def find_steiner_tree(graphs:CollectionT, terminal_nodes:CollectionT, metric_clo
     return T
 
 
-def calculate_subgraphs_metric_closures(graphs:CollectionT):
+def calculate_subgraphs_metric_closures(graphs: CollectionT, weight: str = None):
     metric_closures = []
 
     for g in graphs:
-        metric_closures.append(metric_closure(g))
+        metric_closures.append(metric_closure(g, weight=weight))
 
     return metric_closures

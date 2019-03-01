@@ -28,8 +28,8 @@ import os
 from collections import defaultdict
 from typing import Optional, Union
 
-from PyQt5.QtCore import QSettings, QTranslator, Qt
-from PyQt5.QtWidgets import QAction, QToolBar
+from PyQt5.QtCore import QSettings, QTranslator, Qt, QVariant
+from PyQt5.QtWidgets import QAction, QToolBar, QMessageBox
 from PyQt5.QtGui import QIcon
 
 from qgis.core import *
@@ -45,7 +45,7 @@ from .BoundaryDelineationDock import BoundaryDelineationDock
 from .MapSelectionTool import MapSelectionTool
 from . import utils
 from .utils import SelectionModes, processing_cursor
-from .BoundaryGraph import NoSuitableGraphError, prepare_graph_from_lines, prepare_subgraphs, calculate_subgraphs_metric_closures, find_steiner_tree
+from .BoundaryGraph import NoSuitableGraphError, prepare_graph_from_lines, prepare_subgraphs, calculate_subgraphs_metric_closures, find_steiner_tree, DEFAULT_WEIGHT_NAME
 
 PRECALCULATE_METRIC_CLOSURES = False
 DEFAULT_SELECTION_MODE = SelectionModes.ENCLOSING
@@ -77,8 +77,9 @@ class BoundaryDelineation:
         self.groupName = self.tr('BoundaryDelineation')
 
         # groups
-        # TODO finish this
+        # TODO should ask @Sophie is it worth it?
         # self.group = self.layerTree.insertGroup(0, self.groupName)
+        self.group = None
 
         # map layers
         self.baseRasterLayer = None
@@ -101,7 +102,9 @@ class BoundaryDelineation:
         self.previousMapTool = None
         self.dockWidget = None
         self.selectionMode = None
-        self.edgesWeight = 'weight'
+        self.edgesWeightField = DEFAULT_WEIGHT_NAME
+        self.lengthAttributeName = 'BD_LEN'
+        self.metricClosureGraphs = {}
 
         self.mapSelectionTool = MapSelectionTool(self.canvas)
         self.mapSelectionTool.polygonCreated.connect(self.onPolygonSelectionCreated)
@@ -119,6 +122,7 @@ class BoundaryDelineation:
         # Set projections settings for newly created layers, possible values are: prompt, useProject, useGlobal
         QSettings().setValue('/Projections/defaultBehaviour', 'useProject')
 
+        # self.layerTree.willRemoveChildren.connect(self.onLayerTreeWillRemoveChildren)
 
     def _initLocale(self):
         # Initialize locale
@@ -173,6 +177,8 @@ class BoundaryDelineation:
             self.iface.removeToolBarIcon(action)
 
         self.mapSelectionTool.polygonCreated.disconnect(self.onPolygonSelectionCreated)
+        # self.layerTree.willRemoveChildren.disconnect(self.onLayerTreeWillRemoveChildren)
+
         self.toggleMapSelectionTool(False)
 
         if self.dockWidget:
@@ -242,6 +248,20 @@ class BoundaryDelineation:
     def onCandidatesLayerFeatureChanged(self, featureId):
         self.dockWidget.updateCandidatesButtons()
 
+    def onLayerTreeWillRemoveChildren(self, node: QgsLayerTreeNode, startIndex: int, endIndex: int):
+        # TODO try to fix this...
+        return
+
+        if self.isPluginLayerTreeNode(node):
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Information)
+            msg.setText('This is a message box')
+            msg.setInformativeText('This is additional information')
+            msg.setWindowTitle('MessageBox demo')
+            msg.setDetailedText('The details are as follows:')
+            msg.setStandardButtons(QMessageBox.Ok)
+            msg.exec_()
+
     def onCandidatesLayerBeforeEditingStarted(self):
         pass
         # TODO this is nice, when somebody starts manually editing the layer and we are in different mode,
@@ -276,9 +296,7 @@ class BoundaryDelineation:
 
         self.simplifySegmentsLayer()
 
-        if self.shouldAddLengthAttribute:
-            # TODO actually add the length attribute
-            pass
+        self.addLengthAttribute()
 
         self.createCandidatesLayer()
 
@@ -298,9 +316,6 @@ class BoundaryDelineation:
 
         self.setSelectionMode(DEFAULT_SELECTION_MODE)
 
-        # TODO prevent deletion of the layers
-        # self.layerTree.willRemoveChildren.connect(def (QgsLayerTreeNode *node, int indexFrom, int indexTo))
-
     def setBaseRasterLayer(self, baseRasterLayer: Union[QgsRasterLayer, str]):
         if isinstance(baseRasterLayer, str):
             self.wasBaseRasterLayerInitiallyInLegend = False
@@ -317,6 +332,9 @@ class BoundaryDelineation:
 
         assert segmentsLayer.geometryType() == QgsWkbTypes.LineGeometry
 
+        if segmentsLayer.fields().indexFromName(self.lengthAttributeName) != -1:
+            self.dockWidget.toggleAddLengthAttributeCheckBoxEnabled(False)
+
         self.segmentsLayer = segmentsLayer
 
         return segmentsLayer
@@ -332,12 +350,67 @@ class BoundaryDelineation:
         })
 
         self.simplifiedSegmentsLayer = result['OUTPUT']
+
+        self.dockWidget.setComboboxLayer(self.simplifiedSegmentsLayer)
+
         utils.add_vector_layer(
             self.simplifiedSegmentsLayer,
             self.simplifiedSegmentsLayerName,
             colors=(0, 255, 0),
-            file=self.__getStylePath('segments.qml')
+            file=self.__getStylePath('segments.qml'),
+            parent=self.group
             )
+
+    def addLengthAttribute(self) -> None:
+        assert self.simplifiedSegmentsLayer
+
+        if self.shouldAddLengthAttribute:
+            assert self.simplifiedSegmentsLayer.fields().indexFromName(self.lengthAttributeName) == -1
+
+            field = QgsField(self.lengthAttributeName, QVariant.Double)
+            field.setDefaultValueDefinition(QgsDefaultValue('$length', True))
+
+            self.simplifiedSegmentsLayer.dataProvider().addAttributes([field])
+            self.simplifiedSegmentsLayer.updateFields()
+            self.simplifiedSegmentsLayer.startEditing()
+
+            for f in self.simplifiedSegmentsLayer.getFeatures():
+                self.simplifiedSegmentsLayer.changeAttributeValue(
+                    f.id(),
+                    self.simplifiedSegmentsLayer.fields().indexFromName(self.lengthAttributeName),
+                    f.geometry().length()
+                    )
+
+            self.simplifiedSegmentsLayer.commitChanges()
+
+    def setWeightField(self, name: str) -> None:
+        self.edgesWeightField = name or DEFAULT_WEIGHT_NAME
+        self.metricClosureGraphs[self.edgesWeightField] = calculate_subgraphs_metric_closures(self.subgraphs, weight=self.edgesWeightField) if PRECALCULATE_METRIC_CLOSURES else None
+
+    def isPluginLayerTreeNode(self, node: QgsLayerTree) -> bool:
+        # for some reason even the normal nodes are behaving like groups...
+        if QgsLayerTree.isGroup(node):
+            # unfortunately this does not work in Python, it's cpp only...
+            # group = QgsLayerTree.toGroup(node)
+
+            # All my other attempts also failed miserably
+            # group = self.layerTree.findGroup(self.groupName)
+            # print(111, group, node, len(node.name()), node.name())
+            # return group is self.group
+            pass
+        else:
+            layer = self.project.mapLayer(node.layerId())
+            print(111, node, layer)
+
+            if layer in (self.simplifiedSegmentsLayer, self.verticesLayer, self.candidatesLayer, self.finalLayer):
+                return True
+
+            if self.wasBaseRasterLayerInitiallyInLegend and layer is self.baseRasterLayer:
+                return True
+            if self.wasSegmentsLayerInitiallyInLegend and layer is self.segmentsLayer:
+                return True
+
+        return False
 
     def createCandidatesLayer(self) -> QgsVectorLayer:
         crs = self.__getCrs(self.segmentsLayer).authid()
@@ -348,11 +421,8 @@ class BoundaryDelineation:
         # candidatesLayer.dataProvider().addAttributes(candidatesLayerFields)
         # candidatesLayer.updateFields()
 
-        # utils.add_vector_layer(self.simplifiedSegmentsLayer, 'self.simplifiedSegmentsLayerName')
-        # utils.add_vector_layer(self.segmentsLayer, 'self.segmentsLayerName')
-        # utils.add_vector_layer(candidatesLayer, self.candidatesLayerName)
-        utils.add_vector_layer(candidatesLayer, file=self.__getStylePath('candidates.qml'))
-        utils.add_vector_layer(finalLayer, file=self.__getStylePath('final.qml'))
+        utils.add_vector_layer(candidatesLayer, file=self.__getStylePath('candidates.qml'), parent=self.group)
+        utils.add_vector_layer(finalLayer, file=self.__getStylePath('final.qml'), parent=self.group)
 
         candidatesLayer.featureAdded.connect(self.onCandidatesLayerFeatureChanged)
         candidatesLayer.featuresDeleted.connect(self.onCandidatesLayerFeatureChanged)
@@ -380,8 +450,7 @@ class BoundaryDelineation:
 
         self.verticesLayer = verticesNoDuplicatesResult['OUTPUT']
 
-        # utils.add_vector_layer(self.verticesLayer, self.verticesLayerName, (255, 0, 0), 1.3, legend=False)
-        utils.add_vector_layer(self.verticesLayer, self.verticesLayerName, (255, 0, 0), 1.3)
+        utils.add_vector_layer(self.verticesLayer, self.verticesLayerName, (255, 0, 0), 1.3, parent=self.group)
 
         return self.verticesLayer
 
@@ -402,7 +471,7 @@ class BoundaryDelineation:
 
         self.graph = prepare_graph_from_lines(self.simplifiedSegmentsLayer)
         self.subgraphs = prepare_subgraphs(self.graph)
-        self.metricClosureGraphs = calculate_subgraphs_metric_closures(self.subgraphs) if PRECALCULATE_METRIC_CLOSURES else None
+        self.metricClosureGraphs[self.edgesWeightField] = calculate_subgraphs_metric_closures(self.subgraphs, weight=self.edgesWeightField) if PRECALCULATE_METRIC_CLOSURES else None
 
         return self.graph
 
@@ -482,10 +551,10 @@ class BoundaryDelineation:
         selectedPoints = [f.geometry().asPoint() for f in self.verticesLayer.selectedFeatures()]
 
         try:
-            if self.metricClosureGraphs is None:
-                self.metricClosureGraphs = calculate_subgraphs_metric_closures(self.subgraphs)
+            if self.metricClosureGraphs[self.edgesWeightField] is None:
+                self.metricClosureGraphs[self.edgesWeightField] = calculate_subgraphs_metric_closures(self.subgraphs, weight=self.edgesWeightField)
 
-            T = find_steiner_tree(self.subgraphs, selectedPoints, metric_closures=self.metricClosureGraphs)
+            T = find_steiner_tree(self.subgraphs, selectedPoints, metric_closures=self.metricClosureGraphs[self.edgesWeightField])
         except NoSuitableGraphError:
             # this is hapenning when the user selects nodes from two separate graphs
             return
@@ -528,9 +597,9 @@ class BoundaryDelineation:
             for k, e in edgesDict.items():
                 # find the cheapest edge that is not already selected (in case there are two nodes
                 # selected and there are more than one edges connecting them)
-                if k not in featureIds and (bestEdgeValue is None or bestEdgeValue > e[self.edgesWeight]):
+                if k not in featureIds and (bestEdgeValue is None or bestEdgeValue > e[self.edgesWeightField]):
                     bestEdgeKey = k
-                    bestEdgeValue = e[self.edgesWeight]
+                    bestEdgeValue = e[self.edgesWeightField]
 
             if bestEdgeKey:
                 featureIds.append(bestEdgeKey)
