@@ -20,16 +20,17 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.gui import QgsMapTool, QgsRubberBand
-from qgis.core import QgsWkbTypes, QgsPointXY, QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsProject
+from qgis.gui import QgsMapTool, QgsRubberBand, QgsMapMouseEvent, QgsMapCanvas
+from qgis.core import QgsWkbTypes, QgsPointXY
+from qgis.PyQt.QtCore import pyqtSignal, Qt
 from qgis.PyQt.QtGui import QColor
-from qgis.PyQt.QtCore import pyqtSignal
+from qgis.PyQt.QtWidgets import QApplication
 
 class MapSelectionTool(QgsMapTool):
 
-    polygonCreated = pyqtSignal(QgsPointXY, QgsPointXY)
+    polygonCreated = pyqtSignal(QgsPointXY, QgsPointXY, Qt.KeyboardModifiers)
 
-    def __init__(self, canvas):
+    def __init__(self, canvas: QgsMapCanvas) -> None:
         QgsMapTool.__init__(self, canvas)
 
         mFillColor = QColor(254, 178, 76, 63)
@@ -42,30 +43,29 @@ class MapSelectionTool(QgsMapTool):
         self.rubberBand.setWidth(1)
         self.reset()
 
-    def reset(self):
+    def reset(self) -> None:
         self.startPoint = self.endPoint = None
         self.isEmittingPoint = False
         self.rubberBand.reset(QgsWkbTypes.PolygonGeometry)
 
-    def canvasPressEvent(self, e):
+    def canvasPressEvent(self, e: QgsMapMouseEvent) -> None:
         self.startPoint = self.toMapCoordinates(e.pos())
         self.endPoint = self.startPoint
         self.isEmittingPoint = True
         self.showRect(self.startPoint, self.endPoint)
 
-    def canvasReleaseEvent(self, e):
+    def canvasReleaseEvent(self, e: QgsMapMouseEvent) -> None:
         self.isEmittingPoint = False
         self.rubberBand.hide()
-        self.transformCoordinates()
-        self.polygonCreated.emit(self.startPoint, self.endPoint)
+        self.polygonCreated.emit(self.startPoint, self.endPoint, QApplication.keyboardModifiers())
 
-    def canvasMoveEvent(self, e):
+    def canvasMoveEvent(self, e: QgsMapMouseEvent) -> None:
         if not self.isEmittingPoint:
             return
-        self.endPoint = self.toMapCoordinates( e.pos() )
+        self.endPoint = self.toMapCoordinates(e.pos())
         self.showRect(self.startPoint, self.endPoint)
 
-    def showRect(self, startPoint, endPoint):
+    def showRect(self, startPoint: QgsPointXY, endPoint: QgsPointXY) -> None:
         self.rubberBand.reset(QgsWkbTypes.PolygonGeometry)
         if startPoint.x() == endPoint.x() or startPoint.y() == endPoint.y():
             return
@@ -80,22 +80,6 @@ class MapSelectionTool(QgsMapTool):
         self.rubberBand.addPoint(point4, True)    # true to update canvas
         self.rubberBand.show()
 
-    def transformCoordinates(self):
-        if self.startPoint is None or self.endPoint is None:
-            return None
-        elif self.startPoint.x() == self.endPoint.x() or self.startPoint.y() == self.endPoint.y():
-            return None
-
-        # Defining the crs from src and destiny
-        epsg = self.canvas.mapSettings().destinationCrs().authid()
-        crsSrc = QgsCoordinateReferenceSystem(epsg)
-        crsDest = QgsCoordinateReferenceSystem(4326)
-        # Creating a transformer
-        coordinateTransformer = QgsCoordinateTransform(crsSrc, crsDest, QgsProject.instance())
-        # Transforming the points
-        self.startPoint = coordinateTransformer.transform(self.startPoint)
-        self.endPoint = coordinateTransformer.transform(self.endPoint)
-
-    def deactivate(self):
+    def deactivate(self) -> None:
         self.rubberBand.hide()
         QgsMapTool.deactivate(self)
