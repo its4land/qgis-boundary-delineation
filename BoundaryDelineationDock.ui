@@ -2,7 +2,6 @@
 <ui version="4.0">
  <class>BDWidget</class>
  <widget class="QDockWidget" name="BDWidget">
-  </property>
   <property name="floating">
    <bool>false</bool>
   </property>
