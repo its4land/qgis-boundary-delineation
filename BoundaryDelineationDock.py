@@ -52,15 +52,16 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
 
         self.plugin = plugin
         self.isAlreadyProcessed = False
+        self.isLoadingLayer = False
 
         self.tabs.setTabEnabled(1, False)
         self.step1ProgressBar.setValue(0)
 
         self.baseRasterLayerComboBox.setFilters(QgsMapLayerProxyModel.RasterLayer)
-        self.baseRasterLayerComboBox.setFilters(QgsMapLayerProxyModel.LineLayer)
+        self.segmentsLayerComboBox.setFilters(QgsMapLayerProxyModel.LineLayer)
 
         self.baseRasterLayerButton.clicked.connect(self.onBaseRasterInputButtonClicked)
-        self.baseRasterLayerComboBox.layerChanged.connect(self.onBaseRasterLayerComboBoxChanged)
+        self.baseRasterLayerComboBox.currentIndexChanged.connect(self.onBaseRasterLayerComboBoxChanged)
         self.segmentsLayerButton.clicked.connect(self.onSegmentsLayerButtonClicked)
         self.segmentsLayerComboBox.currentIndexChanged.connect(self.onSegmentsLayerComboBoxChanged)
 
@@ -101,11 +102,31 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
             self.segmentsLayerComboBox.setAdditionalItems([result[0]])
             self.segmentsLayerComboBox.setCurrentIndex(self.segmentsLayerComboBox.count() - 1)
 
-    def onBaseRasterLayerComboBoxChanged(self, layer):
-        if layer:
-            self.plugin.setBaseRasterLayer(layer)
+    def onBaseRasterLayerComboBoxChanged(self, layerIdx):
+        if self.isLoadingLayer:
+            return
+
+        if layerIdx is None:
+            return
+
+        layer = self.baseRasterLayerComboBox.layer(layerIdx)
+        layer = self.baseRasterLayerComboBox.currentText() if not layer else layer
+
+        if not layer:
+            return
+
+        self.isLoadingLayer = True
+
+        layer = self.plugin.setBaseRasterLayer(layer)
+
+        self.isLoadingLayer = False
+
+        self.plugin.zoomToLayer(layer)
 
     def onSegmentsLayerComboBoxChanged(self, layerIdx):
+        if self.isLoadingLayer:
+            return
+
         if layerIdx is None:
             return
 
@@ -115,9 +136,14 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         if not layer:
             return
 
+        self.isLoadingLayer = True
+
         # normalize layer if it's filepath instead of layer instance
         layer = self.plugin.setSegmentsLayer(layer)
 
+        self.isLoadingLayer = False
+
+        self.plugin.zoomToLayer(layer)
         self.processButton.setEnabled(True)
 
     def onModeNodesRadioToggled(self, checked):
@@ -156,7 +182,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
     def onProcessButtonClicked(self) -> None:
         if self.isAlreadyProcessed:
             # TODO confirm you want reprocess and lose all changes
-            pass
+            return
 
         self.step1ProgressBar.setValue(0)
         self.plugin.processFirstStep()

@@ -295,21 +295,38 @@ class BoundaryDelineation:
 
         self.setSelectionMode(DEFAULT_SELECTION_MODE)
 
-    def setBaseRasterLayer(self, baseRasterLayer: Union[QgsRasterLayer, str]):
+    def setBaseRasterLayer(self, baseRasterLayer: Union[QgsRasterLayer, str]) -> None:
+        if self.baseRasterLayer is baseRasterLayer:
+            return baseRasterLayer
+
         if isinstance(baseRasterLayer, str):
             self.wasBaseRasterLayerInitiallyInLegend = False
-            baseRasterLayer = QgsRasterLayer(baseRasterLayer, self.baseRasterLayerName, 'ogr')
+            baseRasterLayer = QgsRasterLayer(baseRasterLayer, self.baseRasterLayerName)
+
+            self.project.addMapLayer(baseRasterLayer)
+
+        if self.baseRasterLayer and not self.wasBaseRasterLayerInitiallyInLegend:
+            utils.remove_layer(self.baseRasterLayer)
 
         self.baseRasterLayer = baseRasterLayer
 
         return baseRasterLayer
 
-    def setSegmentsLayer(self, segmentsLayer: Union[QgsVectorLayer, str]):
+    def setSegmentsLayer(self, segmentsLayer: Union[QgsVectorLayer, str]) -> None:
+        if self.segmentsLayer is segmentsLayer:
+            return segmentsLayer
+
         if isinstance(segmentsLayer, str):
             self.wasSegmentsLayerInitiallyInLegend = False
             segmentsLayer = QgsVectorLayer(segmentsLayer, self.segmentsLayerName, 'ogr')
 
-        assert segmentsLayer.geometryType() == QgsWkbTypes.LineGeometry
+            self.project.addMapLayer(segmentsLayer)
+
+        if segmentsLayer.geometryType() != QgsWkbTypes.LineGeometry:
+            self.showMessage('Please use segments layer that is with lines geometry')
+
+        if self.segmentsLayer and not self.wasSegmentsLayerInitiallyInLegend:
+            utils.remove_layer(self.segmentsLayer)
 
         if segmentsLayer.fields().indexFromName(self.lengthAttributeName) != -1:
             self.dockWidget.toggleAddLengthAttributeCheckBoxEnabled(False)
@@ -317,6 +334,14 @@ class BoundaryDelineation:
         self.segmentsLayer = segmentsLayer
 
         return segmentsLayer
+
+    def zoomToLayer(self, layer: Union[QgsVectorLayer, QgsRasterLayer]) -> None:
+        self.iface.setActiveLayer(layer)
+        self.iface.actionZoomToLayer().trigger()
+        # rect = self.__getCoordinateTransform(layer).transform(layer.extent())
+
+        # self.canvas.setExtent(rect)
+        # self.canvas.refresh()
 
     def simplifySegmentsLayer(self):
         assert self.segmentsLayer
