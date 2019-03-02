@@ -19,7 +19,7 @@ class BoundaryDelineationError(Exception):
     pass
 
 class NoSuitableGraphError(BoundaryDelineationError):
-    def __init__(self, expression, message):
+    def __init__(self, expression = None, message = None):
         self.expression = expression
         self.message = message
 
