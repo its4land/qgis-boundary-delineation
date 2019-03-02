@@ -87,8 +87,11 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.__setIcon(self.rejectButton, 'reject.png')
         self.__setIcon(self.finishButton, 'finishFlag.png')
 
-        # as there is no option to select None, make sure the correct layer is selected in the first place
-        self.segmentsLayerComboBox.currentIndexChanged.emit(self.segmentsLayerComboBox.currentIndex())
+        if self.baseRasterLayerComboBox.currentLayer():
+            self.baseRasterLayerComboBox.layerChanged.emit(self.baseRasterLayerComboBox.currentLayer())
+
+        if self.segmentsLayerComboBox.currentLayer():
+            self.segmentsLayerComboBox.layerChanged.emit(self.segmentsLayerComboBox.currentLayer())
 
     def onBaseRasterInputButtonClicked(self):
         result = QFileDialog.getOpenFileName(self, self.tr('Open Base Raster Layer File'), '', 'Raster Image (*.tif *.tiff *.geotiff *.ascii *.map)')

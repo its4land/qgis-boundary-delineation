@@ -54,9 +54,9 @@ def add_vector_layer(layer, name=None, colors=None, size = None, legend: bool = 
     if colors or size or file:
         update_symbology(layer, colors=colors, size=size, file=file)
 
-    if parent:
-        # assert parent.isGroup()
 
+    if parent:
+        QgsProject.instance().addMapLayer(layer, False)
         parent.addLayer(layer)
     else:
         QgsProject.instance().addMapLayer(layer, legend)

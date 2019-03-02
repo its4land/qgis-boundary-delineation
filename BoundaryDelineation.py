@@ -77,9 +77,7 @@ class BoundaryDelineation:
         self.groupName = self.tr('BoundaryDelineation')
 
         # groups
-        # TODO should ask @Sophie is it worth it?
-        # self.group = self.layerTree.insertGroup(0, self.groupName)
-        self.group = None
+        self.group = self.getGroup()
 
         # map layers
         self.baseRasterLayer = None
@@ -155,7 +153,6 @@ class BoundaryDelineation:
         self.actions.append(action)
 
         action.setWhatsThis(self.appName)
-        action.setCheckable(True)
 
         # Add toolbar button to the Plugins toolbar
         self.iface.addToolBarIcon(action)
@@ -181,7 +178,11 @@ class BoundaryDelineation:
             self.iface.removePluginMenu(self.tr(self.appName), action)
             self.iface.removeToolBarIcon(action)
 
-        self.mapSelectionTool.polygonCreated.disconnect(self.onPolygonSelectionCreated)
+        # TODO very stupid workaround. Should find a way to check if method is connected!
+        try:
+            self.mapSelectionTool.polygonCreated.disconnect(self.onPolygonSelectionCreated)
+        finally:
+            pass
         # self.layerTree.willRemoveChildren.disconnect(self.onLayerTreeWillRemoveChildren)
 
         self.toggleMapSelectionTool(False)
@@ -194,26 +195,21 @@ class BoundaryDelineation:
 
         del self.dockWidget
 
-        self.canvas.mapToolSet.disconnect(self.onMapToolSet)
-
-        if not self.wasBaseRasterLayerInitiallyInLegend:
-            utils.remove_layer(self.baseRasterLayer)
-
-        if not self.wasSegmentsLayerInitiallyInLegend:
-            utils.remove_layer(self.segmentsLayer)
-
-        if self.candidatesLayer:
-            self.candidatesLayer.rollBack()
-
-        utils.remove_layer(self.simplifiedSegmentsLayer)
-        utils.remove_layer(self.verticesLayer)
-        utils.remove_layer(self.candidatesLayer)
+        self.resetProcessed()
 
     def run(self, checked: bool) -> None:
-        if checked:
-            self.dockWidget.show()
-        else:
+        if self.dockWidget.isVisible():
             self.dockWidget.hide()
+        else:
+            self.dockWidget.show()
+
+    def getGroup(self) -> QgsLayerTreeGroup:
+        group = self.layerTree.findGroup(self.groupName)
+
+        if not group:
+            group = self.layerTree.insertGroup(0, self.groupName)
+
+        return group
 
     def showMessage(self, message, level = Qgis.Info, duration: int = 5):
         self.iface.messageBar().pushMessage(self.appName, message, level, duration)
@@ -295,45 +291,27 @@ class BoundaryDelineation:
 
         self.setSelectionMode(DEFAULT_SELECTION_MODE)
 
-    def setBaseRasterLayer(self, baseRasterLayer: Union[QgsRasterLayer, str]) -> None:
-        if self.baseRasterLayer is baseRasterLayer:
-            return baseRasterLayer
+    def resetProcessed(self):
+        self.toggleMapSelectionTool(False)
 
-        if isinstance(baseRasterLayer, str):
-            self.wasBaseRasterLayerInitiallyInLegend = False
-            baseRasterLayer = QgsRasterLayer(baseRasterLayer, self.baseRasterLayerName)
-
-            self.project.addMapLayer(baseRasterLayer)
-
-        if self.baseRasterLayer and not self.wasBaseRasterLayerInitiallyInLegend:
+        if not self.wasBaseRasterLayerInitiallyInLegend:
             utils.remove_layer(self.baseRasterLayer)
+            self.baseRasterLayer = None
 
-        self.baseRasterLayer = baseRasterLayer
-
-        return baseRasterLayer
-
-    def setSegmentsLayer(self, segmentsLayer: Union[QgsVectorLayer, str]) -> None:
-        if self.segmentsLayer is segmentsLayer:
-            return segmentsLayer
-
-        if isinstance(segmentsLayer, str):
-            self.wasSegmentsLayerInitiallyInLegend = False
-            segmentsLayer = QgsVectorLayer(segmentsLayer, self.segmentsLayerName, 'ogr')
-
-            self.project.addMapLayer(segmentsLayer)
-
-        if segmentsLayer.geometryType() != QgsWkbTypes.LineGeometry:
-            self.showMessage('Please use segments layer that is with lines geometry')
-
-        if self.segmentsLayer and not self.wasSegmentsLayerInitiallyInLegend:
+        if not self.wasSegmentsLayerInitiallyInLegend:
             utils.remove_layer(self.segmentsLayer)
+            self.segmentsLayer = None
 
-        if segmentsLayer.fields().indexFromName(self.lengthAttributeName) != -1:
-            self.dockWidget.toggleAddLengthAttributeCheckBoxEnabled(False)
+        if self.candidatesLayer:
+            self.candidatesLayer.rollBack()
 
-        self.segmentsLayer = segmentsLayer
+        utils.remove_layer(self.simplifiedSegmentsLayer)
+        utils.remove_layer(self.verticesLayer)
+        utils.remove_layer(self.candidatesLayer)
 
-        return segmentsLayer
+        self.simplifiedSegmentsLayer = None
+        self.verticesLayer = None
+        self.candidatesLayer = None
 
     def zoomToLayer(self, layer: Union[QgsVectorLayer, QgsRasterLayer]) -> None:
         self.iface.setActiveLayer(layer)
@@ -343,6 +321,51 @@ class BoundaryDelineation:
         # self.canvas.setExtent(rect)
         # self.canvas.refresh()
 
+    def setBaseRasterLayer(self, baseRasterLayer: Union[QgsRasterLayer, str]) -> None:
+        if self.baseRasterLayer is baseRasterLayer:
+            return baseRasterLayer
+
+        self.group = self.getGroup()
+
+        if isinstance(baseRasterLayer, str):
+            self.wasBaseRasterLayerInitiallyInLegend = False
+            baseRasterLayer = QgsRasterLayer(baseRasterLayer, self.baseRasterLayerName)
+
+            self.project.addMapLayer(baseRasterLayer)
+
+        self.baseRasterLayer = baseRasterLayer
+
+        return baseRasterLayer
+
+    def setSegmentsLayer(self, segmentsLayer: Union[QgsVectorLayer, str]) -> None:
+        if self.segmentsLayer is segmentsLayer:
+            return segmentsLayer
+
+        self.group = self.getGroup()
+
+        if isinstance(segmentsLayer, str):
+            self.wasSegmentsLayerInitiallyInLegend = False
+            segmentsLayer = QgsVectorLayer(segmentsLayer, self.segmentsLayerName, 'ogr')
+
+            utils.add_vector_layer(segmentsLayer, self.segmentsLayerName, parent=self.group)
+
+        if segmentsLayer.geometryType() != QgsWkbTypes.LineGeometry:
+            self.showMessage('Please use segments layer that is with lines geometry')
+
+        self.segmentsLayer = segmentsLayer
+
+        if self.isAddingLengthAttributePossible():
+            self.dockWidget.toggleAddLengthAttributeCheckBoxEnabled(False)
+
+        return segmentsLayer
+
+    def isAddingLengthAttributePossible(self) -> bool:
+        if self.segmentsLayer and self.segmentsLayer.fields().indexFromName(self.lengthAttributeName) != -1:
+            return True
+
+        return False
+
+    @processing_cursor()
     def simplifySegmentsLayer(self):
         assert self.segmentsLayer
 
@@ -352,6 +375,10 @@ class BoundaryDelineation:
             'TOLERANCE': 1.0,
             'OUTPUT': 'memory:simplifygeometries'
         })
+
+        # if self.wasSegmentsLayerInitiallyInLegend:
+        if self.layerTree.findLayer(self.segmentsLayer.id()):
+            self.layerTree.findLayer(self.segmentsLayer.id()).setItemVisibilityChecked(False)
 
         self.simplifiedSegmentsLayer = result['OUTPUT']
 
