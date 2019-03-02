@@ -51,8 +51,10 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.setupUi(self)
 
         self.plugin = plugin
+        self.tr = plugin.tr
         self.isAlreadyProcessed = False
         self.isLoadingLayer = False
+        self.isBeingProcessed = False
 
         self.tabs.setTabEnabled(1, False)
         self.step1ProgressBar.setValue(0)
@@ -61,9 +63,9 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.segmentsLayerComboBox.setFilters(QgsMapLayerProxyModel.LineLayer)
 
         self.baseRasterLayerButton.clicked.connect(self.onBaseRasterInputButtonClicked)
-        self.baseRasterLayerComboBox.currentIndexChanged.connect(self.onBaseRasterLayerComboBoxChanged)
+        self.baseRasterLayerComboBox.layerChanged.connect(self.onBaseRasterLayerComboBoxChanged)
         self.segmentsLayerButton.clicked.connect(self.onSegmentsLayerButtonClicked)
-        self.segmentsLayerComboBox.currentIndexChanged.connect(self.onSegmentsLayerComboBoxChanged)
+        self.segmentsLayerComboBox.layerChanged.connect(self.onSegmentsLayerComboBoxChanged)
 
         self.modeEnclosingRadio.toggled.connect(self.onModeEnclosingRadioToggled)
         self.modeNodesRadio.toggled.connect(self.onModeNodesRadioToggled)
@@ -89,62 +91,56 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.segmentsLayerComboBox.currentIndexChanged.emit(self.segmentsLayerComboBox.currentIndex())
 
     def onBaseRasterInputButtonClicked(self):
-        result = QFileDialog.getOpenFileName(self, 'Open Base Raster Layer File', '', 'Raster Image (*.tif *.tiff *.geotiff *.ascii *.map)')
+        result = QFileDialog.getOpenFileName(self, self.tr('Open Base Raster Layer File'), '', 'Raster Image (*.tif *.tiff *.geotiff *.ascii *.map)')
 
-        if result and result[0]:
-            self.baseRasterLayerComboBox.setAdditionalItems([result[0]])
-            self.baseRasterLayerComboBox.setCurrentIndex(self.baseRasterLayerComboBox.count() - 1)
+        if not result or not result[0]:
+            return
+
+        layer = self.plugin.setBaseRasterLayer(result[0])
+
+        self.baseRasterLayerComboBox.setLayer(layer)
 
     def onSegmentsLayerButtonClicked(self):
-        result = QFileDialog.getOpenFileName(self, 'Open Segments Layer File', '', 'ESRI Shapefile (*.shp)')
+        result = QFileDialog.getOpenFileName(self, self.tr('Open Segments Layer File'), '', 'ESRI Shapefile (*.shp)')
 
-        if result and result[0]:
-            self.segmentsLayerComboBox.setAdditionalItems([result[0]])
-            self.segmentsLayerComboBox.setCurrentIndex(self.segmentsLayerComboBox.count() - 1)
+        if not result or not result[0]:
+            return
 
-    def onBaseRasterLayerComboBoxChanged(self, layerIdx):
+        layer = self.plugin.setSegmentsLayer(result[0])
+        self.segmentsLayerComboBox.setLayer(layer)
+
+    def onBaseRasterLayerComboBoxChanged(self, layer):
         if self.isLoadingLayer:
             return
-
-        if layerIdx is None:
-            return
-
-        layer = self.baseRasterLayerComboBox.layer(layerIdx)
-        layer = self.baseRasterLayerComboBox.currentText() if not layer else layer
 
         if not layer:
             return
 
         self.isLoadingLayer = True
 
-        layer = self.plugin.setBaseRasterLayer(layer)
+        self.plugin.setBaseRasterLayer(layer)
 
         self.isLoadingLayer = False
 
         self.plugin.zoomToLayer(layer)
 
-    def onSegmentsLayerComboBoxChanged(self, layerIdx):
+    def onSegmentsLayerComboBoxChanged(self, layer):
         if self.isLoadingLayer:
             return
-
-        if layerIdx is None:
-            return
-
-        layer = self.segmentsLayerComboBox.layer(layerIdx)
-        layer = self.segmentsLayerComboBox.currentText() if not layer else layer
 
         if not layer:
             return
 
         self.isLoadingLayer = True
 
-        # normalize layer if it's filepath instead of layer instance
         layer = self.plugin.setSegmentsLayer(layer)
 
         self.isLoadingLayer = False
 
         self.plugin.zoomToLayer(layer)
-        self.processButton.setEnabled(True)
+
+        if not self.isBeingProcessed:
+            self.processButton.setEnabled(True)
 
     def onModeNodesRadioToggled(self, checked):
         self.weightComboBox.setEnabled(checked)
@@ -180,23 +176,49 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         # putting here self.plugin.refreshSelectionModeBehavior() causes infinite loop.
 
     def onProcessButtonClicked(self) -> None:
-        if self.isAlreadyProcessed:
-            # TODO confirm you want reprocess and lose all changes
-            return
-
         self.step1ProgressBar.setValue(0)
+        self.toggleFirstStepLock(True)
+
+
+        if self.isAlreadyProcessed:
+            userConfirms = self.getConfirmation(
+                self.tr('Already processed'),
+                self.tr('Are you sure you want to proceed?')
+            )
+
+            if userConfirms:
+                self.plugin.resetProcessed()
+            else:
+                self.toggleFirstStepLock(False)
+                return
+
+
         self.plugin.processFirstStep()
-        self.step1ProgressBar.setValue(100)
 
+        self.toggleFirstStepLock(False)
         self.tabs.setCurrentWidget(self.stepTwoTab)
-        self.tabs.setTabEnabled(1, True)
-
         self.updateSelectionModeButtons()
 
         self.isAlreadyProcessed = True
 
+        self.step1ProgressBar.setValue(100)
+
     def onWeightComboBoxChanged(self, name: str) -> None:
         self.plugin.setWeightField(name)
+
+    def toggleFirstStepLock(self, disabled: bool) -> bool:
+        self.isBeingProcessed = disabled
+
+        self.tabs.setTabEnabled(1, not disabled)
+
+        self.baseRasterLayerButton.setDisabled(disabled)
+        self.baseRasterLayerComboBox.setDisabled(disabled)
+        self.segmentsLayerButton.setDisabled(disabled)
+        self.segmentsLayerComboBox.setDisabled(disabled)
+        self.outputLayerTextEdit.setDisabled(disabled)
+        self.outputLayerButton.setDisabled(disabled)
+        self.processButton.setDisabled(disabled)
+        self.addLengthAttributeCheckBox.setDisabled(disabled or not self.plugin.isAddingLengthAttributePossible())
 
     def updateSelectionModeButtons(self):
         if self.plugin.isMapSelectionToolEnabled and self.plugin.selectionMode == SelectionModes.ENCLOSING:
@@ -216,18 +238,27 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.addLengthAttributeCheckBox.setEnabled(enabled)
 
     # def closeEvent(self, event: QCloseEvent):
-    #     reply = QMessageBox.question(self,
-    #         self.plugin.tr('Message'),
-    #         self.plugin.tr('Are you sure you want to quit? All the layers execpt the results will be removed.'),
-    #         QMessageBox.Yes,
-    #         QMessageBox.No
-    #         )
-
+    #     userConfirm = self.getConfirmation(
+    #       self.tr('Message'),
+    #       self.tr('Are you sure you want to quit? All the layers execpt the results will be removed.')
+    #     )
+    #
     #     if reply == QMessageBox.Yes:
     #         self.closingPlugin.emit()
     #         event.accept()
     #     else:
     #         event.ignore()
+    #         
+    def getConfirmation(self, title: str, body: str) -> bool:
+        reply = QMessageBox.question(
+            self,
+            title,
+            body,
+            QMessageBox.Yes,
+            QMessageBox.No
+            )
+
+        return reply == QMessageBox.Yes
 
     def closeEvent(self, event: QCloseEvent):
         self.closingPlugin.emit()
