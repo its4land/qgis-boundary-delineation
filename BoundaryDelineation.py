@@ -239,7 +239,14 @@ class BoundaryDelineation:
         self.syntheticFeatureSelection(startPoint, endPoint, modifiers)
 
     def onCandidatesLayerFeatureChanged(self, featureId):
-        self.dockWidget.updateCandidatesButtons()
+        enable = self.candidatesLayer.featureCount() > 0
+
+        self.dockWidget.setCandidatesButtonsEnabled(enable)
+
+    def onFinalLayerFeaturesChanged(self, featureId):
+        enable = self.finalLayer.featureCount() > 0
+
+        self.dockWidget.setFinalButtonEnabled(enable)
 
     def onLayerTreeWillRemoveChildren(self, node: QgsLayerTreeNode, startIndex: int, endIndex: int):
         # TODO try to fix this...
@@ -290,6 +297,12 @@ class BoundaryDelineation:
         self.dockWidget.step1ProgressBar.setValue(100)
 
         self.setSelectionMode(DEFAULT_SELECTION_MODE)
+
+    @processing_cursor()
+    def processFinish(self) -> None:
+        self.showMessage(self.tr('Boundary deliniation finished, see the currently active layer for all the results'))
+        self.iface.setActiveLayer(self.finalLayer)
+        self.resetProcessed()
 
     def resetProcessed(self):
         self.toggleMapSelectionTool(False)
@@ -458,6 +471,8 @@ class BoundaryDelineation:
         candidatesLayer.featureAdded.connect(self.onCandidatesLayerFeatureChanged)
         candidatesLayer.featuresDeleted.connect(self.onCandidatesLayerFeatureChanged)
         candidatesLayer.beforeEditingStarted.connect(self.onCandidatesLayerBeforeEditingStarted)
+        finalLayer.featureAdded.connect(self.onFinalLayerFeaturesChanged)
+        finalLayer.featuresDeleted.connect(self.onFinalLayerFeaturesChanged)
 
         self.candidatesLayer = candidatesLayer
         self.finalLayer = finalLayer

@@ -78,6 +78,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.acceptButton.clicked.connect(self.onAcceptButtonClicked)
         self.rejectButton.clicked.connect(self.onRejectButtonClicked)
         self.editButton.toggled.connect(self.onEditButtonToggled)
+        self.finishButton.clicked.connect(self.onFinishButtonClicked)
 
         self.weightComboBox.setFilters(QgsFieldProxyModel.Numeric)
 
@@ -178,10 +179,16 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.plugin.toggleEditCandidates()
         # putting here self.plugin.refreshSelectionModeBehavior() causes infinite loop.
 
+    def onFinishButtonClicked(self) -> None:
+        self.plugin.processFinish()
+        self.tabs.setCurrentWidget(self.stepOneTab)
+        self.tabs.setTabEnabled(1, False)
+        self.step1ProgressBar.setValue(0)
+        self.isAlreadyProcessed = False
+
     def onProcessButtonClicked(self) -> None:
         self.step1ProgressBar.setValue(0)
         self.toggleFirstStepLock(True)
-
 
         if self.isAlreadyProcessed:
             userConfirms = self.getConfirmation(
@@ -194,7 +201,6 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
             else:
                 self.toggleFirstStepLock(False)
                 return
-
 
         self.plugin.processFirstStep()
 
@@ -224,6 +230,12 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.addLengthAttributeCheckBox.setDisabled(disabled or not self.plugin.isAddingLengthAttributePossible())
 
     def updateSelectionModeButtons(self):
+        if self.plugin.selectionMode is None:
+            self.modeEnclosingRadio.setChecked(False)
+            self.modeNodesRadio.setChecked(False)
+            self.modeManualRadio.setChecked(False)
+            return
+
         if self.plugin.isMapSelectionToolEnabled and self.plugin.selectionMode == SelectionModes.ENCLOSING:
             self.modeEnclosingRadio.setChecked(True)
             return
@@ -251,7 +263,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
     #         event.accept()
     #     else:
     #         event.ignore()
-    #         
+
     def getConfirmation(self, title: str, body: str) -> bool:
         reply = QMessageBox.question(
             self,
@@ -267,12 +279,16 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.closingPlugin.emit()
         event.accept()
 
-    def updateCandidatesButtons(self) -> None:
-        enableButtons = self.plugin.candidatesLayer.featureCount() > 0
+    def setCandidatesButtonsEnabled(self, enable: bool) -> None:
+        self.acceptButton.setEnabled(enable)
+        self.rejectButton.setEnabled(enable)
+        self.editButton.setEnabled(enable)
 
-        self.acceptButton.setEnabled(enableButtons)
-        self.rejectButton.setEnabled(enableButtons)
-        self.editButton.setEnabled(enableButtons)
+    def setFinalButtonEnabled(self, enabled: bool = None) -> None:
+        if enabled is None:
+            enabled = not self.finishButton.enabled()
+
+        self.finishButton.setEnabled(enabled)
 
     def setComboboxLayer(self, layer: QgsVectorLayer) -> None:
         self.weightComboBox.setLayer(layer)
