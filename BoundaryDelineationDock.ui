@@ -2,13 +2,6 @@
 <ui version="4.0">
  <class>BDWidget</class>
  <widget class="QDockWidget" name="BDWidget">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>435</width>
-    <height>304</height>
-   </rect>
   </property>
   <property name="floating">
    <bool>false</bool>

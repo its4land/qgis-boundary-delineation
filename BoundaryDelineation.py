@@ -168,10 +168,12 @@ class BoundaryDelineation:
 
         # Create the dockwidget (after translation) and keep reference
         self.dockWidget = BoundaryDelineationDock(self)
-        # connect to provide cleanup on closing of dockwidget
-        self.dockWidget.closingPlugin.connect(self.onClosePlugin)
+
         # show the dockwidget
         self.iface.addDockWidget(Qt.BottomDockWidgetArea, self.dockWidget)
+        self.dockWidget.closingPlugin.connect(self.onClosePlugin)
+
+        self.canvas.mapToolSet.connect(self.onMapToolSet)
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
@@ -184,8 +186,15 @@ class BoundaryDelineation:
 
         self.toggleMapSelectionTool(False)
 
-        if self.dockWidget:
-            self.canvas.mapToolSet.disconnect(self.onMapToolSet)
+        self.iface.removeDockWidget(self.dockWidget)
+
+        # self.dockWidget.closingPlugin.disconnect(self.onClosePlugin)
+        self.dockWidget.hide()
+        self.dockWidget.destroy()
+
+        del self.dockWidget
+
+        self.canvas.mapToolSet.disconnect(self.onMapToolSet)
 
         if not self.wasBaseRasterLayerInitiallyInLegend:
             utils.remove_layer(self.baseRasterLayer)
@@ -202,10 +211,8 @@ class BoundaryDelineation:
 
     def run(self, checked: bool) -> None:
         if checked:
-            self.canvas.mapToolSet.connect(self.onMapToolSet)
             self.dockWidget.show()
         else:
-            self.canvas.mapToolSet.disconnect(self.onMapToolSet)
             self.dockWidget.hide()
 
     def showMessage(self, message, level = Qgis.Info, duration: int = 5):
@@ -223,12 +230,14 @@ class BoundaryDelineation:
         self.isMapSelectionToolEnabled = toggle
 
     def onMapToolSet(self, newTool, oldTool):
+        if self.actions[0].isChecked():
+            return
+
         if newTool is self.mapSelectionTool and self.previousMapTool is None:
             self.previousMapTool = oldTool
 
         if oldTool is self.mapSelectionTool and newTool is not self.mapSelectionTool:
-            if self.dockWidget:
-                self.dockWidget.updateSelectionModeButtons()
+            self.dockWidget.updateSelectionModeButtons()
 
     def onPolygonSelectionCreated(self, startPoint: QgsPointXY, endPoint: QgsPointXY, modifiers: Qt.KeyboardModifiers):
         self.syntheticFeatureSelection(startPoint, endPoint, modifiers)
@@ -258,24 +267,7 @@ class BoundaryDelineation:
         #     self.setSelectionMode(SelectionModes.MANUAL)
 
     def onClosePlugin(self):
-        """Cleanup necessary items here when plugin dockwidget is closed"""
-
-        # disconnects
-        # self.dockWidget.closingPlugin.disconnect(self.onClosePlugin)
-        # self.canvas.mapToolSet.disconnect(self.onMapToolSet)
-        # self.mapSelectionTool.polygonCreated.disconnect(self.onPolygonSelectionCreated)
-        # self.toggleMapSelectionTool(False)
-
-
-        # utils.remove_layer(self.segmentsLayer)
-        # utils.remove_layer(self.simplifiedSegmentsLayer)
-
-        # remove this statement if dockwidget is to remain
-        # for reuse if plugin is reopened
-        # Commented next statement since it causes QGIS crashe
-        # when closing the docked window:
-        # self.dockWidget = None
-        pass
+        self.actions[0].setChecked(False)
 
     @processing_cursor()
     def processFirstStep(self):
