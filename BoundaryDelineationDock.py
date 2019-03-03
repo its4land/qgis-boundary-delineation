@@ -68,12 +68,12 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.segmentsLayerComboBox.layerChanged.connect(self.onSegmentsLayerComboBoxChanged)
         self.outputLayerButton.clicked.connect(self.onOutputLayerButtonClicked)
         self.outputLayerLineEdit.textChanged.connect(self.onOutputLayerLineEditChanged)
+        self.addLengthAttributeCheckBox.toggled.connect(self.onAddLengthAttributeCheckBoxToggled)
+        self.processButton.clicked.connect(self.onProcessButtonClicked)
 
         self.modeEnclosingRadio.toggled.connect(self.onModeEnclosingRadioToggled)
         self.modeNodesRadio.toggled.connect(self.onModeNodesRadioToggled)
         self.modeManualRadio.toggled.connect(self.onModeManualRadioToggled)
-        self.addLengthAttributeCheckBox.toggled.connect(self.onAddLengthAttributeCheckBoxToggled)
-        self.processButton.clicked.connect(self.onProcessButtonClicked)
 
         self.weightComboBox.fieldChanged.connect(self.onWeightComboBoxChanged)
 
@@ -164,14 +164,17 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
 
         if checked:
             self.plugin.setSelectionMode(SelectionModes.NODES)
+            self.editButton.setChecked(False)
 
     def onModeEnclosingRadioToggled(self, checked):
         if checked:
             self.plugin.setSelectionMode(SelectionModes.ENCLOSING)
+            self.editButton.setChecked(False)
 
     def onModeManualRadioToggled(self, checked):
         if checked:
             self.plugin.setSelectionMode(SelectionModes.MANUAL)
+            self.editButton.setChecked(False)
 
     def onAddLengthAttributeCheckBoxToggled(self, checked):
         self.plugin.shouldAddLengthAttribute = checked

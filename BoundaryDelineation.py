@@ -722,6 +722,10 @@ class BoundaryDelineation:
 
             self.iface.setActiveLayer(self.candidatesLayer)
             self.iface.actionVertexTool().trigger()
+        else:
+            # TODO maybe ask before rollback?
+            self.candidatesLayer.rollBack()
+            self.refreshSelectionModeBehavior()
 
         self.isEditCandidatesToggled = toggled
 
