@@ -456,10 +456,26 @@ class BoundaryDelineation:
 
         return False
 
+    def createFinalLayer(self) -> QgsVectorLayer:
+        filename = self.dockWidget.getOutputLayer()
+        crs = self.__getCrs()
+
+        if os.path.isfile(filename):
+            finalLayer = QgsVectorLayer(filename, self.finalLayerName, 'ogr')
+        else:
+            finalLayer = QgsVectorLayer('MultiLineString?crs=%s' % crs.authid(), self.finalLayerName, 'memory')
+
+            if filename:
+                (writeErrorCode, writeErrorMsg) = QgsVectorFileWriter.writeAsVectorFormat(finalLayer, filename, 'utf-8', crs, 'ESRI Shapefile')
+                if writeErrorMsg:
+                    self.showMessage('[%s] %s' % (writeErrorCode, writeErrorMsg))
+
+        return finalLayer
+
     def createCandidatesLayer(self) -> QgsVectorLayer:
         crs = self.__getCrs(self.segmentsLayer).authid()
         candidatesLayer = QgsVectorLayer('MultiLineString?crs=%s' % crs, self.candidatesLayerName, 'memory')
-        finalLayer = QgsVectorLayer('MultiLineString?crs=%s' % crs, self.finalLayerName, 'memory')
+        finalLayer = self.createFinalLayer()
         lineLayerFields = self.simplifiedSegmentsLayer.dataProvider().fields().toList()
         candidatesLayerFields= [QgsField(field.name(),field.type()) for field in lineLayerFields]
         # candidatesLayer.dataProvider().addAttributes(candidatesLayerFields)

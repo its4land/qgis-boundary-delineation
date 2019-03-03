@@ -66,6 +66,8 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.baseRasterLayerComboBox.layerChanged.connect(self.onBaseRasterLayerComboBoxChanged)
         self.segmentsLayerButton.clicked.connect(self.onSegmentsLayerButtonClicked)
         self.segmentsLayerComboBox.layerChanged.connect(self.onSegmentsLayerComboBoxChanged)
+        self.outputLayerButton.clicked.connect(self.onOutputLayerButtonClicked)
+        self.outputLayerLineEdit.textChanged.connect(self.onOutputLayerLineEditChanged)
 
         self.modeEnclosingRadio.toggled.connect(self.onModeEnclosingRadioToggled)
         self.modeNodesRadio.toggled.connect(self.onModeNodesRadioToggled)
@@ -146,6 +148,17 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         if not self.isBeingProcessed:
             self.processButton.setEnabled(True)
 
+    def onOutputLayerButtonClicked(self):
+        result = QFileDialog.getSaveFileName(self, self.tr('Save Boundary Layer File'), '', 'ESRI Shapefile (*.shp)')
+
+        if not result or not result[0]:
+            return
+
+        self.outputLayerLineEdit.setText(result[0])
+
+    def onOutputLayerLineEditChanged(self, text):
+        pass
+
     def onModeNodesRadioToggled(self, checked):
         self.weightComboBox.setEnabled(checked)
 
@@ -224,7 +237,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.baseRasterLayerComboBox.setDisabled(disabled)
         self.segmentsLayerButton.setDisabled(disabled)
         self.segmentsLayerComboBox.setDisabled(disabled)
-        self.outputLayerTextEdit.setDisabled(disabled)
+        self.outputLayerLineEdit.setDisabled(disabled)
         self.outputLayerButton.setDisabled(disabled)
         self.processButton.setDisabled(disabled)
         self.addLengthAttributeCheckBox.setDisabled(disabled or not self.plugin.isAddingLengthAttributePossible())
@@ -263,6 +276,9 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
     #         event.accept()
     #     else:
     #         event.ignore()
+
+    def getOutputLayer(self) -> str:
+        return self.outputLayerLineEdit.text()
 
     def getConfirmation(self, title: str, body: str) -> bool:
         reply = QMessageBox.question(
