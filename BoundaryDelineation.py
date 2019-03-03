@@ -181,19 +181,22 @@ class BoundaryDelineation:
         # TODO very stupid workaround. Should find a way to check if method is connected!
         try:
             self.mapSelectionTool.polygonCreated.disconnect(self.onPolygonSelectionCreated)
-        finally:
+        except:
             pass
         # self.layerTree.willRemoveChildren.disconnect(self.onLayerTreeWillRemoveChildren)
 
         self.toggleMapSelectionTool(False)
 
-        self.iface.removeDockWidget(self.dockWidget)
+        if self.dockWidget:
+            self.iface.removeDockWidget(self.dockWidget)
 
-        # self.dockWidget.closingPlugin.disconnect(self.onClosePlugin)
-        self.dockWidget.hide()
-        self.dockWidget.destroy()
+            # self.dockWidget.closingPlugin.disconnect(self.onClosePlugin)
+            self.dockWidget.hide()
+            self.dockWidget.destroy()
 
-        del self.dockWidget
+            del self.dockWidget
+
+            self.dockWidget = None
 
         self.resetProcessed()
 
@@ -226,14 +229,14 @@ class BoundaryDelineation:
         self.isMapSelectionToolEnabled = toggle
 
     def onMapToolSet(self, newTool, oldTool):
-        if self.actions[0].isChecked():
-            return
-
         if newTool is self.mapSelectionTool and self.previousMapTool is None:
             self.previousMapTool = oldTool
 
         if oldTool is self.mapSelectionTool and newTool is not self.mapSelectionTool:
             self.dockWidget.updateSelectionModeButtons()
+
+            if self.selectionMode is not SelectionModes.MANUAL:
+                self.setSelectionMode(SelectionModes.NONE)
 
     def onPolygonSelectionCreated(self, startPoint: QgsPointXY, endPoint: QgsPointXY, modifiers: Qt.KeyboardModifiers):
         self.syntheticFeatureSelection(startPoint, endPoint, modifiers)
@@ -321,6 +324,10 @@ class BoundaryDelineation:
         utils.remove_layer(self.simplifiedSegmentsLayer)
         utils.remove_layer(self.verticesLayer)
         utils.remove_layer(self.candidatesLayer)
+
+        if self.finalLayer:
+            self.finalLayer.featureAdded.disconnect(self.onFinalLayerFeaturesChanged)
+            self.finalLayer.featuresDeleted.disconnect(self.onFinalLayerFeaturesChanged)
 
         self.simplifiedSegmentsLayer = None
         self.verticesLayer = None
@@ -544,7 +551,9 @@ class BoundaryDelineation:
         self.dockWidget.updateSelectionModeButtons()
 
     def refreshSelectionModeBehavior(self):
-        if self.selectionMode == SelectionModes.MANUAL:
+        if self.selectionMode is SelectionModes.NONE:
+            return
+        elif self.selectionMode == SelectionModes.MANUAL:
             self.toggleMapSelectionTool(False)
             self.iface.setActiveLayer(self.candidatesLayer)
             self.candidatesLayer.rollBack()

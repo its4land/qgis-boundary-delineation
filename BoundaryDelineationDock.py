@@ -246,10 +246,17 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.addLengthAttributeCheckBox.setDisabled(disabled or not self.plugin.isAddingLengthAttributePossible())
 
     def updateSelectionModeButtons(self):
-        if self.plugin.selectionMode is None:
+        if self.plugin.selectionMode is SelectionModes.NONE:
+            # using QRadioButton.setAutoExclusive gives the ability to deselect all the radio buttons at once
+            self.modeEnclosingRadio.setAutoExclusive(False)
             self.modeEnclosingRadio.setChecked(False)
+            self.modeEnclosingRadio.setAutoExclusive(True)
+            self.modeNodesRadio.setAutoExclusive(False)
             self.modeNodesRadio.setChecked(False)
+            self.modeNodesRadio.setAutoExclusive(True)
+            self.modeManualRadio.setAutoExclusive(False)
             self.modeManualRadio.setChecked(False)
+            self.modeManualRadio.setAutoExclusive(True)
             return
 
         if self.plugin.isMapSelectionToolEnabled and self.plugin.selectionMode == SelectionModes.ENCLOSING:

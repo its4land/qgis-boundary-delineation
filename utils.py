@@ -165,6 +165,7 @@ def multipart_to_singleparts(vectorLayer, name: str = None):
     return result['OUTPUT']
 
 class SelectionModes(Enum):
+    NONE = 0
     MANUAL = 1
     ENCLOSING = 2
     NODES = 3
