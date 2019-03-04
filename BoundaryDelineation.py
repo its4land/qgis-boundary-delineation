@@ -25,15 +25,15 @@
 
 # Import required modules
 import os
+import typing
 from collections import defaultdict
-from typing import Optional, Union
 
 from PyQt5.QtCore import QSettings, QTranslator, Qt, QVariant
 from PyQt5.QtWidgets import QAction, QToolBar, QMessageBox
 from PyQt5.QtGui import QIcon
 
 from qgis.core import *
-from qgis.core import QgsFeatureRequest, Qgis
+from qgis.gui import QgisInterface, QgsMapTool
 from qgis.utils import *
 
 import processing
@@ -50,9 +50,12 @@ from .BoundaryGraph import NoSuitableGraphError, prepare_graph_from_lines, prepa
 PRECALCULATE_METRIC_CLOSURES = False
 DEFAULT_SELECTION_MODE = SelectionModes.ENCLOSING
 
+SelectBehaviour = int
+MessageLevel = int
+
 class BoundaryDelineation:
     """Functions created by Plugin Builder"""
-    def __init__(self, iface):
+    def __init__(self, iface: QgisInterface):
         """Constructor.
         :param iface: An interface instance that will be passed to this class
             which provides the hook by which you can manipulate the QGIS
@@ -121,7 +124,7 @@ class BoundaryDelineation:
 
         # self.layerTree.willRemoveChildren.connect(self.onLayerTreeWillRemoveChildren)
 
-    def _initLocale(self):
+    def _initLocale(self) -> None:
         # Initialize locale
         locale = QSettings().value('locale/userLocale')[0:2]
         localePath = os.path.join(self.pluginDir, 'i18n', '{}_{}.qm'.format(self.appName, locale))
@@ -133,7 +136,7 @@ class BoundaryDelineation:
             QCoreApplication.installTranslator(self.translator)
 
 
-    def tr(self, message: str):
+    def tr(self, message: str) -> None:
         """Get the translation for a string using Qt translation API.
 
         We implement this ourselves since we do not inherit QObject.
@@ -147,7 +150,7 @@ class BoundaryDelineation:
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
         return QCoreApplication.translate(self.appName, message)
 
-    def initGui(self):
+    def initGui(self) -> None:
         # Create action that will start plugin configuration
         action = QAction(QIcon(os.path.join(self.pluginDir, 'icons/icon.png')), self.appName, self.iface.mainWindow())
         self.actions.append(action)
@@ -172,7 +175,7 @@ class BoundaryDelineation:
 
         self.canvas.mapToolSet.connect(self.onMapToolSet)
 
-    def unload(self):
+    def unload(self) -> None:
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
             self.iface.removePluginMenu(self.tr(self.appName), action)
@@ -214,10 +217,10 @@ class BoundaryDelineation:
 
         return group
 
-    def showMessage(self, message, level = Qgis.Info, duration: int = 5):
+    def showMessage(self, message: str, level: MessageLevel = Qgis.Info, duration: int = 5) -> None:
         self.iface.messageBar().pushMessage(self.appName, message, level, duration)
 
-    def toggleMapSelectionTool(self, toggle: bool = None):
+    def toggleMapSelectionTool(self, toggle: bool = None) -> None:
         if toggle is None:
             toggle = not self.isMapSelectionToolEnabled
 
@@ -228,7 +231,7 @@ class BoundaryDelineation:
 
         self.isMapSelectionToolEnabled = toggle
 
-    def onMapToolSet(self, newTool, oldTool):
+    def onMapToolSet(self, newTool: QgsMapTool, oldTool: typing.Optional[QgsMapTool]) -> None:
         if newTool is self.mapSelectionTool and self.previousMapTool is None:
             self.previousMapTool = oldTool
 
@@ -238,20 +241,20 @@ class BoundaryDelineation:
             if self.selectionMode is not SelectionModes.MANUAL:
                 self.setSelectionMode(SelectionModes.NONE)
 
-    def onPolygonSelectionCreated(self, startPoint: QgsPointXY, endPoint: QgsPointXY, modifiers: Qt.KeyboardModifiers):
+    def onPolygonSelectionCreated(self, startPoint: QgsPointXY, endPoint: QgsPointXY, modifiers: Qt.KeyboardModifiers) -> None:
         self.syntheticFeatureSelection(startPoint, endPoint, modifiers)
 
-    def onCandidatesLayerFeatureChanged(self, featureId):
+    def onCandidatesLayerFeatureChanged(self, featureIds: typing.Union[int, typing.List[int]]) -> None:
         enable = self.candidatesLayer.featureCount() > 0
 
         self.dockWidget.setCandidatesButtonsEnabled(enable)
 
-    def onFinalLayerFeaturesChanged(self, featureId):
+    def onFinalLayerFeaturesChanged(self, featureIds: typing.Union[int, typing.List[int]]) -> None:
         enable = self.finalLayer.featureCount() > 0
 
         self.dockWidget.setFinalButtonEnabled(enable)
 
-    def onLayerTreeWillRemoveChildren(self, node: QgsLayerTreeNode, startIndex: int, endIndex: int):
+    def onLayerTreeWillRemoveChildren(self, node: QgsLayerTreeNode, startIndex: int, endIndex: int) -> None:
         # TODO try to fix this...
         return
 
@@ -265,18 +268,18 @@ class BoundaryDelineation:
             msg.setStandardButtons(QMessageBox.Ok)
             msg.exec_()
 
-    def onCandidatesLayerBeforeEditingStarted(self):
+    def onCandidatesLayerBeforeEditingStarted(self) -> None:
         pass
         # TODO this is nice, when somebody starts manually editing the layer and we are in different mode,
         # however does not work properly if we use the plugin in the normal way :(
         # if not self.selectionMode == SelectionModes.MANUAL:
         #     self.setSelectionMode(SelectionModes.MANUAL)
 
-    def onClosePlugin(self):
+    def onClosePlugin(self) -> None:
         self.actions[0].setChecked(False)
 
     @processing_cursor()
-    def processFirstStep(self):
+    def processFirstStep(self) -> None:
         self.dockWidget.step1ProgressBar.setValue(5)
 
         self.simplifySegmentsLayer()
@@ -307,7 +310,7 @@ class BoundaryDelineation:
         self.iface.setActiveLayer(self.finalLayer)
         self.resetProcessed()
 
-    def resetProcessed(self):
+    def resetProcessed(self) -> None:
         self.toggleMapSelectionTool(False)
 
         if not self.wasBaseRasterLayerInitiallyInLegend:
@@ -333,7 +336,7 @@ class BoundaryDelineation:
         self.verticesLayer = None
         self.candidatesLayer = None
 
-    def zoomToLayer(self, layer: Union[QgsVectorLayer, QgsRasterLayer]) -> None:
+    def zoomToLayer(self, layer: QgsMapLayer) -> None:
         self.iface.setActiveLayer(layer)
         self.iface.actionZoomToLayer().trigger()
         # rect = self.__getCoordinateTransform(layer).transform(layer.extent())
@@ -341,7 +344,7 @@ class BoundaryDelineation:
         # self.canvas.setExtent(rect)
         # self.canvas.refresh()
 
-    def setBaseRasterLayer(self, baseRasterLayer: Union[QgsRasterLayer, str]) -> None:
+    def setBaseRasterLayer(self, baseRasterLayer: typing.Union[QgsRasterLayer, str]) -> None:
         if self.baseRasterLayer is baseRasterLayer:
             return baseRasterLayer
 
@@ -357,7 +360,7 @@ class BoundaryDelineation:
 
         return baseRasterLayer
 
-    def setSegmentsLayer(self, segmentsLayer: Union[QgsVectorLayer, str]) -> None:
+    def setSegmentsLayer(self, segmentsLayer: typing.Union[QgsVectorLayer, str]) -> None:
         if self.segmentsLayer is segmentsLayer:
             return segmentsLayer
 
@@ -386,7 +389,7 @@ class BoundaryDelineation:
         return False
 
     @processing_cursor()
-    def simplifySegmentsLayer(self):
+    def simplifySegmentsLayer(self) -> None:
         assert self.segmentsLayer
 
         result = processing.run('qgis:simplifygeometries', {
@@ -535,22 +538,20 @@ class BoundaryDelineation:
 
         return self.polygonizedLayer
 
-    def buildVerticesGraph(self):
+    def buildVerticesGraph(self) -> None:
         assert self.simplifiedSegmentsLayer
 
         self.graph = prepare_graph_from_lines(self.simplifiedSegmentsLayer)
         self.subgraphs = prepare_subgraphs(self.graph)
         self.metricClosureGraphs[self.edgesWeightField] = calculate_subgraphs_metric_closures(self.subgraphs, weight=self.edgesWeightField) if PRECALCULATE_METRIC_CLOSURES else None
 
-        return self.graph
-
-    def setSelectionMode(self, mode: SelectionModes):
+    def setSelectionMode(self, mode: SelectionModes) -> None:
         self.selectionMode = mode
 
         self.refreshSelectionModeBehavior()
         self.dockWidget.updateSelectionModeButtons()
 
-    def refreshSelectionModeBehavior(self):
+    def refreshSelectionModeBehavior(self) -> None:
         if self.selectionMode is SelectionModes.NONE:
             return
         elif self.selectionMode == SelectionModes.MANUAL:
@@ -599,7 +600,7 @@ class BoundaryDelineation:
             self.showMessage(self.tr('Unable to add candidates'))
             return
 
-    def getLinesSelectionModeEnclosing(self, selectBehaviour, rect):
+    def getLinesSelectionModeEnclosing(self, selectBehaviour: SelectBehaviour, rect: QgsRectangle) -> None:
         rect = self.__getCoordinateTransform(self.polygonizedLayer).transform(rect)
 
         self.polygonizedLayer.selectByRect(rect, selectBehaviour)
@@ -608,7 +609,7 @@ class BoundaryDelineation:
         dissolvedPolygonsLayer = utils.dissolve_layer(selectedPolygonsLayer)
         return utils.polygons_layer_to_lines_layer(dissolvedPolygonsLayer).getFeatures()
 
-    def getLinesSelectionModeNodes(self, selectBehaviour, rect):
+    def getLinesSelectionModeNodes(self, selectBehaviour: SelectBehaviour, rect: QgsRectangle) -> None:
         rect = self.__getCoordinateTransform(self.polygonizedLayer).transform(rect)
 
         self.verticesLayer.selectByRect(rect, selectBehaviour)
@@ -633,6 +634,7 @@ class BoundaryDelineation:
         # edge[2] stays for the line ids
         featureIds = [edge[2] for edge in T.edges(keys=True)]
 
+        # The following allows closing the lines if the two endpoints are also connected by an edge
         pointsMap = defaultdict(int)
 
         for f in self.simplifiedSegmentsLayer.getFeatures(featureIds):
@@ -740,13 +742,13 @@ class BoundaryDelineation:
 
         return toggled
 
-    def __getCrs(self, layer: Union[QgsVectorLayer, QgsRasterLayer] = None) -> QgsCoordinateReferenceSystem:
+    def __getCrs(self, layer: QgsMapLayer = None) -> QgsCoordinateReferenceSystem:
         if layer:
             return layer.sourceCrs()
 
         return self.project.crs()
 
-    def __getCoordinateTransform(self, layer: Union[QgsVectorLayer, QgsRasterLayer]) -> QgsCoordinateTransform:
+    def __getCoordinateTransform(self, layer: QgsMapLayer) -> QgsCoordinateTransform:
         return QgsCoordinateTransform(
             self.__getCrs(),
             self.__getCrs(layer),

@@ -29,9 +29,9 @@ import os
 from PyQt5 import uic
 from PyQt5.QtCore import pyqtSignal, QSettings, QTranslator, qVersion, Qt
 from PyQt5.QtGui import QIcon, QColor, QPixmap, QCloseEvent
-from PyQt5.QtWidgets import QDockWidget, QAction, QFileDialog, QToolBar, QMessageBox
+from PyQt5.QtWidgets import QDockWidget, QAction, QFileDialog, QToolBar, QMessageBox, QPushButton, QLabel
 
-from qgis.core import QgsMapLayerProxyModel, QgsFieldProxyModel, QgsVectorLayer
+from qgis.core import QgsMapLayerProxyModel, QgsFieldProxyModel, QgsVectorLayer, QgsRasterLayer
 
 from .utils import SelectionModes
 
@@ -115,7 +115,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         layer = self.plugin.setSegmentsLayer(result[0])
         self.segmentsLayerComboBox.setLayer(layer)
 
-    def onBaseRasterLayerComboBoxChanged(self, layer):
+    def onBaseRasterLayerComboBoxChanged(self, layer: QgsRasterLayer) -> None:
         if self.isLoadingLayer:
             return
 
@@ -130,7 +130,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
 
         self.plugin.zoomToLayer(layer)
 
-    def onSegmentsLayerComboBoxChanged(self, layer):
+    def onSegmentsLayerComboBoxChanged(self, layer: QgsVectorLayer) -> None:
         if self.isLoadingLayer:
             return
 
@@ -148,7 +148,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         if not self.isBeingProcessed:
             self.processButton.setEnabled(True)
 
-    def onOutputLayerButtonClicked(self):
+    def onOutputLayerButtonClicked(self) -> None:
         result = QFileDialog.getSaveFileName(self, self.tr('Save Boundary Layer File'), '', 'ESRI Shapefile (*.shp)')
 
         if not result or not result[0]:
@@ -156,27 +156,27 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
 
         self.outputLayerLineEdit.setText(result[0])
 
-    def onOutputLayerLineEditChanged(self, text):
+    def onOutputLayerLineEditChanged(self, text: str) -> None:
         pass
 
-    def onModeNodesRadioToggled(self, checked):
+    def onModeNodesRadioToggled(self, checked: bool) -> None:
         self.weightComboBox.setEnabled(checked)
 
         if checked:
             self.plugin.setSelectionMode(SelectionModes.NODES)
             self.editButton.setChecked(False)
 
-    def onModeEnclosingRadioToggled(self, checked):
+    def onModeEnclosingRadioToggled(self, checked: bool) -> None:
         if checked:
             self.plugin.setSelectionMode(SelectionModes.ENCLOSING)
             self.editButton.setChecked(False)
 
-    def onModeManualRadioToggled(self, checked):
+    def onModeManualRadioToggled(self, checked: bool) -> None:
         if checked:
             self.plugin.setSelectionMode(SelectionModes.MANUAL)
             self.editButton.setChecked(False)
 
-    def onAddLengthAttributeCheckBoxToggled(self, checked):
+    def onAddLengthAttributeCheckBoxToggled(self, checked: bool) -> None:
         self.plugin.shouldAddLengthAttribute = checked
 
     def onAcceptButtonClicked(self) -> None:
@@ -245,7 +245,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.processButton.setDisabled(disabled)
         self.addLengthAttributeCheckBox.setDisabled(disabled or not self.plugin.isAddingLengthAttributePossible())
 
-    def updateSelectionModeButtons(self):
+    def updateSelectionModeButtons(self) -> None:
         if self.plugin.selectionMode is SelectionModes.NONE:
             # using QRadioButton.setAutoExclusive gives the ability to deselect all the radio buttons at once
             self.modeEnclosingRadio.setAutoExclusive(False)
@@ -269,7 +269,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
 
         self.modeManualRadio.setChecked(True)
 
-    def toggleAddLengthAttributeCheckBoxEnabled(self, enabled: bool = None):
+    def toggleAddLengthAttributeCheckBoxEnabled(self, enabled: bool = None) -> None:
         if enabled is None:
             enabled = not self.addLengthAttributeCheckBox.enabled()
 
@@ -301,7 +301,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
 
         return reply == QMessageBox.Yes
 
-    def closeEvent(self, event: QCloseEvent):
+    def closeEvent(self, event: QCloseEvent) -> None:
         self.closingPlugin.emit()
         event.accept()
 
@@ -319,10 +319,10 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
     def setComboboxLayer(self, layer: QgsVectorLayer) -> None:
         self.weightComboBox.setLayer(layer)
 
-    def __setImage(self, label, icon: str) -> None:
+    def __setImage(self, label: QLabel, icon: str) -> None:
         label.setPixmap(QPixmap(os.path.join(self.plugin.pluginDir, 'icons', icon)))
 
 
-    def __setIcon(self, button, icon: str) -> None:
+    def __setIcon(self, button: QPushButton, icon: str) -> None:
         button.setIcon(QIcon(os.path.join(self.plugin.pluginDir, 'icons', icon)))
 

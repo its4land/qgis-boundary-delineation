@@ -1,5 +1,6 @@
 import os
 import sys
+import typing
 
 LOCAL_NETWORKX_PATH = os.path.join(os.path.dirname(__file__) + '/lib')
 
@@ -19,12 +20,12 @@ class BoundaryDelineationError(Exception):
     pass
 
 class NoSuitableGraphError(BoundaryDelineationError):
-    def __init__(self, expression = None, message = None):
+    def __init__(self, expression: str = None, message: str = None):
         self.expression = expression
         self.message = message
 
 
-def prepare_graph_from_lines(layer, weight_expr_str=None):
+def prepare_graph_from_lines(layer, weight_expr_str: str = None) -> nx.MultiGraph:
     if layer.geometryType() != QgsWkbTypes.LineGeometry:
         raise Exception('Only line layers are accepted')
 
@@ -72,10 +73,10 @@ def prepare_graph_from_lines(layer, weight_expr_str=None):
 
     return G
 
-def prepare_subgraphs(G):
+def prepare_subgraphs(G: nx.MultiGraph) -> tuple:
     return tuple(nx.connected_component_subgraphs(G))
 
-def find_steiner_tree(graphs:CollectionT, terminal_nodes:CollectionT, metric_closures=None):
+def find_steiner_tree(graphs: CollectionT, terminal_nodes: CollectionT, metric_closures: typing.List[nx.Graph] = None) -> nx.Graph:
     terminal_graph = None
     terminal_metric_closure = None
 
@@ -95,7 +96,7 @@ def find_steiner_tree(graphs:CollectionT, terminal_nodes:CollectionT, metric_clo
     return T
 
 
-def calculate_subgraphs_metric_closures(graphs: CollectionT, weight: str = None):
+def calculate_subgraphs_metric_closures(graphs: CollectionT, weight: str = None) -> typing.List[nx.Graph]:
     metric_closures = []
 
     for g in graphs:
