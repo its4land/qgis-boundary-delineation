@@ -89,7 +89,7 @@ def prepare_graph_from_lines(layer, weight_expr_str: str = None) -> nx.MultiGrap
                 data[weight_expr_str] = res if res is not None else DEFAULT_WEIGHT_VALUE
 
             for field_name in numeric_fields_names:
-                data[field_name] = 1 / f[field_name] if f[field_name] else f[field_name] or DEFAULT_WEIGHT_VALUE
+                data[field_name] = f[field_name] if f[field_name] else f[field_name] or DEFAULT_WEIGHT_VALUE
 
             G.add_edge(startPoint, endPoint, fid, **data)
 
