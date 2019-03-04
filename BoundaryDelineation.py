@@ -543,7 +543,11 @@ class BoundaryDelineation:
 
         self.graph = prepare_graph_from_lines(self.simplifiedSegmentsLayer)
         self.subgraphs = prepare_subgraphs(self.graph)
-        self.metricClosureGraphs[self.edgesWeightField] = calculate_subgraphs_metric_closures(self.subgraphs, weight=self.edgesWeightField) if PRECALCULATE_METRIC_CLOSURES else None
+        self.metricClosureGraphs[self.edgesWeightField] = self.calculateMetricClosure() if PRECALCULATE_METRIC_CLOSURES else None
+
+    def calculateMetricClosure(self) -> typing.List[typing.Any]:
+        self.showMessage('It may take some time to precalculate the most optimal boundaries...')
+        return calculate_subgraphs_metric_closures(self.subgraphs, weight=self.edgesWeightField)
 
     def setSelectionMode(self, mode: SelectionModes) -> None:
         self.selectionMode = mode
@@ -624,7 +628,7 @@ class BoundaryDelineation:
 
         try:
             if self.metricClosureGraphs[self.edgesWeightField] is None:
-                self.metricClosureGraphs[self.edgesWeightField] = calculate_subgraphs_metric_closures(self.subgraphs, weight=self.edgesWeightField)
+                self.metricClosureGraphs[self.edgesWeightField] = self.calculateMetricClosure()
 
             T = find_steiner_tree(self.subgraphs, selectedPoints, metric_closures=self.metricClosureGraphs[self.edgesWeightField])
         except NoSuitableGraphError:
