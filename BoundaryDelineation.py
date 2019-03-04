@@ -621,13 +621,24 @@ class BoundaryDelineation:
 
         self.verticesLayer.selectByRect(rect, selectBehaviour)
 
-        if self.verticesLayer.selectedFeatureCount() <= 1:
+        selectedPoints = [f.geometry().asPoint() for f in self.verticesLayer.selectedFeatures()]
+
+        if len(selectedPoints) <= 1:
+            neighbors = []
+
+            if len(selectedPoints) == 1:
+                neighbors = list(self.graph.neighbors(selectedPoints[0]))
+
+            if len(neighbors) == 1:
+                edges = self.graph[selectedPoints[0]][selectedPoints[0]]
+                edgeId = list(edges.keys())[0]
+
+                return [f for f in self.simplifiedSegmentsLayer.getFeatures([edgeId])]
+
             self.candidatesLayer.rollBack()
             # TODO there are self enclosing blocks that can be handled here (one node that is conected to itself)
             self.showMessage(self.tr('Please select two or more nodes to be connected'))
             return
-
-        selectedPoints = [f.geometry().asPoint() for f in self.verticesLayer.selectedFeatures()]
 
         try:
             if self.metricClosureGraphs[self.edgesWeightField] is None:
