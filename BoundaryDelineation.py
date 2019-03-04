@@ -381,7 +381,7 @@ class BoundaryDelineation:
         self.segmentsLayer = segmentsLayer
 
         if self.isAddingLengthAttributePossible():
-            self.dockWidget.toggleAddLengthAttributeCheckBoxEnabled(False)
+            self.dockWidget.toggleAddLengthAttributeCheckBoxEnabled(True)
 
         return segmentsLayer
 
