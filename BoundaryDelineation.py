@@ -322,6 +322,9 @@ class BoundaryDelineation:
             self.segmentsLayer = None
 
         if self.candidatesLayer:
+            self.candidatesLayer.featureAdded.disconnect(self.onCandidatesLayerFeatureChanged)
+            self.candidatesLayer.featuresDeleted.disconnect(self.onCandidatesLayerFeatureChanged)
+            self.candidatesLayer.beforeEditingStarted.disconnect(self.onCandidatesLayerBeforeEditingStarted)
             self.candidatesLayer.rollBack()
 
         utils.remove_layer(self.simplifiedSegmentsLayer)
