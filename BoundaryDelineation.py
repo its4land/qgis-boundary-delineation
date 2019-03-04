@@ -4,13 +4,14 @@
  BoundaryDelineation
                                  A QGIS plugin
  BoundaryDelineation
-                              -------------------
+                             -------------------
         begin                : 2018-05-23
         git sha              : $Format:%H$
         copyright            : (C) 2018 by Sophie Crommelinck
         email                : s.crommelinck@utwente.nl
         development          : Reiner Borchert, Hansa Luftbild AG Münster
         email                : borchert@hansaluftbild.de
+        development          : 2019, Ivan Ivanov @ ITC, University of Twente <ivan.ivanov@suricactus.com>
  ***************************************************************************/
 
 /***************************************************************************
@@ -23,7 +24,6 @@
  ***************************************************************************/
 """
 
-# Import required modules
 import os
 import typing
 from collections import defaultdict

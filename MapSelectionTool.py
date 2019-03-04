@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """
 /***************************************************************************
- BoundaryDelineation
+ MapSelectionTool
                                  A QGIS plugin
- BoundaryDelineation. This script was based on https://github.com/lcoandrade/OSMDownloader/blob/master/rectangleAreaTool.py
+ MapSelectioNTool. This script was based on https://github.com/lcoandrade/OSMDownloader/blob/master/rectangleAreaTool.py
                               -------------------
         begin                : 2019-02-09
         git sha              : $Format:%H$
         copyright            : (C) 2019 by Ivan Ivanov @ ITC, University of Twente
-        email                : ivan.ivanov@suricactus.com
+        development          : 2019, Ivan Ivanov @ ITC, University of Twente <ivan.ivanov@suricactus.com>
  ***************************************************************************/
 
 /***************************************************************************
