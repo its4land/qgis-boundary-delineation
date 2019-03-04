@@ -376,7 +376,7 @@ class BoundaryDelineation:
             utils.add_vector_layer(segmentsLayer, self.segmentsLayerName, parent=self.group)
 
         if segmentsLayer.geometryType() != QgsWkbTypes.LineGeometry:
-            self.showMessage('Please use segments layer that is with lines geometry')
+            self.showMessage(self.tr('Please use segments layer that is with lines geometry'))
 
         self.segmentsLayer = segmentsLayer
 
@@ -549,7 +549,7 @@ class BoundaryDelineation:
         self.metricClosureGraphs[self.edgesWeightField] = self.calculateMetricClosure() if PRECALCULATE_METRIC_CLOSURES else None
 
     def calculateMetricClosure(self) -> typing.List[typing.Any]:
-        self.showMessage('It may take some time to precalculate the most optimal boundaries...')
+        self.showMessage(self.tr('It may take some time to precalculate the most optimal boundaries...'))
         return calculate_subgraphs_metric_closures(self.subgraphs, weight=self.edgesWeightField)
 
     def setSelectionMode(self, mode: SelectionModes) -> None:
