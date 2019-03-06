@@ -1,5 +1,6 @@
 import functools
 import collections.abc
+import typing
 
 from enum import Enum
 
@@ -9,7 +10,7 @@ from PyQt5.QtWidgets import QApplication
 
 import processing
 
-from qgis.core import QgsProject, QgsMarkerSymbol, QgsLineSymbol, QgsSingleSymbolRenderer, QgsGraduatedSymbolRenderer, QgsLayerTree
+from qgis.core import QgsProject, QgsMarkerSymbol, QgsLineSymbol, QgsSingleSymbolRenderer, QgsGraduatedSymbolRenderer, QgsLayerTreeNode, QgsVectorLayer, QgsRasterLayer, QgsMapLayer
 from qgis.utils import iface
 
 
@@ -47,21 +48,63 @@ def remove_layer(layer):
 
     return True
 
-def add_vector_layer(layer, name=None, colors=None, size = None, legend: bool = True, file: str = None, parent: QgsLayerTree = None) -> None:
+def move_tree_node(node: typing.Union[QgsMapLayer, QgsLayerTreeNode], index: int, parent: QgsLayerTreeNode = None):
+    root = QgsProject.instance().layerTreeRoot()
+    node = root.findLayer(node.id()) if isinstance(node, QgsMapLayer) else node
+
+    if node is None:
+        return None
+
+    layer_clone = node.clone()
+    parent = parent if parent else node.parent()
+    parent.insertChildNode(index, layer_clone)
+    parent.removeChildNode(node)
+
+def get_tree_node_index(node: typing.Union[QgsMapLayer, QgsLayerTreeNode], top: bool = False):
+    root = QgsProject.instance().layerTreeRoot()
+    node = root.findLayer(node.id()) if isinstance(node, QgsMapLayer) else node
+    node_parent = node.parent()
+
+    if top:
+        tmp = node_parent
+        while(tmp):
+            tmp = tmp.parent()
+
+            if not tmp:
+                break
+
+            node = node_parent
+            node_parent = tmp
+
+    for i, n in enumerate(node_parent.children()):
+        if n is node:
+            return i
+
+    return None
+
+def add_group(group: QgsLayerTreeNode, name: str = None, index: int = -1, parent: QgsLayerTreeNode = None):
+    parent = parent if parent else QgsProject.instance().layerTreeRoot()
+    parent.insertGroup(index, group)
+
+def add_layer(layer: QgsMapLayer, name: str = None, index: int = -1, color: typing.List = None, size: float = None, file: str = None, parent: QgsLayerTreeNode = None) -> None:
     if name:
         layer.setName(name)
 
-    if colors or size or file:
-        update_symbology(layer, colors=colors, size=size, file=file)
+    if isinstance(layer, QgsVectorLayer):
+        if color or size or file:
+            update_symbology(layer, color=color, size=size, file=file)
+    elif isinstance(layer, QgsRasterLayer):
+        # TODO update symbology
+        pass
 
+    instance = QgsProject.instance()
+    instance.addMapLayer(layer, False)
 
-    if parent:
-        QgsProject.instance().addMapLayer(layer, False)
-        parent.addLayer(layer)
-    else:
-        QgsProject.instance().addMapLayer(layer, legend)
+    parent = parent if parent else instance.layerTreeRoot()
+    print('index', index, layer.name())
+    parent.insertLayer(index, layer)
 
-def update_symbology(layer, colors=None, size=None, file: str = None) -> None:
+def update_symbology(layer, color=None, size=None, file: str = None) -> None:
     assert layer, 'Layer is not defined'
 
     if file:
@@ -83,11 +126,11 @@ def update_symbology(layer, colors=None, size=None, file: str = None) -> None:
     else:
         raise Exception('Unknown renderer!')
 
-    if colors:
-        assert isinstance(colors, collections.abc.Sequence), 'Colors should be a iteratable of three numbers for Red, Green, Blue; Each of them between 0 and 255'
-        assert len(colors) in (3, 4), 'There should be three numbers passed for Red, Green, Blue; Each of them between 0 and 255'
+    if color:
+        assert isinstance(color, collections.abc.Sequence), 'Color should be a iteratable of three numbers for Red, Green, Blue; Each of them between 0 and 255'
+        assert len(color) in (3, 4), 'There should be three numbers passed for Red, Green, Blue; Each of them between 0 and 255'
 
-        symbol.setColor(QColor.fromRgb(*colors))
+        symbol.setColor(QColor.fromRgb(*color))
 
     if size:
         # For lines

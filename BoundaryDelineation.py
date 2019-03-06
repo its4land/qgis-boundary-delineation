@@ -90,7 +90,6 @@ class BoundaryDelineation:
         self.candidatesLayer = None
         self.finalLayer = None
 
-        # Declare instance attributes
         self.actions = []
         self.canvas = self.iface.mapCanvas()
 
@@ -209,11 +208,11 @@ class BoundaryDelineation:
         else:
             self.dockWidget.show()
 
-    def getGroup(self) -> QgsLayerTreeGroup:
+    def getGroup(self, index: int = 0) -> QgsLayerTreeGroup:
         group = self.layerTree.findGroup(self.groupName)
 
         if not group:
-            group = self.layerTree.insertGroup(0, self.groupName)
+            group = self.layerTree.insertGroup(index, self.groupName)
 
         return group
 
@@ -351,13 +350,26 @@ class BoundaryDelineation:
         if self.baseRasterLayer is baseRasterLayer:
             return baseRasterLayer
 
-        self.group = self.getGroup()
-
         if isinstance(baseRasterLayer, str):
-            self.wasBaseRasterLayerInitiallyInLegend = False
-            baseRasterLayer = QgsRasterLayer(baseRasterLayer, self.baseRasterLayerName)
+            self.group = self.getGroup()
 
+            if self.baseRasterLayer and not self.wasBaseRasterLayerInitiallyInLegend:
+                utils.remove_layer(self.baseRasterLayer)
+
+            self.wasBaseRasterLayerInitiallyInLegend = False
+            baseRasterLayer = QgsRasterLayer(baseRasterLayer, self.baseRasterLayerName, )
+
+            utils.add_layer(baseRasterLayer, self.baseRasterLayerName, parent=parent, index=-1)
             self.project.addMapLayer(baseRasterLayer)
+        else:
+            self.wasBaseRasterLayerInitiallyInLegend = True
+
+            baseRasterLayerTreeIdx = utils.get_tree_node_index(baseRasterLayer, top=True) or 0
+
+            self.group = self.getGroup(baseRasterLayerTreeIdx)
+
+            if baseRasterLayerTreeIdx is not None and not self.group.findLayer(baseRasterLayer.id()):
+                self.group = utils.move_tree_node(self.group, baseRasterLayerTreeIdx)
 
         self.baseRasterLayer = baseRasterLayer
 
@@ -370,10 +382,15 @@ class BoundaryDelineation:
         self.group = self.getGroup()
 
         if isinstance(segmentsLayer, str):
+            if self.segmentsLayer and not self.wasSegmentsLayerInitiallyInLegend:
+                utils.remove_layer(self.segmentsLayer)
+
             self.wasSegmentsLayerInitiallyInLegend = False
             segmentsLayer = QgsVectorLayer(segmentsLayer, self.segmentsLayerName, 'ogr')
 
-            utils.add_vector_layer(segmentsLayer, self.segmentsLayerName, parent=self.group)
+            utils.add_layer(segmentsLayer, self.segmentsLayerName, parent=self.group, index=0)
+        else:
+            self.wasSegmentsLayerInitiallyInLegend = True
 
         if segmentsLayer.geometryType() != QgsWkbTypes.LineGeometry:
             self.showMessage(self.tr('Please use segments layer that is with lines geometry'))
@@ -408,14 +425,16 @@ class BoundaryDelineation:
 
         self.simplifiedSegmentsLayer = result['OUTPUT']
 
-        self.dockWidget.setComboboxLayer(self.simplifiedSegmentsLayer)
+        self.dockWidget.setComboboxLayer(self.simplifiedSegmentsLayer,)
 
-        utils.add_vector_layer(
+        layerTreeIndex = utils.get_tree_node_index(self.verticesLayer) + 1 if self.verticesLayer else 0
+        utils.add_layer(
             self.simplifiedSegmentsLayer,
             self.simplifiedSegmentsLayerName,
-            colors=(0, 255, 0),
+            color=(0, 255, 0),
             file=self.__getStylePath('segments.qml'),
-            parent=self.group
+            parent=self.group,
+            index=layerTreeIndex
             )
 
     def addLengthAttribute(self) -> None:
@@ -480,6 +499,7 @@ class BoundaryDelineation:
 
             if filename:
                 (writeErrorCode, writeErrorMsg) = QgsVectorFileWriter.writeAsVectorFormat(finalLayer, filename, 'utf-8', crs, 'ESRI Shapefile')
+
                 if writeErrorMsg:
                     self.showMessage('[%s] %s' % (writeErrorCode, writeErrorMsg))
 
@@ -494,8 +514,10 @@ class BoundaryDelineation:
         # candidatesLayer.dataProvider().addAttributes(candidatesLayerFields)
         # candidatesLayer.updateFields()
 
-        utils.add_vector_layer(candidatesLayer, file=self.__getStylePath('candidates.qml'), parent=self.group)
-        utils.add_vector_layer(finalLayer, file=self.__getStylePath('final.qml'), parent=self.group)
+        layerTreeIndex = utils.get_tree_node_index(self.simplifiedSegmentsLayer)
+
+        utils.add_layer(candidatesLayer, file=self.__getStylePath('candidates.qml'), parent=self.group, index=layerTreeIndex + 1)
+        utils.add_layer(finalLayer, file=self.__getStylePath('final.qml'), parent=self.group, index=layerTreeIndex + 2)
 
         candidatesLayer.featureAdded.connect(self.onCandidatesLayerFeatureChanged)
         candidatesLayer.featuresDeleted.connect(self.onCandidatesLayerFeatureChanged)
@@ -525,7 +547,7 @@ class BoundaryDelineation:
 
         self.verticesLayer = verticesNoDuplicatesResult['OUTPUT']
 
-        utils.add_vector_layer(self.verticesLayer, self.verticesLayerName, (255, 0, 0), 1.3, parent=self.group)
+        utils.add_layer(self.verticesLayer, self.verticesLayerName, color=(255, 0, 0), size=1.3, parent=self.group, index=0)
 
         return self.verticesLayer
 
