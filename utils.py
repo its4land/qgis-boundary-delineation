@@ -3,6 +3,7 @@ import collections.abc
 import typing
 
 from enum import Enum
+from collections import defaultdict
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QCursor, QColor
@@ -10,11 +11,11 @@ from PyQt5.QtWidgets import QApplication
 
 import processing
 
-from qgis.core import QgsProject, QgsMarkerSymbol, QgsLineSymbol, QgsSingleSymbolRenderer, QgsGraduatedSymbolRenderer, QgsLayerTreeNode, QgsVectorLayer, QgsRasterLayer, QgsMapLayer
+from qgis.core import QgsProject, QgsMarkerSymbol, QgsLineSymbol, QgsSingleSymbolRenderer, QgsGraduatedSymbolRenderer, QgsLayerTreeNode, QgsVectorLayer, QgsRasterLayer, QgsMapLayer, QgsPoint
 from qgis.utils import iface
 
 
-def processing_cursor(cursor=QCursor(Qt.WaitCursor)):
+def processing_cursor(cursor = QCursor(Qt.WaitCursor)) -> typing.Callable:
     def processing_cursor_decorator(func):
         @functools.wraps(func)
         def func_wrapper(*args, **kwargs):
@@ -31,15 +32,15 @@ def processing_cursor(cursor=QCursor(Qt.WaitCursor)):
         return func_wrapper
     return processing_cursor_decorator
 
-def show_processing_cursor(cursor=QCursor(Qt.WaitCursor)):
+def show_processing_cursor(cursor = QCursor(Qt.WaitCursor)) -> None:
     QApplication.setOverrideCursor(cursor)
     QApplication.processEvents()
 
-def hide_processing_cursor():
+def hide_processing_cursor() -> None:
     QApplication.restoreOverrideCursor()
     QApplication.processEvents()
 
-def remove_layer(layer):
+def remove_layer(layer) -> bool:
     if not layer:
         return False
 
@@ -48,19 +49,19 @@ def remove_layer(layer):
 
     return True
 
-def move_tree_node(node: typing.Union[QgsMapLayer, QgsLayerTreeNode], index: int, parent: QgsLayerTreeNode = None):
+def move_tree_node(node: typing.Union[QgsMapLayer, QgsLayerTreeNode], index: int, parent: QgsLayerTreeNode = None) -> None:
     root = QgsProject.instance().layerTreeRoot()
     node = root.findLayer(node.id()) if isinstance(node, QgsMapLayer) else node
 
     if node is None:
-        return None
+        return
 
     layer_clone = node.clone()
     parent = parent if parent else node.parent()
     parent.insertChildNode(index, layer_clone)
     parent.removeChildNode(node)
 
-def get_tree_node_index(node: typing.Union[QgsMapLayer, QgsLayerTreeNode], top: bool = False):
+def get_tree_node_index(node: typing.Union[QgsMapLayer, QgsLayerTreeNode], top: bool = False) -> None:
     root = QgsProject.instance().layerTreeRoot()
     node = root.findLayer(node.id()) if isinstance(node, QgsMapLayer) else node
     node_parent = node.parent()
@@ -80,13 +81,13 @@ def get_tree_node_index(node: typing.Union[QgsMapLayer, QgsLayerTreeNode], top: 
         if n is node:
             return i
 
-    return None
+    return
 
-def add_group(group: QgsLayerTreeNode, name: str = None, index: int = -1, parent: QgsLayerTreeNode = None):
+def add_group(group: QgsLayerTreeNode, name: str = None, index: int = -1, parent: QgsLayerTreeNode = None) -> None:
     parent = parent if parent else QgsProject.instance().layerTreeRoot()
     parent.insertGroup(index, group)
 
-def add_layer(layer: QgsMapLayer, name: str = None, index: int = -1, color: typing.List = None, size: float = None, file: str = None, parent: QgsLayerTreeNode = None) -> None:
+def add_layer(layer: QgsMapLayer, name: str = None, index: int = -1, color: typing.List[float] = None, size: float = None, file: str = None, parent: QgsLayerTreeNode = None) -> None:
     if name:
         layer.setName(name)
 
@@ -101,10 +102,9 @@ def add_layer(layer: QgsMapLayer, name: str = None, index: int = -1, color: typi
     instance.addMapLayer(layer, False)
 
     parent = parent if parent else instance.layerTreeRoot()
-    print('index', index, layer.name())
     parent.insertLayer(index, layer)
 
-def update_symbology(layer, color=None, size=None, file: str = None) -> None:
+def update_symbology(layer: QgsMapLayer, color: typing.List[float] = None, size: float = None, file: str = None) -> None:
     assert layer, 'Layer is not defined'
 
     if file:
@@ -144,73 +144,98 @@ def update_symbology(layer, color=None, size=None, file: str = None) -> None:
         layer.triggerRepaint()
         iface.layerTreeView().refreshLayerSymbology(layer.id())
 
-
-def set_active_layer(layer):
+def set_active_layer(layer: QgsMapLayer) -> None:
     assert isinstance(layer, QgsVectorLayer)
 
     iface.setActiveLayer(layer)
 
 
-def selected_features_to_layer(vectorLayer, name=None):
+def selected_features_to_layer(vector_layer: QgsVectorLayer, name: str = None) -> QgsVectorLayer:
     if name is None:
         name = 'SelectedFeatures'
 
     result = processing.run('native:saveselectedfeatures', {
-        'INPUT': vectorLayer,
+        'INPUT': vector_layer,
         'OUTPUT': 'memory:%s' % name
     })
 
     return result['OUTPUT']
 
-def dissolve_layer(vectorLayer, name=None):
+def dissolve_layer(vector_layer: QgsVectorLayer, name: str = None) -> QgsVectorLayer:
     if name is None:
         name = 'DissolvedFeatures'
 
     result = processing.run('native:dissolve', {
-        'INPUT': vectorLayer,
+        'INPUT': vector_layer,
         'FIELD': [],
         'OUTPUT': 'memory:%s' % name,
     })
 
     return result['OUTPUT']
 
-def polygons_layer_to_lines_layer(vectorLayer, name=None):
+def polygons_layer_to_lines_layer(vector_layer: QgsVectorLayer, name: str = None) -> QgsVectorLayer:
     if name is None:
         name = 'polygonstolines'
 
     result = processing.run('qgis:polygonstolines', {
-        'INPUT': vectorLayer,
+        'INPUT': vector_layer,
         'OUTPUT': 'memory:%s' % name,
     })
 
     return result['OUTPUT']
 
-def lines_to_polygons(vectorLayer, name: str = None):
+def lines_to_polygons(vector_layer: QgsVectorLayer, name: str = None) -> QgsVectorLayer:
     if name is None:
         name = 'LinesToPolygons'
 
     result = processing.run('qgis:linestopolygons', {
-        'INPUT': vectorLayer,
+        'INPUT': vector_layer,
         'OUTPUT': 'memory:%s' % name,
     })
 
     return result['OUTPUT']
 
-def multipart_to_singleparts(vectorLayer, name: str = None):
+def multipart_to_singleparts(vector_layer: QgsVectorLayer, name: str = None) -> QgsVectorLayer:
     if name is None:
         name = 'MultipartToSingleparts'
 
     result = processing.run('native:multiparttosingleparts', {
-        'INPUT': vectorLayer,
+        'INPUT': vector_layer,
         'OUTPUT': 'memory:%s' % name,
     })
 
     return result['OUTPUT']
+
+def lines_unique_vertices(vector_layer: QgsVectorLayer, feature_ids: typing.List[int] = None) -> typing.List[QgsPoint]:
+    points = defaultdict(int)
+    features = vector_layer.getFeatures(feature_ids) if feature_ids else vector_layer.getFeatures()
+
+    for f in features:
+        geom = f.geometry()
+
+        is_multipart = geom.isMultipart()
+
+        if is_multipart:
+            lines = geom.asMultiPolyline()
+        else:
+            lines = [geom.asPolyline()]
+
+        for idx, line in enumerate(lines):
+            startPoint = line[0]
+            endPoint = line[-1]
+
+            points[startPoint] += 1
+            points[endPoint] += 1
+
+        lines.append(f)
+
+    return [k for k, v in points.items() if v == 1]
 
 class SelectionModes(Enum):
     NONE = 0
     MANUAL = 1
     ENCLOSING = 2
     NODES = 3
+    LINES = 4
 
 
