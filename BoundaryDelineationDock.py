@@ -73,6 +73,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
 
         self.modeEnclosingRadio.toggled.connect(self.onModeEnclosingRadioToggled)
         self.modeNodesRadio.toggled.connect(self.onModeNodesRadioToggled)
+        self.modeLinesRadio.toggled.connect(self.onModeLinesRadioToggled)
         self.modeManualRadio.toggled.connect(self.onModeManualRadioToggled)
 
         self.weightComboBox.fieldChanged.connect(self.onWeightComboBoxChanged)
@@ -166,6 +167,11 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
             self.plugin.setSelectionMode(SelectionModes.NODES)
             self.editButton.setChecked(False)
 
+    def onModeLinesRadioToggled(self, checked: bool) -> None:
+        if checked:
+            self.plugin.setSelectionMode(SelectionModes.LINES)
+            self.editButton.setChecked(False)
+
     def onModeEnclosingRadioToggled(self, checked: bool) -> None:
         if checked:
             self.plugin.setSelectionMode(SelectionModes.ENCLOSING)
@@ -254,6 +260,9 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
             self.modeNodesRadio.setAutoExclusive(False)
             self.modeNodesRadio.setChecked(False)
             self.modeNodesRadio.setAutoExclusive(True)
+            self.modeLinesRadio.setAutoExclusive(False)
+            self.modeLinesRadio.setChecked(False)
+            self.modeLinesRadio.setAutoExclusive(True)
             self.modeManualRadio.setAutoExclusive(False)
             self.modeManualRadio.setChecked(False)
             self.modeManualRadio.setAutoExclusive(True)
@@ -265,6 +274,10 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
 
         if self.plugin.isMapSelectionToolEnabled and self.plugin.selectionMode == SelectionModes.NODES:
             self.modeNodesRadio.setChecked(True)
+            return
+
+        if self.plugin.isMapSelectionToolEnabled and self.plugin.selectionMode == SelectionModes.LINES:
+            self.modeLinesRadio.setChecked(True)
             return
 
         self.modeManualRadio.setChecked(True)
@@ -289,6 +302,9 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
 
     def getOutputLayer(self) -> str:
         return self.outputLayerLineEdit.text()
+
+    def getPolygonizeChecked(self) -> str:
+        return self.polygonizeCheckBox.isChecked()
 
     def getConfirmation(self, title: str, body: str) -> bool:
         reply = QMessageBox.question(

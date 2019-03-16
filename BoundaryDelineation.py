@@ -26,7 +26,6 @@
 
 import os
 import typing
-from collections import defaultdict
 
 from PyQt5.QtCore import QSettings, QTranslator, Qt, QVariant
 from PyQt5.QtWidgets import QAction, QToolBar, QMessageBox
@@ -77,10 +76,8 @@ class BoundaryDelineation:
         self.verticesLayerName = self.tr('Vertices')
         self.candidatesLayerName = self.tr('Candidates')
         self.finalLayerName = self.tr('Final')
+        self.finalLayerPolygonsName = self.tr('Final Polygons')
         self.groupName = self.tr('BoundaryDelineation')
-
-        # groups
-        self.group = self.getGroup()
 
         # map layers
         self.baseRasterLayer = None
@@ -89,6 +86,7 @@ class BoundaryDelineation:
         self.verticesLayer = None
         self.candidatesLayer = None
         self.finalLayer = None
+        self.finalLayerPolygons = None
 
         self.actions = []
         self.canvas = self.iface.mapCanvas()
@@ -307,6 +305,11 @@ class BoundaryDelineation:
     def processFinish(self) -> None:
         self.showMessage(self.tr('Boundary deliniation finished, see the currently active layer for all the results'))
         self.iface.setActiveLayer(self.finalLayer)
+
+        if self.dockWidget.getPolygonizeChecked():
+            self.finalLayerPolygons = utils.polyginize_lines(self.finalLayer)
+            utils.add_layer(self.finalLayerPolygons, self.finalLayerPolygonsName, parent=self.getGroup())
+
         self.resetProcessed()
 
     def resetProcessed(self) -> None:
@@ -320,19 +323,24 @@ class BoundaryDelineation:
             utils.remove_layer(self.segmentsLayer)
             self.segmentsLayer = None
 
-        if self.candidatesLayer:
-            self.candidatesLayer.featureAdded.disconnect(self.onCandidatesLayerFeatureChanged)
-            self.candidatesLayer.featuresDeleted.disconnect(self.onCandidatesLayerFeatureChanged)
-            self.candidatesLayer.beforeEditingStarted.disconnect(self.onCandidatesLayerBeforeEditingStarted)
-            self.candidatesLayer.rollBack()
+        try:
+            if self.candidatesLayer:
+                self.candidatesLayer.featureAdded.disconnect(self.onCandidatesLayerFeatureChanged)
+                self.candidatesLayer.featuresDeleted.disconnect(self.onCandidatesLayerFeatureChanged)
+                self.candidatesLayer.beforeEditingStarted.disconnect(self.onCandidatesLayerBeforeEditingStarted)
+                self.candidatesLayer.rollBack()
+        except:
+            self.showMessage(self.tr('Unable clean-up'))
 
         utils.remove_layer(self.simplifiedSegmentsLayer)
         utils.remove_layer(self.verticesLayer)
         utils.remove_layer(self.candidatesLayer)
 
-        if self.finalLayer:
+        try:
             self.finalLayer.featureAdded.disconnect(self.onFinalLayerFeaturesChanged)
             self.finalLayer.featuresDeleted.disconnect(self.onFinalLayerFeaturesChanged)
+        except:
+            self.showMessage(self.tr('Unable clean-up'))
 
         self.simplifiedSegmentsLayer = None
         self.verticesLayer = None
@@ -351,8 +359,6 @@ class BoundaryDelineation:
             return baseRasterLayer
 
         if isinstance(baseRasterLayer, str):
-            self.group = self.getGroup()
-
             if self.baseRasterLayer and not self.wasBaseRasterLayerInitiallyInLegend:
                 utils.remove_layer(self.baseRasterLayer)
 
@@ -366,10 +372,10 @@ class BoundaryDelineation:
 
             baseRasterLayerTreeIdx = utils.get_tree_node_index(baseRasterLayer, top=True) or 0
 
-            self.group = self.getGroup(baseRasterLayerTreeIdx)
+            group = self.getGroup(baseRasterLayerTreeIdx)
 
-            if baseRasterLayerTreeIdx is not None and not self.group.findLayer(baseRasterLayer.id()):
-                self.group = utils.move_tree_node(self.group, baseRasterLayerTreeIdx)
+            if baseRasterLayerTreeIdx is not None and not group.findLayer(baseRasterLayer.id()):
+                group = utils.move_tree_node(group, baseRasterLayerTreeIdx)
 
         self.baseRasterLayer = baseRasterLayer
 
@@ -379,8 +385,6 @@ class BoundaryDelineation:
         if self.segmentsLayer is segmentsLayer:
             return segmentsLayer
 
-        self.group = self.getGroup()
-
         if isinstance(segmentsLayer, str):
             if self.segmentsLayer and not self.wasSegmentsLayerInitiallyInLegend:
                 utils.remove_layer(self.segmentsLayer)
@@ -388,7 +392,7 @@ class BoundaryDelineation:
             self.wasSegmentsLayerInitiallyInLegend = False
             segmentsLayer = QgsVectorLayer(segmentsLayer, self.segmentsLayerName, 'ogr')
 
-            utils.add_layer(segmentsLayer, self.segmentsLayerName, parent=self.group, index=0)
+            utils.add_layer(segmentsLayer, self.segmentsLayerName, parent=self.getGroup(), index=0)
         else:
             self.wasSegmentsLayerInitiallyInLegend = True
 
@@ -425,7 +429,9 @@ class BoundaryDelineation:
 
         self.simplifiedSegmentsLayer = result['OUTPUT']
 
-        self.dockWidget.setComboboxLayer(self.simplifiedSegmentsLayer,)
+        self.dockWidget.setComboboxLayer(self.simplifiedSegmentsLayer)
+
+        print('May be different on first run', self.getGroup(), self.getGroup())
 
         layerTreeIndex = utils.get_tree_node_index(self.verticesLayer) + 1 if self.verticesLayer else 0
         utils.add_layer(
@@ -433,7 +439,7 @@ class BoundaryDelineation:
             self.simplifiedSegmentsLayerName,
             color=(0, 255, 0),
             file=self.__getStylePath('segments.qml'),
-            parent=self.group,
+            parent=self.getGroup(),
             index=layerTreeIndex
             )
 
@@ -472,7 +478,7 @@ class BoundaryDelineation:
             # All my other attempts also failed miserably
             # group = self.layerTree.findGroup(self.groupName)
             # print(111, group, node, len(node.name()), node.name())
-            # return group is self.group
+            # return group is self.getGroup()
             pass
         else:
             layer = self.project.mapLayer(node.layerId())
@@ -516,8 +522,8 @@ class BoundaryDelineation:
 
         layerTreeIndex = utils.get_tree_node_index(self.simplifiedSegmentsLayer)
 
-        utils.add_layer(candidatesLayer, file=self.__getStylePath('candidates.qml'), parent=self.group, index=layerTreeIndex + 1)
-        utils.add_layer(finalLayer, file=self.__getStylePath('final.qml'), parent=self.group, index=layerTreeIndex + 2)
+        utils.add_layer(candidatesLayer, file=self.__getStylePath('candidates.qml'), parent=self.getGroup(), index=layerTreeIndex + 1)
+        utils.add_layer(finalLayer, file=self.__getStylePath('final.qml'), parent=self.getGroup(), index=layerTreeIndex + 2)
 
         candidatesLayer.featureAdded.connect(self.onCandidatesLayerFeatureChanged)
         candidatesLayer.featuresDeleted.connect(self.onCandidatesLayerFeatureChanged)
@@ -547,21 +553,14 @@ class BoundaryDelineation:
 
         self.verticesLayer = verticesNoDuplicatesResult['OUTPUT']
 
-        utils.add_layer(self.verticesLayer, self.verticesLayerName, color=(255, 0, 0), size=1.3, parent=self.group, index=0)
+        utils.add_layer(self.verticesLayer, self.verticesLayerName, color=(255, 0, 0), size=1.3, parent=self.getGroup(), index=0)
 
         return self.verticesLayer
 
     def polygonizeSegmentsLayer(self) -> QgsVectorLayer:
         assert self.simplifiedSegmentsLayer
 
-        polygonizedResult = processing.run('qgis:polygonize', {
-            'INPUT': self.simplifiedSegmentsLayer,
-            'OUTPUT': 'memory:polygonized',
-        })
-
-        self.polygonizedLayer = polygonizedResult['OUTPUT']
-
-        return self.polygonizedLayer
+        self.polygonizedLayer = utils.polyginize_lines(self.simplifiedSegmentsLayer)
 
     def buildVerticesGraph(self) -> None:
         assert self.simplifiedSegmentsLayer
@@ -615,6 +614,8 @@ class BoundaryDelineation:
 
         if self.selectionMode == SelectionModes.ENCLOSING:
             lines = self.getLinesSelectionModeEnclosing(selectBehaviour, rect)
+        elif self.selectionMode == SelectionModes.LINES:
+            lines = self.getLinesSelectionModeLines(selectBehaviour, rect)
         elif self.selectionMode == SelectionModes.NODES:
             lines = self.getLinesSelectionModeNodes(selectBehaviour, rect)
 
@@ -623,22 +624,36 @@ class BoundaryDelineation:
         else:
             raise Exception('Wrong selection mode selected, should never be the case')
 
-        assert lines, 'There should be at least one feature'
+        if not len(lines):
+            self.showMessage(self.tr('No results found!'))
+            self.deleteAllCandidates()
+            return
 
         if not self.addCandidates(lines):
             self.showMessage(self.tr('Unable to add candidates'))
             return
 
-    def getLinesSelectionModeEnclosing(self, selectBehaviour: SelectBehaviour, rect: QgsRectangle) -> None:
+    def getLinesSelectionModeEnclosing(self, selectBehaviour: SelectBehaviour, rect: QgsRectangle) -> typing.List:
         rect = self.__getCoordinateTransform(self.polygonizedLayer).transform(rect)
 
         self.polygonizedLayer.selectByRect(rect, selectBehaviour)
 
         selectedPolygonsLayer = utils.selected_features_to_layer(self.polygonizedLayer)
         dissolvedPolygonsLayer = utils.dissolve_layer(selectedPolygonsLayer)
-        return utils.polygons_layer_to_lines_layer(dissolvedPolygonsLayer).getFeatures()
+        return tuple(utils.polygons_layer_to_lines_layer(dissolvedPolygonsLayer).getFeatures())
 
-    def getLinesSelectionModeNodes(self, selectBehaviour: SelectBehaviour, rect: QgsRectangle) -> None:
+    def getLinesSelectionModeLines(self, selectBehaviour: SelectBehaviour, rect: QgsRectangle) -> typing.List:
+        rect = self.__getCoordinateTransform(self.simplifiedSegmentsLayer).transform(rect)
+
+        self.simplifiedSegmentsLayer.selectByRect(rect, selectBehaviour)
+
+        selectedLinesLayer = utils.selected_features_to_layer(self.simplifiedSegmentsLayer)
+        dissolvedLinesLayer = utils.dissolve_layer(selectedLinesLayer)
+        points = utils.lines_unique_vertices(dissolvedLinesLayer)
+
+        return tuple(dissolvedLinesLayer.getFeatures())
+
+    def getLinesSelectionModeNodes(self, selectBehaviour: SelectBehaviour, rect: QgsRectangle) -> typing.List:
         rect = self.__getCoordinateTransform(self.polygonizedLayer).transform(rect)
 
         self.verticesLayer.selectByRect(rect, selectBehaviour)
@@ -673,30 +688,7 @@ class BoundaryDelineation:
 
         # edge[2] stays for the line ids
         featureIds = [edge[2] for edge in T.edges(keys=True)]
-
-        # The following allows closing the lines if the two endpoints are also connected by an edge
-        pointsMap = defaultdict(int)
-
-        for f in self.simplifiedSegmentsLayer.getFeatures(featureIds):
-            geom = f.geometry()
-
-            is_multipart = geom.isMultipart()
-
-            if is_multipart:
-                lines = geom.asMultiPolyline()
-            else:
-                lines = [geom.asPolyline()]
-
-            for idx, line in enumerate(lines):
-                startPoint = line[0]
-                endPoint = line[-1]
-
-                pointsMap[startPoint] += 1
-                pointsMap[endPoint] += 1
-
-            lines.append(f)
-
-        points = [k for k, v in pointsMap.items() if v == 1]
+        points = utils.lines_unique_vertices(self.simplifiedSegmentsLayer, featureIds)
 
         if len(points) != 2:
             self.showMessage(self.tr('Unable to find the shortest path'))
@@ -717,7 +709,7 @@ class BoundaryDelineation:
             if bestEdgeKey:
                 featureIds.append(bestEdgeKey)
 
-        return [f for f in self.simplifiedSegmentsLayer.getFeatures(featureIds)]
+        return tuple(self.simplifiedSegmentsLayer.getFeatures(featureIds))
 
 
     def addCandidates(self, lineFeatures: QgsFeatureIterator) -> bool:
@@ -737,6 +729,22 @@ class BoundaryDelineation:
 
         if not self.candidatesLayer.addFeatures(features):
             self.showMessage(self.tr('Unable to add features as candidates #2'))
+            return False
+
+        self.candidatesLayer.triggerRepaint()
+
+        return True
+
+    def deleteAllCandidates(self) -> bool:
+        self.candidatesLayer.rollBack()
+        self.candidatesLayer.startEditing()
+
+        if not self.candidatesLayer.isEditable():
+            self.showMessage(self.tr('Unable to add features as candidates #1'))
+            return False
+
+        if not self.candidatesLayer.deleteFeatures([f.id() for f in self.candidatesLayer.getFeatures()]):
+            self.showMessage(self.tr('Unable to delete all candidate features'))
             return False
 
         self.candidatesLayer.triggerRepaint()
@@ -774,7 +782,7 @@ class BoundaryDelineation:
             self.iface.setActiveLayer(self.candidatesLayer)
             self.iface.actionVertexTool().trigger()
         else:
-            # TODO maybe ask before rollback?
+            # TODO maybe ask before rollBack?
             self.candidatesLayer.rollBack()
             self.refreshSelectionModeBehavior()
 

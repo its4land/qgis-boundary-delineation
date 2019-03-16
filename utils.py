@@ -206,6 +206,17 @@ def multipart_to_singleparts(vector_layer: QgsVectorLayer, name: str = None) -> 
 
     return result['OUTPUT']
 
+def polyginize_lines(vector_layer: QgsVectorLayer, name: str = None) -> QgsVectorLayer:
+    if name is None:
+        name = 'PolygonizedLines'
+
+    polygonizedResult = processing.run('qgis:polygonize', {
+        'INPUT': vector_layer,
+        'OUTPUT': 'memory:%s' % name,
+    })
+
+    return polygonizedResult['OUTPUT']
+
 def lines_unique_vertices(vector_layer: QgsVectorLayer, feature_ids: typing.List[int] = None) -> typing.List[QgsPoint]:
     points = defaultdict(int)
     features = vector_layer.getFeatures(feature_ids) if feature_ids else vector_layer.getFeatures()
