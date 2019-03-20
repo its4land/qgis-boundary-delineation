@@ -651,46 +651,40 @@ class BoundaryDelineation:
         dissolvedLinesLayer = utils.dissolve_layer(selectedLinesLayer)
         singlepartsLayer = utils.multipart_to_singleparts(selectedLinesLayer)
 
+        self.simplifiedSegmentsLayer.deselect(list(self.simplifiedSegmentsLayer.selectedFeatureIds()))
+
+        enclosingLineFeatures = list(dissolvedLinesLayer.getFeatures())
         points = dict()
 
         for f in singlepartsLayer.getFeatures():
             points[f.id()] = utils.lines_unique_vertices(singlepartsLayer, [f.id()])
 
-        if len(points.keys()) != 2:
-            self.showMessage('Currently autoclosing is supported only for two selected continuous segments')
-            return tuple(dissolvedLinesLayer.getFeatures())
+        points = list(points.values())autoclosing
 
-        points = list(points.values())
+        if len(points) != 2 or len(points[0]) != 2 or len(points[1]) != 2:
+            self.showMessage(self.tr('Autoclosing lines is currently supported for two continuous segments only'))
+            return enclosingLineFeatures
 
         pointX1 = points[0][0]
-        pointX2 = points[0][1] if len(points[0]) == 2 else points[0][0]
-        pointY1 = points[1][0]
-        pointY2 = points[1][1] if len(points[1]) == 2 else points[1][0]
-
-        enclosingLineFeatures = list(dissolvedLinesLayer.getFeatures())
+        pointY1 = points[0][1]
+        pointX2 = points[1][0]
+        pointY2 = points[1][1]
 
         selectedLinesLayer.startEditing()
 
-        # f1 = QgsFeature(selectedLinesLayer.fields())
-        # f2 = QgsFeature(selectedLinesLayer.fields())
+        f1 = QgsFeature(selectedLinesLayer.fields())
+        f2 = QgsFeature(selectedLinesLayer.fields())
 
-        # if pointX1.distance(pointX2) + pointY1.distance(pointY2) < pointX1.distance(pointY2) + pointY1.distance(pointX2):
-        #     # x1->x2 y1->y2
-        #     f1.setGeometry(QgsGeometry.fromMultiPolylineXY([[pointX1, pointX2]]))
-        #     f2.setGeometry(QgsGeometry.fromMultiPolylineXY([[pointY1, pointY2]]))
-        # else:
-        #     # x1->y2 y1->x
-        #     f1.setGeometry(QgsGeometry.fromMultiPolylineXY([[pointX1, pointY2]]))
-        #     f2.setGeometry(QgsGeometry.fromMultiPolylineXY([[pointY1, pointX2]]))
+        if pointX1.distance(pointX2) + pointY1.distance(pointY2) < pointX1.distance(pointY2) + pointY1.distance(pointX2):
+            # x1->x2 y1->y2
+            f1.setGeometry(QgsGeometry.fromMultiPolylineXY([[pointX1, pointX2]]))
+            f2.setGeometry(QgsGeometry.fromMultiPolylineXY([[pointY1, pointY2]]))
+        else:
+            # x1->y2 y1->x
+            f1.setGeometry(QgsGeometry.fromMultiPolylineXY([[pointX1, pointY2]]))
+            f2.setGeometry(QgsGeometry.fromMultiPolylineXY([[pointY1, pointX2]]))
 
-        # print('MICHI0', enclosingLineFeatures[0].geometry())
-        # print('MICHI1', f1.geometry())
-        # print('MICHI2', f2.geometry())
-
-        # op1 = enclosingLineFeatures[0].geometry().addPart([pointX1, pointX2])
-        # op2 = enclosingLineFeatures[0].geometry().addPart([pointY1, pointY2])
-
-        # success = selectedLinesLayer.addFeatures([f1, f2])
+        success = selectedLinesLayer.addFeatures([f1, f2])
 
         selectedLinesLayer.commitChanges()
 
