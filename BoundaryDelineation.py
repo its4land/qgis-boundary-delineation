@@ -330,17 +330,20 @@ class BoundaryDelineation:
                 self.candidatesLayer.beforeEditingStarted.disconnect(self.onCandidatesLayerBeforeEditingStarted)
                 self.candidatesLayer.rollBack()
         except:
-            self.showMessage(self.tr('Unable clean-up'))
+            self.showMessage(self.tr('Unable clean-up #%s' % 1))
 
-        utils.remove_layer(self.simplifiedSegmentsLayer)
-        utils.remove_layer(self.verticesLayer)
-        utils.remove_layer(self.candidatesLayer)
+        try:
+            utils.remove_layer(self.simplifiedSegmentsLayer)
+            utils.remove_layer(self.verticesLayer)
+            utils.remove_layer(self.candidatesLayer)
+        except:
+            self.showMessage(self.tr('Unable clean-up #%s' % 2))
 
         try:
             self.finalLayer.featureAdded.disconnect(self.onFinalLayerFeaturesChanged)
             self.finalLayer.featuresDeleted.disconnect(self.onFinalLayerFeaturesChanged)
         except:
-            self.showMessage(self.tr('Unable clean-up'))
+            self.showMessage(self.tr('Unable clean-up #%s' % 3))
 
         self.simplifiedSegmentsLayer = None
         self.verticesLayer = None
