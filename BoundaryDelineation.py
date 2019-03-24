@@ -595,6 +595,7 @@ class BoundaryDelineation:
 
             self.iface.actionAddFeature().trigger()
         else:
+            self.iface.setActiveLayer(self.simplifiedSegmentsLayer)
             self.toggleMapSelectionTool(True)
 
     @processing_cursor()
@@ -651,8 +652,9 @@ class BoundaryDelineation:
         self.simplifiedSegmentsLayer.selectByRect(rect, selectBehaviour)
 
         selectedLinesLayer = utils.selected_features_to_layer(self.simplifiedSegmentsLayer)
-        dissolvedLinesLayer = utils.dissolve_layer(selectedLinesLayer)
-        singlepartsLayer = utils.multipart_to_singleparts(selectedLinesLayer)
+        singlepartsLayer = utils.multipart_to_singleparts(dissolvedLinesLayer)
+
+        utils.add_layer(dissolvedLinesLayer)
 
         self.simplifiedSegmentsLayer.deselect(list(self.simplifiedSegmentsLayer.selectedFeatureIds()))
 
@@ -662,7 +664,9 @@ class BoundaryDelineation:
         for f in singlepartsLayer.getFeatures():
             points[f.id()] = utils.lines_unique_vertices(singlepartsLayer, [f.id()])
 
-        points = list(points.values())autoclosing
+        print(points)
+
+        points = list(points.values())
 
         if len(points) != 2 or len(points[0]) != 2 or len(points[1]) != 2:
             self.showMessage(self.tr('Autoclosing lines is currently supported for two continuous segments only'))
