@@ -26,12 +26,15 @@
 
 import os
 import typing
+from typing import Optional
 
-from PyQt5.QtCore import QSettings, QTranslator, Qt, QVariant
+from PyQt5.QtCore import QSettings, QTranslator, Qt, QVariant, QCoreApplication
 from PyQt5.QtWidgets import QAction, QToolBar, QMessageBox
 from PyQt5.QtGui import QIcon
 
-from qgis.core import *
+from qgis.core import Qgis, QgsProject, QgsCoordinateReferenceSystem, QgsLayerTree, QgsLayerTreeNode, QgsLayerTreeGroup, QgsPointXY, QgsVectorLayer, \
+    QgsRasterLayer, QgsMapLayer, QgsWkbTypes, QgsVectorFileWriter, QgsCoordinateTransform, QgsField, QgsDefaultValue, QgsRectangle, QgsFeatureIterator, \
+    QgsFeature, QgsGeometry
 from qgis.gui import QgisInterface, QgsMapTool
 from qgis.utils import *
 
@@ -44,13 +47,15 @@ from .BoundaryDelineationDock import BoundaryDelineationDock
 from .MapSelectionTool import MapSelectionTool
 from . import utils
 from .utils import SelectionModes, processing_cursor
-from .BoundaryGraph import NoSuitableGraphError, prepare_graph_from_lines, prepare_subgraphs, calculate_subgraphs_metric_closures, find_steiner_tree, DEFAULT_WEIGHT_NAME
+from .BoundaryGraph import NoSuitableGraphError, prepare_graph_from_lines, prepare_subgraphs, calculate_subgraphs_metric_closures, \
+    find_steiner_tree, DEFAULT_WEIGHT_NAME
 
 PRECALCULATE_METRIC_CLOSURES = False
 DEFAULT_SELECTION_MODE = SelectionModes.ENCLOSING
 
 SelectBehaviour = int
 MessageLevel = int
+
 
 class BoundaryDelineation:
     """Functions created by Plugin Builder"""
@@ -80,15 +85,15 @@ class BoundaryDelineation:
         self.groupName = self.tr('BoundaryDelineation')
 
         # map layers
-        self.baseRasterLayer = None
-        self.segmentsLayer = None
-        self.simplifiedSegmentsLayer = None
-        self.verticesLayer = None
-        self.candidatesLayer = None
-        self.finalLayer = None
-        self.finalLayerPolygons = None
+        self.baseRasterLayer: Optional[QgsRasterLayer] = None
+        self.segmentsLayer: Optional[QgsVectorLayer] = None
+        self.simplifiedSegmentsLayer: Optional[QgsVectorLayer] = None
+        self.verticesLayer: Optional[QgsVectorLayer] = None
+        self.candidatesLayer: Optional[QgsVectorLayer] = None
+        self.finalLayer: Optional[QgsVectorLayer] = None
+        self.finalLayerPolygons: Optional[QgsVectorLayer] = None
 
-        self.actions = []
+        self.actions: typing.List[QAction] = []
         self.canvas = self.iface.mapCanvas()
 
         self.isMapSelectionToolEnabled = False
@@ -97,11 +102,12 @@ class BoundaryDelineation:
         self.wasBaseRasterLayerInitiallyInLegend = True
         self.wasSegmentsLayerInitiallyInLegend = True
         self.previousMapTool = None
-        self.dockWidget = None
-        self.selectionMode = None
+        self.dockWidget: Optional[BoundaryDelineationDock] = None
+        self.selectionMode: Optional[SelectionModes] = None
         self.edgesWeightField = DEFAULT_WEIGHT_NAME
         self.lengthAttributeName = 'BD_LEN'
-        self.metricClosureGraphs = {}
+        self.metricClosureGraphs: typing.Dict[str, typing.Any] = {}
+        self.graph = None
 
         self.mapSelectionTool = MapSelectionTool(self.canvas)
         self.mapSelectionTool.polygonCreated.connect(self.onPolygonSelectionCreated)
@@ -132,8 +138,7 @@ class BoundaryDelineation:
 
             QCoreApplication.installTranslator(self.translator)
 
-
-    def tr(self, message: str) -> None:
+    def tr(self, message: str) -> str:
         """Get the translation for a string using Qt translation API.
 
         We implement this ourselves since we do not inherit QObject.
@@ -201,6 +206,8 @@ class BoundaryDelineation:
         self.resetProcessed()
 
     def run(self, checked: bool) -> None:
+        assert self.dockWidget
+
         if self.dockWidget.isVisible():
             self.dockWidget.hide()
         else:
@@ -228,7 +235,9 @@ class BoundaryDelineation:
 
         self.isMapSelectionToolEnabled = toggle
 
-    def onMapToolSet(self, newTool: QgsMapTool, oldTool: typing.Optional[QgsMapTool]) -> None:
+    def onMapToolSet(self, newTool: QgsMapTool, oldTool: Optional[QgsMapTool]) -> None:
+        assert self.dockWidget
+
         if newTool is self.mapSelectionTool and self.previousMapTool is None:
             self.previousMapTool = oldTool
 
@@ -242,11 +251,17 @@ class BoundaryDelineation:
         self.syntheticFeatureSelection(startPoint, endPoint, modifiers)
 
     def onCandidatesLayerFeatureChanged(self, featureIds: typing.Union[int, typing.List[int]]) -> None:
+        assert self.candidatesLayer
+        assert self.dockWidget
+
         enable = self.candidatesLayer.featureCount() > 0
 
         self.dockWidget.setCandidatesButtonsEnabled(enable)
 
     def onFinalLayerFeaturesChanged(self, featureIds: typing.Union[int, typing.List[int]]) -> None:
+        assert self.finalLayer
+        assert self.dockWidget
+
         enable = self.finalLayer.featureCount() > 0
 
         self.dockWidget.setFinalButtonEnabled(enable)
@@ -277,6 +292,8 @@ class BoundaryDelineation:
 
     @processing_cursor()
     def processFirstStep(self) -> None:
+        assert self.dockWidget
+
         self.dockWidget.step1ProgressBar.setValue(5)
 
         self.simplifySegmentsLayer()
@@ -303,6 +320,8 @@ class BoundaryDelineation:
 
     @processing_cursor()
     def processFinish(self) -> None:
+        assert self.dockWidget
+
         self.showMessage(self.tr('Boundary deliniation finished, see the currently active layer for all the results'))
         self.iface.setActiveLayer(self.finalLayer)
 
@@ -340,8 +359,9 @@ class BoundaryDelineation:
             self.showMessage(self.tr('Unable clean-up #%s' % 2))
 
         try:
-            self.finalLayer.featureAdded.disconnect(self.onFinalLayerFeaturesChanged)
-            self.finalLayer.featuresDeleted.disconnect(self.onFinalLayerFeaturesChanged)
+            if self.finalLayer:
+                self.finalLayer.featureAdded.disconnect(self.onFinalLayerFeaturesChanged)
+                self.finalLayer.featuresDeleted.disconnect(self.onFinalLayerFeaturesChanged)
         except:
             self.showMessage(self.tr('Unable clean-up #%s' % 3))
 
@@ -359,7 +379,7 @@ class BoundaryDelineation:
 
     def setBaseRasterLayer(self, baseRasterLayer: typing.Union[QgsRasterLayer, str]) -> None:
         if self.baseRasterLayer is baseRasterLayer:
-            return baseRasterLayer
+            return
 
         if isinstance(baseRasterLayer, str):
             if self.baseRasterLayer and not self.wasBaseRasterLayerInitiallyInLegend:
@@ -368,7 +388,7 @@ class BoundaryDelineation:
             self.wasBaseRasterLayerInitiallyInLegend = False
             baseRasterLayer = QgsRasterLayer(baseRasterLayer, self.baseRasterLayerName, )
 
-            utils.add_layer(baseRasterLayer, self.baseRasterLayerName, parent=parent, index=-1)
+            utils.add_layer(baseRasterLayer, self.baseRasterLayerName, index=-1)
             self.project.addMapLayer(baseRasterLayer)
         else:
             self.wasBaseRasterLayerInitiallyInLegend = True
@@ -378,15 +398,15 @@ class BoundaryDelineation:
             group = self.getGroup(baseRasterLayerTreeIdx)
 
             if baseRasterLayerTreeIdx is not None and not group.findLayer(baseRasterLayer.id()):
-                group = utils.move_tree_node(group, baseRasterLayerTreeIdx)
+                utils.move_tree_node(group, baseRasterLayerTreeIdx)
 
         self.baseRasterLayer = baseRasterLayer
 
-        return baseRasterLayer
-
     def setSegmentsLayer(self, segmentsLayer: typing.Union[QgsVectorLayer, str]) -> None:
+        assert self.dockWidget
+
         if self.segmentsLayer is segmentsLayer:
-            return segmentsLayer
+            return
 
         if isinstance(segmentsLayer, str):
             if self.segmentsLayer and not self.wasSegmentsLayerInitiallyInLegend:
@@ -407,7 +427,7 @@ class BoundaryDelineation:
         if self.isAddingLengthAttributePossible():
             self.dockWidget.toggleAddLengthAttributeCheckBoxEnabled(True)
 
-        return segmentsLayer
+        return
 
     def isAddingLengthAttributePossible(self) -> bool:
         if self.segmentsLayer and self.segmentsLayer.fields().indexFromName(self.lengthAttributeName) != -1:
@@ -418,6 +438,7 @@ class BoundaryDelineation:
     @processing_cursor()
     def simplifySegmentsLayer(self) -> None:
         assert self.segmentsLayer
+        assert self.dockWidget
 
         result = processing.run('qgis:simplifygeometries', {
             'INPUT': self.segmentsLayer,
@@ -434,9 +455,8 @@ class BoundaryDelineation:
 
         self.dockWidget.setComboboxLayer(self.simplifiedSegmentsLayer)
 
-        print('May be different on first run', self.getGroup(), self.getGroup())
-
         layerTreeIndex = utils.get_tree_node_index(self.verticesLayer) + 1 if self.verticesLayer else 0
+
         utils.add_layer(
             self.simplifiedSegmentsLayer,
             self.simplifiedSegmentsLayerName,
@@ -444,7 +464,7 @@ class BoundaryDelineation:
             file=self.__getStylePath('segments.qml'),
             parent=self.getGroup(),
             index=layerTreeIndex
-            )
+        )
 
     def addLengthAttribute(self) -> None:
         assert self.simplifiedSegmentsLayer
@@ -464,13 +484,17 @@ class BoundaryDelineation:
                     f.id(),
                     self.simplifiedSegmentsLayer.fields().indexFromName(self.lengthAttributeName),
                     f.geometry().length()
-                    )
+                )
 
             self.simplifiedSegmentsLayer.commitChanges()
 
     def setWeightField(self, name: str) -> None:
         self.edgesWeightField = name or DEFAULT_WEIGHT_NAME
-        self.metricClosureGraphs[self.edgesWeightField] = calculate_subgraphs_metric_closures(self.subgraphs, weight=self.edgesWeightField) if PRECALCULATE_METRIC_CLOSURES else None
+
+        if PRECALCULATE_METRIC_CLOSURES:
+            self.metricClosureGraphs[self.edgesWeightField] = calculate_subgraphs_metric_closures(self.subgraphs, weight=self.edgesWeightField)
+        else:
+            self.metricClosureGraphs[self.edgesWeightField] = None
 
     def isPluginLayerTreeNode(self, node: QgsLayerTree) -> bool:
         # for some reason even the normal nodes are behaving like groups...
@@ -498,6 +522,8 @@ class BoundaryDelineation:
         return False
 
     def createFinalLayer(self) -> QgsVectorLayer:
+        assert self.dockWidget
+
         filename = self.dockWidget.getOutputLayer()
         crs = self.__getCrs()
 
@@ -518,8 +544,8 @@ class BoundaryDelineation:
         crs = self.__getCrs(self.segmentsLayer).authid()
         candidatesLayer = QgsVectorLayer('MultiLineString?crs=%s' % crs, self.candidatesLayerName, 'memory')
         finalLayer = self.createFinalLayer()
-        lineLayerFields = self.simplifiedSegmentsLayer.dataProvider().fields().toList()
-        candidatesLayerFields= [QgsField(field.name(),field.type()) for field in lineLayerFields]
+        # lineLayerFields = self.simplifiedSegmentsLayer.dataProvider().fields().toList()
+        # candidatesLayerFields= [QgsField(field.name(),field.type()) for field in lineLayerFields]
         # candidatesLayer.dataProvider().addAttributes(candidatesLayerFields)
         # candidatesLayer.updateFields()
 
@@ -577,17 +603,22 @@ class BoundaryDelineation:
         return calculate_subgraphs_metric_closures(self.subgraphs, weight=self.edgesWeightField)
 
     def setSelectionMode(self, mode: SelectionModes) -> None:
+        assert self.dockWidget
+
         self.selectionMode = mode
 
         self.refreshSelectionModeBehavior()
         self.dockWidget.updateSelectionModeButtons()
 
     def refreshSelectionModeBehavior(self) -> None:
+        assert self.candidatesLayer
+
         if self.selectionMode is SelectionModes.NONE:
             return
         elif self.selectionMode == SelectionModes.MANUAL:
             self.toggleMapSelectionTool(False)
             self.iface.setActiveLayer(self.candidatesLayer)
+
             self.candidatesLayer.rollBack()
             self.candidatesLayer.startEditing()
 
@@ -602,8 +633,6 @@ class BoundaryDelineation:
     def syntheticFeatureSelection(self, startPoint: QgsPointXY, endPoint: QgsPointXY, modifiers: Qt.KeyboardModifiers) -> None:
         if startPoint is None or endPoint is None:
             raise Exception('Something went very bad, unable to create selection without start or end point')
-
-        isControlPressed = False
 
         # check the Shift and Control modifiers to reproduce the navive selection
         if modifiers & Qt.ShiftModifier:
@@ -637,21 +666,25 @@ class BoundaryDelineation:
             self.showMessage(self.tr('Unable to add candidates'))
             return
 
-    def getLinesSelectionModeEnclosing(self, selectBehaviour: SelectBehaviour, rect: QgsRectangle) -> typing.List:
+    def getLinesSelectionModeEnclosing(self, selectBehaviour: SelectBehaviour, rect: QgsRectangle) -> typing.Tuple:
         rect = self.__getCoordinateTransform(self.polygonizedLayer).transform(rect)
 
         self.polygonizedLayer.selectByRect(rect, selectBehaviour)
 
         selectedPolygonsLayer = utils.selected_features_to_layer(self.polygonizedLayer)
         dissolvedPolygonsLayer = utils.dissolve_layer(selectedPolygonsLayer)
+
         return tuple(utils.polygons_layer_to_lines_layer(dissolvedPolygonsLayer).getFeatures())
 
-    def getLinesSelectionModeLines(self, selectBehaviour: SelectBehaviour, rect: QgsRectangle) -> typing.List:
+    def getLinesSelectionModeLines(self, selectBehaviour: SelectBehaviour, rect: QgsRectangle) -> typing.Tuple:
+        assert self.simplifiedSegmentsLayer
+
         rect = self.__getCoordinateTransform(self.simplifiedSegmentsLayer).transform(rect)
 
         self.simplifiedSegmentsLayer.selectByRect(rect, selectBehaviour)
 
         selectedLinesLayer = utils.selected_features_to_layer(self.simplifiedSegmentsLayer)
+        dissolvedLinesLayer = utils.dissolve_layer(selectedLinesLayer)
         singlepartsLayer = utils.multipart_to_singleparts(dissolvedLinesLayer)
 
         utils.add_layer(dissolvedLinesLayer)
@@ -659,18 +692,18 @@ class BoundaryDelineation:
         self.simplifiedSegmentsLayer.deselect(list(self.simplifiedSegmentsLayer.selectedFeatureIds()))
 
         enclosingLineFeatures = list(dissolvedLinesLayer.getFeatures())
-        points = dict()
+        points_dict = dict()
 
         for f in singlepartsLayer.getFeatures():
-            points[f.id()] = utils.lines_unique_vertices(singlepartsLayer, [f.id()])
+            points_dict[f.id()] = utils.lines_unique_vertices(singlepartsLayer, [f.id()])
 
-        print(points)
+        # print(points_dict)
 
-        points = list(points.values())
+        points = list(points_dict.values())
 
         if len(points) != 2 or len(points[0]) != 2 or len(points[1]) != 2:
             self.showMessage(self.tr('Autoclosing lines is currently supported for two continuous segments only'))
-            return enclosingLineFeatures
+            return tuple(enclosingLineFeatures)
 
         pointX1 = points[0][0]
         pointY1 = points[0][1]
@@ -691,7 +724,7 @@ class BoundaryDelineation:
             f1.setGeometry(QgsGeometry.fromMultiPolylineXY([[pointX1, pointY2]]))
             f2.setGeometry(QgsGeometry.fromMultiPolylineXY([[pointY1, pointX2]]))
 
-        success = selectedLinesLayer.addFeatures([f1, f2])
+        selectedLinesLayer.addFeatures([f1, f2])
 
         selectedLinesLayer.commitChanges()
 
@@ -699,7 +732,12 @@ class BoundaryDelineation:
 
         return tuple(dissolvedLinesLayer2.getFeatures())
 
-    def getLinesSelectionModeNodes(self, selectBehaviour: SelectBehaviour, rect: QgsRectangle) -> typing.List:
+    def getLinesSelectionModeNodes(self, selectBehaviour: SelectBehaviour, rect: QgsRectangle) -> Optional[typing.Tuple]:
+        assert self.verticesLayer
+        assert self.simplifiedSegmentsLayer
+        assert self.candidatesLayer
+        assert self.graph
+
         rect = self.__getCoordinateTransform(self.polygonizedLayer).transform(rect)
 
         self.verticesLayer.selectByRect(rect, selectBehaviour)
@@ -707,7 +745,7 @@ class BoundaryDelineation:
         selectedPoints = [f.geometry().asPoint() for f in self.verticesLayer.selectedFeatures()]
 
         if len(selectedPoints) <= 1:
-            neighbors = []
+            neighbors: typing.List[typing.Any] = []
 
             if len(selectedPoints) == 1:
                 neighbors = list(self.graph.neighbors(selectedPoints[0]))
@@ -757,8 +795,9 @@ class BoundaryDelineation:
 
         return tuple(self.simplifiedSegmentsLayer.getFeatures(featureIds))
 
-
     def addCandidates(self, lineFeatures: QgsFeatureIterator) -> bool:
+        assert self.candidatesLayer
+
         self.candidatesLayer.rollBack()
         self.candidatesLayer.startEditing()
 
@@ -782,6 +821,8 @@ class BoundaryDelineation:
         return True
 
     def deleteAllCandidates(self) -> bool:
+        assert self.candidatesLayer
+
         self.candidatesLayer.rollBack()
         self.candidatesLayer.startEditing()
 
@@ -798,6 +839,8 @@ class BoundaryDelineation:
         return True
 
     def acceptCandidates(self) -> bool:
+        assert self.candidatesLayer
+        assert self.finalLayer
         assert self.candidatesLayer.featureCount() > 0
 
         self.finalLayer.startEditing()
@@ -805,9 +848,11 @@ class BoundaryDelineation:
         return self.finalLayer.isEditable() and \
             self.finalLayer.addFeatures(self.candidatesLayer.getFeatures()) and \
             self.finalLayer.commitChanges() and \
-            self.rejectCandidates() # empty the canidates layer :)
+            self.rejectCandidates()  # empty the canidates layer :)
 
     def rejectCandidates(self) -> bool:
+        assert self.candidatesLayer
+
         self.candidatesLayer.startEditing()
         self.candidatesLayer.selectAll()
 
@@ -816,6 +861,8 @@ class BoundaryDelineation:
             self.candidatesLayer.commitChanges()
 
     def toggleEditCandidates(self, toggled: bool = None) -> bool:
+        assert self.candidatesLayer
+
         if toggled is None:
             toggled = not self.isEditCandidatesToggled
 
@@ -849,5 +896,5 @@ class BoundaryDelineation:
             self.project
         )
 
-    def __getStylePath(self, file: str) -> None:
+    def __getStylePath(self, file: str) -> str:
         return os.path.join(self.pluginDir, 'styles', file)

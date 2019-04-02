@@ -15,14 +15,14 @@ from qgis.core import QgsProject, QgsMarkerSymbol, QgsLineSymbol, QgsSingleSymbo
 from qgis.utils import iface
 
 
-def processing_cursor(cursor = QCursor(Qt.WaitCursor)) -> typing.Callable:
+def processing_cursor(cursor=QCursor(Qt.WaitCursor)) -> typing.Callable:
     def processing_cursor_decorator(func):
         @functools.wraps(func)
         def func_wrapper(*args, **kwargs):
             show_processing_cursor(cursor=cursor)
 
             try:
-               return func(*args, **kwargs)
+                return func(*args, **kwargs)
             except Exception:
                 hide_processing_cursor()
                 raise
@@ -32,7 +32,7 @@ def processing_cursor(cursor = QCursor(Qt.WaitCursor)) -> typing.Callable:
         return func_wrapper
     return processing_cursor_decorator
 
-def show_processing_cursor(cursor = QCursor(Qt.WaitCursor)) -> None:
+def show_processing_cursor(cursor=QCursor(Qt.WaitCursor)) -> None:
     QApplication.setOverrideCursor(cursor)
     QApplication.processEvents()
 
@@ -61,7 +61,7 @@ def move_tree_node(node: typing.Union[QgsMapLayer, QgsLayerTreeNode], index: int
     parent.insertChildNode(index, layer_clone)
     parent.removeChildNode(node)
 
-def get_tree_node_index(node: typing.Union[QgsMapLayer, QgsLayerTreeNode], top: bool = False) -> None:
+def get_tree_node_index(node: typing.Union[QgsMapLayer, QgsLayerTreeNode], top: bool = False) -> int:
     root = QgsProject.instance().layerTreeRoot()
     node = root.findLayer(node.id()) if isinstance(node, QgsMapLayer) else node
     node_parent = node.parent()
@@ -81,13 +81,13 @@ def get_tree_node_index(node: typing.Union[QgsMapLayer, QgsLayerTreeNode], top: 
         if n is node:
             return i
 
-    return
+    return -1
 
 def add_group(group: QgsLayerTreeNode, name: str = None, index: int = -1, parent: QgsLayerTreeNode = None) -> None:
     parent = parent if parent else QgsProject.instance().layerTreeRoot()
     parent.insertGroup(index, group)
 
-def add_layer(layer: QgsMapLayer, name: str = None, index: int = -1, color: typing.List[float] = None, size: float = None, file: str = None, parent: QgsLayerTreeNode = None) -> None:
+def add_layer(layer: QgsMapLayer, name: str = None, index: int = -1, color: typing.Tuple[int, int, int] = None, size: float = None, file: str = None, parent: QgsLayerTreeNode = None) -> None:
     if name:
         layer.setName(name)
 
@@ -104,7 +104,7 @@ def add_layer(layer: QgsMapLayer, name: str = None, index: int = -1, color: typi
     parent = parent if parent else instance.layerTreeRoot()
     parent.insertLayer(index, layer)
 
-def update_symbology(layer: QgsMapLayer, color: typing.List[float] = None, size: float = None, file: str = None) -> None:
+def update_symbology(layer: QgsMapLayer, color: typing.Tuple[int, int, int] = None, size: float = None, file: str = None) -> None:
     assert layer, 'Layer is not defined'
 
     if file:
@@ -218,7 +218,7 @@ def polyginize_lines(vector_layer: QgsVectorLayer, name: str = None) -> QgsVecto
     return polygonizedResult['OUTPUT']
 
 def lines_unique_vertices(vector_layer: QgsVectorLayer, feature_ids: typing.List[int] = None) -> typing.List[QgsPoint]:
-    points = defaultdict(int)
+    points: typing.Dict[QgsPoint, int] = defaultdict(int)
     features = vector_layer.getFeatures(feature_ids) if feature_ids else vector_layer.getFeatures()
 
     for f in features:
@@ -248,5 +248,3 @@ class SelectionModes(Enum):
     ENCLOSING = 2
     NODES = 3
     LINES = 4
-
-
