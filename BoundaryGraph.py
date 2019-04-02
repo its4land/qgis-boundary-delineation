@@ -31,8 +31,7 @@ if LOCAL_NETWORKX_PATH not in sys.path:
 
 import networkx as nx
 from networkx.algorithms.approximation.steinertree import steiner_tree, metric_closure
-from qgis.core import QgsWkbTypes
-from collections.abc import Collection
+from qgis.core import QgsWkbTypes, QgsExpression
 from typing import Collection as CollectionT
 
 DEFAULT_WEIGHT_NAME = 'weight'
@@ -82,11 +81,12 @@ def prepare_graph_from_lines(layer, weight_expr_str: str = None) -> nx.MultiGrap
                 fid = (fid, idx)
 
             # due to buggy behaviour, weight should never be None (for now)
-            data = { DEFAULT_WEIGHT_NAME: DEFAULT_WEIGHT_VALUE }
+            data = {DEFAULT_WEIGHT_NAME: DEFAULT_WEIGHT_VALUE}
 
             if weight_expr:
-                expression.evaluate(f)
-                data[weight_expr_str] = res if res is not None else DEFAULT_WEIGHT_VALUE
+                weight_expr.evaluate(f)
+                # TODO fix this
+                # data[weight_expr_str] = res if res is not None else DEFAULT_WEIGHT_VALUE
 
             for field_name in numeric_fields_names:
                 data[field_name] = f[field_name] if f[field_name] else f[field_name] or DEFAULT_WEIGHT_VALUE
@@ -111,7 +111,6 @@ def find_steiner_tree(graphs: CollectionT, terminal_nodes: CollectionT, metric_c
 
     if not terminal_graph:
         raise NoSuitableGraphError()
-
 
     T = steiner_tree(terminal_graph, terminal_nodes, metric_closure=terminal_metric_closure)
 

@@ -43,7 +43,6 @@ FORM_CLASS, _ = uic.loadUiType(os.path.join(
 
 class BoundaryDelineationDialog(QDialog, FORM_CLASS):
 
-
     dialog = None
 
     def __init__(self, parent=None):
@@ -58,7 +57,7 @@ class BoundaryDelineationDialog(QDialog, FORM_CLASS):
         BoundaryDelineationDialog.dialog = self
 
         # Connect buttons to functions
-        ### Step I ###
+        # Step I #
         self.rasterInputButton.clicked.connect(self.selectRasterInput)
         self.vectorInputButton.clicked.connect(self.selectVectorInput)
         self.vectorOutputButton.clicked.connect(self.selectVectorOutput)
@@ -66,7 +65,7 @@ class BoundaryDelineationDialog(QDialog, FORM_CLASS):
         self.lineEdit2.editingFinished.connect(self.endEditVectorInput)
         self.lineEdit3.editingFinished.connect(self.endEditVectorOutput)
         self.createNodesButton.clicked.connect(self.createNodes)
-        ### Step II ###
+        # Step II #
         self.connectNodesButton.clicked.connect(self.connectNodes)
         self.acceptBoundaryButton.clicked.connect(self.acceptCandidate)
         self.editBoundaryButton.clicked.connect(self.editCandidate)
@@ -91,12 +90,11 @@ class BoundaryDelineationDialog(QDialog, FORM_CLASS):
         self.lineEdit2.setText(DelineationController.currentInputLineUri())
         self.lineEdit3.setText(DelineationController.currentOutputLineUri())
 
-        if not self.lineEdit2.text() or DelineationController.getNodeLayer(showError = False) is None:
+        if not self.lineEdit2.text() or DelineationController.getNodeLayer(showError=False) is None:
             self.tabWidget.setCurrentWidget(self.StepI)
         else:
             self.tabWidget.setCurrentWidget(self.StepII)
         self._checkButtons()
-
 
     def closeEvent(self, event):
         BoundaryDelineationDialog.dialog = None
@@ -112,14 +110,14 @@ class BoundaryDelineationDialog(QDialog, FORM_CLASS):
         self.vectorOutputButton.setEnabled(True)
         self.createNodesButton.setEnabled(True)
         self.connectNodesButton.setEnabled(True)
-        candidatesExist = DelineationController.getCandidatesLayer(create = False, showError = False) is not None
+        candidatesExist = DelineationController.getCandidatesLayer(create=False, showError=False) is not None
         self.acceptBoundaryButton.setEnabled(candidatesExist and bool(DelineationController.outputFileName))
         self.editBoundaryButton.setEnabled(candidatesExist)
         self.deleteBoundaryButton.setEnabled(candidatesExist)
         self.manualDelineationButtton.setEnabled(bool(DelineationController.outputFileName))
-        self.finishDelineationButton.setEnabled(DelineationController.getFinalBoundaryLayer(create = False, showError = False) is not None)
+        self.finishDelineationButton.setEnabled(DelineationController.getFinalBoundaryLayer(create=False, showError=False) is not None)
 
-    ### Step I ###
+    # Step I #
     # Open raster file provided by user in GUI
     def openRasterInput(self, fileName, lineEdit=None):
         if lineEdit is not None:
@@ -167,7 +165,7 @@ class BoundaryDelineationDialog(QDialog, FORM_CLASS):
 
     # Set vector output file according to file path provided by user in GUI
     def selectVectorOutput(self):
-        result =  QFileDialog.getSaveFileName(self, 'Save File as', '', '*.shp')
+        result = QFileDialog.getSaveFileName(self, 'Save File as', '', '*.shp')
         if result:
             self.openVectorOutput(result[0], self.lineEdit3)
 
@@ -230,7 +228,7 @@ class BoundaryDelineationDialog(QDialog, FORM_CLASS):
             # Enable feature selection
             # iface.actionSelect().trigger()
 
-            if DelineationController.getNodeLayer(showError = False) is not None:
+            if DelineationController.getNodeLayer(showError=False) is not None:
                 self.tabWidget.setCurrentWidget(self.StepII)
 
             self._checkButtons()
@@ -241,7 +239,7 @@ class BoundaryDelineationDialog(QDialog, FORM_CLASS):
 
         DelineationController.canvas.mapToolSet.connect(self.onMapToolSet)
 
-    ### Step II ###
+    # Step II #
     def connectNodes(self):
         if DelineationController.connectNodes():
             self._checkButtons()

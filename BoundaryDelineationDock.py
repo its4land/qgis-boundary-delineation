@@ -237,7 +237,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
     def onWeightComboBoxChanged(self, name: str) -> None:
         self.plugin.setWeightField(name)
 
-    def toggleFirstStepLock(self, disabled: bool) -> bool:
+    def toggleFirstStepLock(self, disabled: bool) -> None:
         self.isBeingProcessed = disabled
 
         self.tabs.setTabEnabled(1, not disabled)
@@ -313,7 +313,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
             body,
             QMessageBox.Yes,
             QMessageBox.No
-            )
+        )
 
         return reply == QMessageBox.Yes
 
@@ -338,7 +338,5 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
     def __setImage(self, label: QLabel, icon: str) -> None:
         label.setPixmap(QPixmap(os.path.join(self.plugin.pluginDir, 'icons', icon)))
 
-
     def __setIcon(self, button: QPushButton, icon: str) -> None:
         button.setIcon(QIcon(os.path.join(self.plugin.pluginDir, 'icons', icon)))
-
