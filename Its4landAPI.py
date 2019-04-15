@@ -24,7 +24,7 @@ from typing import Any, Optional, Dict
 from enum import Enum
 from urllib.parse import urljoin, quote
 
-import requests
+from requests import request, exceptions
 
 class ResponseType(Enum):
     json = 1
@@ -35,6 +35,25 @@ class ResponseType(Enum):
 
 Payload = Dict[str, Any]
 
+class Its4landException(Exception):
+    def __init__(self, msg: str = 'API ERROR', error: Exception = None, url: str = None, code: int = 999):
+        if error:
+            if isinstance(error, Its4landException):
+                error.count += 1
+            elif isinstance(error, exceptions.RequestException):
+                self.msg = msg or str(error)
+            else:
+                self.msg = msg or str(error)
+                self.code = code or error.response.code
+                self.url = url or error.response.url
+
+        else:
+            self.msg = msg
+            self.code = code
+            self.url = url
+
+        self.count = 0
+        self.error = error
 
 class Its4landAPI:
     def __init__(self, url: str, api_key: str, response_type: ResponseType = ResponseType.json):
