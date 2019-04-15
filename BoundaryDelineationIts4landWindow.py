@@ -80,6 +80,17 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
 
         self.projectsGroupBox.setEnabled(True)
 
+        try:
+            projects = self.plugin.service.get_projects()
+        except Exception as e:
+            self.plugin.showMessage('Oopsie' + str(e))
+            return
+
+        assert projects.get('features'), 'Please contact HansaLuftbild, there is "features" missing from ./projects'
+
+        self.setProjects(projects['features'])
+
+
     def onLogoutButtonClicked(self) -> None:
         self.logoutButton.setEnabled(False)
         self.loginInput.setText('')
@@ -120,16 +131,6 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
 
     def showEvent(self, event: QShowEvent):
         self.projectsListWidget.clear()
-
-        try:
-            projects = self.plugin.service.get_projects()
-        except Exception as e:
-            self.plugin.showMessage('Oopsie' + str(e))
-            return
-
-        assert projects.get('features'), 'Please contact HansaLuftbild, there is "features" missing from ./projects'
-
-        self.setProjects(projects['features'])
 
     def setProjects(self, projects: List[Dict]):
         self.projects = projects
