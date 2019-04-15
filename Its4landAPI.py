@@ -41,6 +41,7 @@ class Its4landAPI:
         self.url = url + '/'
         self.api_key = api_key
         self.response_type = response_type
+        self.session_token = ''
 
     def get(self, *argv, **kwargs):
         return self.request('GET', *argv, **kwargs)
@@ -53,14 +54,24 @@ class Its4landAPI:
                 data: Optional[Payload],
                 encode_as: str = 'form',
                 response_type: ResponseType = None,
-                files: dict = None,
+                files: Dict[str, Any] = None,
+                headers: Dict[str, str] = dict(),
+                auth_required: bool = True,
                 url: str = None):
         url = url or self.url
         response_type = response_type or self.response_type
 
+        assert not auth_required or self.session_token, 'No session token provided'
+
         try:
+            headers['X-Api-Key'] = self.api_key
+
+            if self.session_token:
+                headers['X-Session-Token'] = self.session_token
+
             send_data: Dict[str, Any] = {
                 'stream': (response_type == ResponseType.stream),
+                'headers': headers,
             }
 
             if encode_as == 'json':
@@ -99,13 +110,23 @@ class Its4landAPI:
         except Exception as e:
             raise Exception(url, 999, 'Unknown exception', e)
 
+    def login(self, login: str, password: str) -> str:
+        # self.session_token = self.post({
+        #     'login': login,
+        #     'password': password,
+        # },
+        # auth_required=False,
+        # url=urljoin(self.url, 'login'))
+        self.session_token = 'SESSION_TOKEN'
+        return self.session_token
+
     def get_projects(self):
         return self.get(None, url=urljoin(self.url, 'projects'))
 
     def get_validaiton_sets(self):
         return self.get(None, url=urljoin(self.url, 'WP5ValidationSets'))
 
-    def post_boundary(self, project_id: str, geojson: str):
+    def post_boundaries(self, project_id: str, geojson: str):
         url = urljoin(self.url, 'BoundaryFaceFeatures/%s' % quote(project_id, safe=''))
 
         return self.post({'geojson': geojson, }, url=url)

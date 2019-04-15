@@ -24,12 +24,9 @@ import os
 from typing import List, Dict
 
 from PyQt5 import uic
-from PyQt5.QtCore import pyqtSignal, QSettings, QTranslator, qVersion, Qt
-from PyQt5.QtGui import QIcon, QColor, QPixmap, QCloseEvent, QShowEvent
-from PyQt5.QtWidgets import QDialog, QAction, QFileDialog, QToolBar, QMessageBox, QPushButton, QLabel
-
-from qgis.core import QgsMapLayerProxyModel, QgsFieldProxyModel, QgsVectorLayer, QgsRasterLayer
-from qgis.utils import iface
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtGui import QShowEvent
+from PyQt5.QtWidgets import QDialog, QAction
 
 from .utils import SelectionModes
 
@@ -52,6 +49,46 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         self.tr = plugin.tr
         self.service = plugin.service
         self.projectsListWidget.currentRowChanged.connect(self.onProjectListWidgetCurrentRowChanged)
+
+        self.loginInput.textChanged.connect(self.onLoginInputChanged)
+        self.passwordInput.textChanged.connect(self.onLoginInputChanged)
+        self.loginButton.clicked.connect(self.onLoginButtonClicked)
+        self.logoutButton.clicked.connect(self.onLogoutButtonClicked)
+
+    def onLoginInputChanged(self, text: str) -> None:
+        pass
+
+    def onPasswordInputChanged(self, text: str) -> None:
+        pass
+
+    def onLoginButtonClicked(self) -> None:
+        self.loginInput.setEnabled(False)
+        self.passwordInput.setEnabled(False)
+        self.loginButton.setEnabled(False)
+        self.logoutButton.setEnabled(False)
+
+        try:
+            self.service.login(self.loginInput.text(), self.passwordInput.text())
+        except Exception as e:
+            self.loginInput.setEnabled(True)
+            self.passwordInput.setEnabled(True)
+            self.loginButton.setEnabled(True)
+            self.passwordInput.setText('')
+            raise e
+
+        self.logoutButton.setEnabled(True)
+
+        self.projectsGroupBox.setEnabled(True)
+
+    def onLogoutButtonClicked(self) -> None:
+        self.logoutButton.setEnabled(False)
+        self.loginInput.setText('')
+        self.passwordInput.setText('')
+        self.loginInput.setEnabled(True)
+        self.passwordInput.setEnabled(True)
+        self.loginButton.setEnabled(True)
+
+        self.projectsGroupBox.setEnabled(False)
 
     def onProjectListWidgetCurrentRowChanged(self, index):
         assert self.projects

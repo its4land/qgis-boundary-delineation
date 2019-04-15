@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>546</width>
-    <height>258</height>
+    <width>496</width>
+    <height>528</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,7 +15,7 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QGroupBox" name="groupBox_2">
+    <widget class="QGroupBox" name="loginGroupBox">
      <property name="acceptDrops">
       <bool>false</bool>
      </property>
@@ -23,7 +23,221 @@
       <bool>false</bool>
      </property>
      <property name="title">
-      <string>Project</string>
+      <string>Login</string>
+     </property>
+     <property name="flat">
+      <bool>true</bool>
+     </property>
+     <property name="checkable">
+      <bool>false</bool>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QLineEdit" name="loginInput">
+        <property name="placeholderText">
+         <string>Login</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QgsPasswordLineEdit" name="passwordInput">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="placeholderText">
+         <string>Password</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="loginButton">
+        <property name="text">
+         <string>Login</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="logoutButton">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Logout</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="projectsGroupBox">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="acceptDrops">
+      <bool>false</bool>
+     </property>
+     <property name="autoFillBackground">
+      <bool>false</bool>
+     </property>
+     <property name="title">
+      <string>Projects</string>
+     </property>
+     <property name="flat">
+      <bool>true</bool>
+     </property>
+     <property name="checkable">
+      <bool>false</bool>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <item>
+       <widget class="QListWidget" name="projectsListWidget_2">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>100</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="projectDetailsGroupBox_2">
+        <property name="minimumSize">
+         <size>
+          <width>300</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>300</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="title">
+         <string>Project details</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_2">
+         <item row="0" column="0">
+          <layout class="QFormLayout" name="formLayout_2">
+           <item row="1" column="0">
+            <widget class="QLabel" name="nameLabel_2">
+             <property name="text">
+              <string>Name</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="descriptionLabel_2">
+             <property name="text">
+              <string>Description</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="tagsLabel_2">
+             <property name="text">
+              <string>Tags</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0">
+            <widget class="QLabel" name="modelsLabel_2">
+             <property name="text">
+              <string>Models</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0">
+            <widget class="QLabel" name="spatialSourcesLabel_2">
+             <property name="text">
+              <string>Spatial Sources</string>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLabel" name="nameValueLabel_2">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="textFormat">
+              <enum>Qt::PlainText</enum>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QLabel" name="descriptionValueLabel_2">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="textFormat">
+              <enum>Qt::PlainText</enum>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QLabel" name="tagsValueLabel_2">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="textFormat">
+              <enum>Qt::PlainText</enum>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="1">
+            <widget class="QLabel" name="modelsValueLabel_2">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="textFormat">
+              <enum>Qt::PlainText</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="1">
+            <widget class="QLabel" name="spatialSourcesValueLabel_2">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="textFormat">
+              <enum>Qt::PlainText</enum>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="validationSetsGroupBox">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="acceptDrops">
+      <bool>false</bool>
+     </property>
+     <property name="autoFillBackground">
+      <bool>false</bool>
+     </property>
+     <property name="title">
+      <string>WP5 Validation Sets</string>
      </property>
      <property name="flat">
       <bool>true</bool>
@@ -57,7 +271,7 @@
          </size>
         </property>
         <property name="title">
-         <string>Project details</string>
+         <string>Validation set details</string>
         </property>
         <layout class="QGridLayout" name="gridLayout">
          <item row="0" column="0">
@@ -66,37 +280,6 @@
             <widget class="QLabel" name="nameLabel">
              <property name="text">
               <string>Name</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0">
-            <widget class="QLabel" name="descriptionLabel">
-             <property name="text">
-              <string>Description</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="0">
-            <widget class="QLabel" name="tagsLabel">
-             <property name="text">
-              <string>Tags</string>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="0">
-            <widget class="QLabel" name="modelsLabel">
-             <property name="text">
-              <string>Models</string>
-             </property>
-            </widget>
-           </item>
-           <item row="5" column="0">
-            <widget class="QLabel" name="spatialSourcesLabel">
-             <property name="text">
-              <string>Spatial Sources</string>
-             </property>
-             <property name="wordWrap">
-              <bool>true</bool>
              </property>
             </widget>
            </item>
@@ -113,6 +296,13 @@
              </property>
             </widget>
            </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="descriptionLabel">
+             <property name="text">
+              <string>Description</string>
+             </property>
+            </widget>
+           </item>
            <item row="2" column="1">
             <widget class="QLabel" name="descriptionValueLabel">
              <property name="text">
@@ -123,6 +313,13 @@
              </property>
              <property name="wordWrap">
               <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="tagsLabel">
+             <property name="text">
+              <string>Tags</string>
              </property>
             </widget>
            </item>
@@ -139,18 +336,15 @@
              </property>
             </widget>
            </item>
-           <item row="4" column="1">
-            <widget class="QLabel" name="modelsValueLabel">
+           <item row="4" column="0">
+            <widget class="QLabel" name="modelsLabel">
              <property name="text">
-              <string/>
-             </property>
-             <property name="textFormat">
-              <enum>Qt::PlainText</enum>
+              <string>Models</string>
              </property>
             </widget>
            </item>
-           <item row="5" column="1">
-            <widget class="QLabel" name="spatialSourcesValueLabel">
+           <item row="4" column="1">
+            <widget class="QLabel" name="modelsValueLabel">
              <property name="text">
               <string/>
              </property>
@@ -169,6 +363,9 @@
    </item>
    <item>
     <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
@@ -179,6 +376,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QgsPasswordLineEdit</class>
+   <extends>QLineEdit</extends>
+   <header>qgspasswordlineedit.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections>
   <connection>

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>410</width>
-    <height>276</height>
+    <width>443</width>
+    <height>288</height>
    </rect>
   </property>
   <property name="floating">
@@ -33,7 +33,7 @@
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <property name="documentMode">
        <bool>true</bool>
@@ -212,38 +212,6 @@
        </attribute>
        <layout class="QGridLayout" name="gridLayout_3">
         <item row="7" column="2">
-         <widget class="QPushButton" name="acceptButton">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>30</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>Accept </string>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>icons/accept.png</normaloff>icons/accept.png</iconset>
-          </property>
-         </widget>
-        </item>
-        <item row="7" column="1">
          <widget class="QPushButton" name="rejectButton">
           <property name="enabled">
            <bool>false</bool>
@@ -279,7 +247,7 @@
          </widget>
         </item>
         <item row="7" column="3">
-         <widget class="QPushButton" name="editButton">
+         <widget class="QPushButton" name="acceptButton">
           <property name="enabled">
            <bool>false</bool>
           </property>
@@ -302,18 +270,15 @@
            </size>
           </property>
           <property name="text">
-           <string>Edit</string>
+           <string>Accept </string>
           </property>
           <property name="icon">
            <iconset>
-            <normaloff>icons/edit.png</normaloff>icons/edit.png</iconset>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
+            <normaloff>icons/accept.png</normaloff>icons/accept.png</iconset>
           </property>
          </widget>
         </item>
-        <item row="4" column="1" colspan="3">
+        <item row="4" column="2" colspan="3">
          <widget class="QgsFieldComboBox" name="weightComboBox">
           <property name="enabled">
            <bool>false</bool>
@@ -323,14 +288,7 @@
           </property>
          </widget>
         </item>
-        <item row="8" column="1" colspan="2">
-         <widget class="QCheckBox" name="polygonizeCheckBox">
-          <property name="text">
-           <string>Polygonize final layer</string>
-          </property>
-         </widget>
-        </item>
-        <item row="8" column="3">
+        <item row="8" column="4">
          <widget class="QPushButton" name="finishButton">
           <property name="enabled">
            <bool>false</bool>
@@ -370,7 +328,42 @@
           </property>
          </widget>
         </item>
-        <item row="3" column="1" colspan="3">
+        <item row="7" column="4">
+         <widget class="QPushButton" name="editButton">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Edit</string>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>icons/edit.png</normaloff>icons/edit.png</iconset>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="2" colspan="3">
          <layout class="QHBoxLayout" name="horizontalLayout">
           <property name="spacing">
            <number>0</number>
@@ -403,6 +396,27 @@
             </property>
             <property name="autoExclusive">
              <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="8" column="2" colspan="2">
+         <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <item>
+           <widget class="QCheckBox" name="polygonizeCheckBox">
+            <property name="text">
+             <string>Polygonize final layer</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="uploadCheckBox">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Upload</string>
             </property>
            </widget>
           </item>
