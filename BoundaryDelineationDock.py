@@ -32,11 +32,12 @@ from PyQt5.QtGui import QIcon, QColor, QPixmap, QCloseEvent
 from PyQt5.QtWidgets import QDockWidget, QAction, QFileDialog, QToolBar, QMessageBox, QPushButton, QLabel
 
 from qgis.core import QgsMapLayerProxyModel, QgsFieldProxyModel, QgsVectorLayer, QgsRasterLayer
+from qgis.utils import iface
 
 from .utils import SelectionModes
+from .BoundaryDelineationIts4landWindow import BoundaryDelineationIts4landWindow
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'BoundaryDelineationDock.ui'))
-
 class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
     closingPlugin = pyqtSignal()
 
@@ -52,6 +53,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
 
         self.plugin = plugin
         self.tr = plugin.tr
+        self.its4landWindow = BoundaryDelineationIts4landWindow(plugin)
         self.isAlreadyProcessed = False
         self.isLoadingLayer = False
         self.isBeingProcessed = False
@@ -68,6 +70,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.segmentsLayerComboBox.layerChanged.connect(self.onSegmentsLayerComboBoxChanged)
         self.outputLayerButton.clicked.connect(self.onOutputLayerButtonClicked)
         self.outputLayerLineEdit.textChanged.connect(self.onOutputLayerLineEditChanged)
+        self.its4landButton.clicked.connect(self.onIts4landButtonClicked)
         self.addLengthAttributeCheckBox.toggled.connect(self.onAddLengthAttributeCheckBoxToggled)
         self.processButton.clicked.connect(self.onProcessButtonClicked)
 
@@ -91,11 +94,25 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.__setIcon(self.rejectButton, 'reject.png')
         self.__setIcon(self.finishButton, 'finishFlag.png')
 
+        self.action = QAction(self.__getIcon('icon.png'), 'ITS4LAND Settings', iface.mainWindow())
+        self.action.setWhatsThis('Settings')
+        self.action.setStatusTip('ITS4LAND Settings')
+        self.action.setObjectName('its4landButton')
+        self.action.triggered.connect(self.onIts4landButtonClicked)
+
+        iface.addPluginToMenu('&BoundaryDelineation', self.action)
+
+        self.its4landWindow.show()
+
         if self.baseRasterLayerComboBox.currentLayer():
             self.baseRasterLayerComboBox.layerChanged.emit(self.baseRasterLayerComboBox.currentLayer())
 
         if self.segmentsLayerComboBox.currentLayer():
             self.segmentsLayerComboBox.layerChanged.emit(self.segmentsLayerComboBox.currentLayer())
+
+    def onIts4landButtonClicked(self):
+        print(1)
+        self.its4landWindow.show()
 
     def onBaseRasterInputButtonClicked(self):
         result = QFileDialog.getOpenFileName(self, self.tr('Open Base Raster Layer File'), '', 'Raster Image (*.tif *.tiff *.geotiff *.ascii *.map)')
@@ -104,7 +121,6 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
             return
 
         layer = self.plugin.setBaseRasterLayer(result[0])
-
         self.baseRasterLayerComboBox.setLayer(layer)
 
     def onSegmentsLayerButtonClicked(self):
@@ -335,8 +351,11 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
     def setComboboxLayer(self, layer: QgsVectorLayer) -> None:
         self.weightComboBox.setLayer(layer)
 
+    def __getIcon(self, icon: str) -> QIcon:
+        return QIcon(os.path.join(self.plugin.pluginDir, 'icons', icon))
+
     def __setImage(self, label: QLabel, icon: str) -> None:
         label.setPixmap(QPixmap(os.path.join(self.plugin.pluginDir, 'icons', icon)))
 
     def __setIcon(self, button: QPushButton, icon: str) -> None:
-        button.setIcon(QIcon(os.path.join(self.plugin.pluginDir, 'icons', icon)))
+        button.setIcon(self.__getIcon(icon))
