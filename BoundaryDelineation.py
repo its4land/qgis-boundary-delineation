@@ -43,6 +43,7 @@ import processing
 # Initialize Qt resources from file resources.py
 from .resources import *
 
+from .Its4landAPI import Its4landAPI
 from .BoundaryDelineationDock import BoundaryDelineationDock
 from .MapSelectionTool import MapSelectionTool
 from . import utils
@@ -56,6 +57,8 @@ DEFAULT_SELECTION_MODE = SelectionModes.ENCLOSING
 SelectBehaviour = int
 MessageLevel = int
 
+API_URL = 'http://i4ldev1dmz.hansaluftbild.de/sub/'
+API_KEY = '1'
 
 class BoundaryDelineation:
     """Functions created by Plugin Builder"""
@@ -72,6 +75,8 @@ class BoundaryDelineation:
         self.layerTree = self.project.layerTreeRoot()
         self.pluginDir = os.path.dirname(__file__)
         self.appName = 'BoundaryDelineation'
+
+        self.service = Its4landAPI(API_URL, API_KEY)
 
         self._initLocale()
 
