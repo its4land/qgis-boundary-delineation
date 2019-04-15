@@ -22,7 +22,7 @@
 
 from typing import Any, Optional, Dict
 from enum import Enum
-from urllib.parse import urljoin
+from urllib.parse import urljoin, quote
 
 import requests
 
@@ -42,12 +42,19 @@ class Its4landAPI:
         self.api_key = api_key
         self.response_type = response_type
 
-    def get(self,
-            data: Optional[Payload],
-            encode_as: str = 'form',
-            response_type: ResponseType = None,
-            files: dict = None,
-            url: str = None):
+    def get(self, *argv, **kwargs):
+        return self.request('GET', *argv, **kwargs)
+
+    def post(self, *argv, **kwargs):
+        return self.request('POST', *argv, **kwargs)
+
+    def request(self,
+                method: str,
+                data: Optional[Payload],
+                encode_as: str = 'form',
+                response_type: ResponseType = None,
+                files: dict = None,
+                url: str = None):
         url = url or self.url
         response_type = response_type or self.response_type
 
@@ -72,12 +79,11 @@ class Its4landAPI:
                     except Exception as e:
                         raise Exception(url, 998, 'Unable to open file: %s' % v, e)
 
-            resp = requests.get(url, **send_data)
+            resp = requests.request(method, url, **send_data)
 
             if resp is not None:
                 if resp.ok and resp.content is not None:
                     print(url)
-                    print('__________')
                     if response_type == ResponseType.stream:
                         return resp
                     elif response_type == ResponseType.json:
@@ -98,6 +104,15 @@ class Its4landAPI:
 
     def get_validaiton_sets(self):
         return self.get(None, url=urljoin(self.url, 'WP5ValidationSets'))
+
+    def post_boundary(self, project_id: str, geojson: str):
+        url = urljoin(self.url, 'BoundaryFaceFeatures/%s' % quote(project_id, safe=''))
+
+        return self.post({'geojson': geojson, }, url=url)
+
+    def download_content_item(self, uid: str, filename: str):
+        url = urljoin(self.url, 'contentitem/%s' % quote(uid, safe=''))
+        return self.download_file(None, url=url, filename=filename)
 
     def download_file(self, data: Optional[Payload], filename: str, **rest) -> str:
         resp = self.get(data, response_type=ResponseType.stream, **rest)

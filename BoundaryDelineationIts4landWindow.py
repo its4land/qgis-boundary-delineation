@@ -56,8 +56,6 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
     def onProjectListWidgetCurrentRowChanged(self, index):
         assert self.projects
 
-        print(index)
-
         if index < 0:
             self.nameValueLabel.setText('')
             self.descriptionValueLabel.setText('')
@@ -89,7 +87,8 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         try:
             projects = self.plugin.service.get_projects()
         except Exception as e:
-            self.plugin.showMessage('Oopsie')
+            self.plugin.showMessage('Oopsie' + str(e))
+            return
 
         assert projects.get('features'), 'Please contact HansaLuftbild, there is "features" missing from ./projects'
 
