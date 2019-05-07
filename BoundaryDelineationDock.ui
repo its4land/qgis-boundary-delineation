@@ -246,13 +246,38 @@
           </property>
          </widget>
         </item>
-        <item row="4" column="2" colspan="3">
-         <widget class="QgsFieldComboBox" name="weightComboBox">
+        <item row="7" column="2">
+         <widget class="QPushButton" name="rejectButton">
           <property name="enabled">
            <bool>false</bool>
           </property>
-          <property name="allowEmptyFieldName">
-           <bool>true</bool>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="layoutDirection">
+           <enum>Qt::LeftToRight</enum>
+          </property>
+          <property name="text">
+           <string>Reject</string>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>icons/reject.png</normaloff>icons/reject.png</iconset>
           </property>
          </widget>
         </item>
@@ -326,38 +351,13 @@
           </item>
          </layout>
         </item>
-        <item row="7" column="2">
-         <widget class="QPushButton" name="rejectButton">
+        <item row="4" column="2" colspan="3">
+         <widget class="QgsFieldComboBox" name="weightComboBox">
           <property name="enabled">
            <bool>false</bool>
           </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>30</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="layoutDirection">
-           <enum>Qt::LeftToRight</enum>
-          </property>
-          <property name="text">
-           <string>Reject</string>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>icons/reject.png</normaloff>icons/reject.png</iconset>
+          <property name="allowEmptyFieldName">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -380,6 +380,46 @@
          </layout>
         </item>
         <item row="9" column="4">
+         <widget class="QPushButton" name="uploadButton">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <family>MS Shell Dlg 2</family>
+           </font>
+          </property>
+          <property name="layoutDirection">
+           <enum>Qt::LeftToRight</enum>
+          </property>
+          <property name="text">
+           <string>Upload its4land</string>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>icons/icon.png</normaloff>icons/icon.png</iconset>
+          </property>
+         </widget>
+        </item>
+        <item row="9" column="2" colspan="2">
          <widget class="QPushButton" name="finishButton">
           <property name="enabled">
            <bool>false</bool>
@@ -416,16 +456,6 @@
           <property name="icon">
            <iconset>
             <normaloff>icons/finishFlag.png</normaloff>icons/finishFlag.png</iconset>
-          </property>
-         </widget>
-        </item>
-        <item row="9" column="2" colspan="2">
-         <widget class="QCheckBox" name="uploadCheckBox">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="text">
-           <string>Upload to its4land project</string>
           </property>
          </widget>
         </item>

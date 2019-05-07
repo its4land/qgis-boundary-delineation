@@ -61,6 +61,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.tabs.setTabEnabled(1, False)
         self.step1ProgressBar.setValue(0)
 
+    def init(self) -> None:
         self.baseRasterLayerComboBox.setFilters(QgsMapLayerProxyModel.RasterLayer)
         self.segmentsLayerComboBox.setFilters(QgsMapLayerProxyModel.LineLayer)
 
@@ -93,6 +94,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.__setIcon(self.editButton, 'edit.png')
         self.__setIcon(self.rejectButton, 'reject.png')
         self.__setIcon(self.finishButton, 'finishFlag.png')
+        self.__setIcon(self.uploadButton, 'icon.png')
 
         self.action = QAction(self.__getIcon('icon.png'), 'ITS4LAND Settings', iface.mainWindow())
         self.action.setWhatsThis('Settings')
@@ -112,7 +114,6 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
             self.segmentsLayerComboBox.layerChanged.emit(self.segmentsLayerComboBox.currentLayer())
 
     def onIts4landButtonClicked(self):
-        print(1)
         self.its4landWindow.show()
 
     def onBaseRasterInputButtonClicked(self):
@@ -266,6 +267,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.outputLayerLineEdit.setDisabled(disabled)
         self.outputLayerButton.setDisabled(disabled)
         self.processButton.setDisabled(disabled)
+        self.its4landButton.setDisabled(disabled)
         self.addLengthAttributeCheckBox.setDisabled(disabled or not self.plugin.isAddingLengthAttributePossible())
 
     def updateSelectionModeButtons(self) -> None:

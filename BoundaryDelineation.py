@@ -176,6 +176,7 @@ class BoundaryDelineation:
 
         # Create the dockwidget (after translation) and keep reference
         self.dockWidget = BoundaryDelineationDock(self)
+        self.dockWidget.init()
 
         # show the dockwidget
         self.iface.addDockWidget(Qt.BottomDockWidgetArea, self.dockWidget)
@@ -552,12 +553,10 @@ class BoundaryDelineation:
 
             # All my other attempts also failed miserably
             # group = self.layerTree.findGroup(self.groupName)
-            # print(111, group, node, len(node.name()), node.name())
             # return group is self.getGroup()
             pass
         else:
             layer = self.project.mapLayer(node.layerId())
-            print(111, node, layer)
 
             if layer in (self.simplifiedSegmentsLayer, self.verticesLayer, self.candidatesLayer, self.finalLayer):
                 return True
