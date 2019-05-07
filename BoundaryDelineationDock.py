@@ -102,7 +102,8 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
 
         iface.addPluginToMenu('&BoundaryDelineation', self.action)
 
-        self.its4landWindow.show()
+        # TODO enable to row below for faster debugging
+        # self.its4landWindow.show()
 
         if self.baseRasterLayerComboBox.currentLayer():
             self.baseRasterLayerComboBox.layerChanged.emit(self.baseRasterLayerComboBox.currentLayer())
