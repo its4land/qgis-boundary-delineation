@@ -616,23 +616,24 @@ class BoundaryDelineation:
         self.dockWidget.updateSelectionModeButtons()
 
     def refreshSelectionModeBehavior(self) -> None:
-        assert self.candidatesLayer
-
         if self.selectionMode is SelectionModes.NONE:
             return
-        elif self.selectionMode == SelectionModes.MANUAL:
-            self.toggleMapSelectionTool(False)
-            self.iface.setActiveLayer(self.candidatesLayer)
-
-            self.candidatesLayer.rollBack()
-            self.candidatesLayer.startEditing()
-
-            assert self.candidatesLayer.isEditable()
-
-            self.iface.actionAddFeature().trigger()
         else:
-            self.iface.setActiveLayer(self.simplifiedSegmentsLayer)
-            self.toggleMapSelectionTool(True)
+            assert self.candidatesLayer
+
+            if self.selectionMode == SelectionModes.MANUAL:
+                self.toggleMapSelectionTool(False)
+                self.iface.setActiveLayer(self.candidatesLayer)
+
+                self.candidatesLayer.rollBack()
+                self.candidatesLayer.startEditing()
+
+                assert self.candidatesLayer.isEditable()
+
+                self.iface.actionAddFeature().trigger()
+            else:
+                self.iface.setActiveLayer(self.simplifiedSegmentsLayer)
+                self.toggleMapSelectionTool(True)
 
     @processing_cursor()
     def syntheticFeatureSelection(self, startPoint: QgsPointXY, endPoint: QgsPointXY, modifiers: Qt.KeyboardModifiers) -> None:
@@ -688,21 +689,23 @@ class BoundaryDelineation:
 
         self.simplifiedSegmentsLayer.selectByRect(rect, selectBehaviour)
 
+        if self.simplifiedSegmentsLayer.selectedFeatureCount() == 0:
+            return ()
+
         selectedLinesLayer = utils.selected_features_to_layer(self.simplifiedSegmentsLayer)
         dissolvedLinesLayer = utils.dissolve_layer(selectedLinesLayer)
-        singlepartsLayer = utils.multipart_to_singleparts(dissolvedLinesLayer)
+        mergedLinesLayer = utils.merge_lines_layer(dissolvedLinesLayer)
+        singlepartsLayer = utils.multipart_to_singleparts(mergedLinesLayer)
 
-        utils.add_layer(dissolvedLinesLayer)
-
-        self.simplifiedSegmentsLayer.deselect(list(self.simplifiedSegmentsLayer.selectedFeatureIds()))
+        # INFO: this is disabled, it causes the selecteBehaviour to be ignored.
+        # Could be written in much more clever way, but does not worth it
+        # self.simplifiedSegmentsLayer.deselect(list(self.simplifiedSegmentsLayer.selectedFeatureIds()))
 
         enclosingLineFeatures = list(dissolvedLinesLayer.getFeatures())
         points_dict = dict()
 
         for f in singlepartsLayer.getFeatures():
             points_dict[f.id()] = utils.lines_unique_vertices(singlepartsLayer, [f.id()])
-
-        # print(points_dict)
 
         points = list(points_dict.values())
 
@@ -844,26 +847,36 @@ class BoundaryDelineation:
         return True
 
     def acceptCandidates(self) -> bool:
+        assert self.simplifiedSegmentsLayer
         assert self.candidatesLayer
         assert self.finalLayer
         assert self.candidatesLayer.featureCount() > 0
 
         self.finalLayer.startEditing()
 
-        return self.finalLayer.isEditable() and \
-            self.finalLayer.addFeatures(self.candidatesLayer.getFeatures()) and \
-            self.finalLayer.commitChanges() and \
-            self.rejectCandidates()  # empty the canidates layer :)
+        if self.finalLayer.isEditable() and \
+                self.finalLayer.addFeatures(self.candidatesLayer.getFeatures()) and \
+                self.finalLayer.commitChanges() and \
+                self.rejectCandidates():  # empty the canidates layer :)
+            self.simplifiedSegmentsLayer.removeSelection()
+            return True
+        else:
+            return False
 
     def rejectCandidates(self) -> bool:
         assert self.candidatesLayer
+        assert self.simplifiedSegmentsLayer
 
         self.candidatesLayer.startEditing()
         self.candidatesLayer.selectAll()
 
-        return self.candidatesLayer.isEditable() and \
-            self.candidatesLayer.deleteSelectedFeatures() and \
-            self.candidatesLayer.commitChanges()
+        if self.candidatesLayer.isEditable() and \
+                self.candidatesLayer.deleteSelectedFeatures() and \
+                self.candidatesLayer.commitChanges():
+            self.simplifiedSegmentsLayer.removeSelection()
+            return True
+        else:
+            return False
 
     def toggleEditCandidates(self, toggled: bool = None) -> bool:
         assert self.candidatesLayer

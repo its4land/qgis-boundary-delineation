@@ -173,6 +173,18 @@ def dissolve_layer(vector_layer: QgsVectorLayer, name: str = None) -> QgsVectorL
 
     return result['OUTPUT']
 
+def merge_lines_layer(vector_layer: QgsVectorLayer, name: str = None) -> QgsVectorLayer:
+    if name is None:
+        name = 'MergedLines'
+
+    result = processing.run('native:mergelines', {
+        'INPUT': vector_layer,
+        'FIELD': [],
+        'OUTPUT': 'memory:%s' % name,
+    })
+
+    return result['OUTPUT']
+
 def polygons_layer_to_lines_layer(vector_layer: QgsVectorLayer, name: str = None) -> QgsVectorLayer:
     if name is None:
         name = 'polygonstolines'
