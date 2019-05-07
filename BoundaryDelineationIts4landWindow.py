@@ -21,19 +21,22 @@
 """
 
 import os
-from typing import List, Dict
+from typing import List, Dict, Optional
+
+from .Its4landAPI import Its4landException
 
 from PyQt5 import uic
-from PyQt5.QtCore import pyqtSignal
+# from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QShowEvent
 from PyQt5.QtWidgets import QDialog, QAction
-
-from .utils import SelectionModes
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'BoundaryDelineationIts4landWindow.ui'))
 
 class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
-    closingPlugin = pyqtSignal()
+    # login = pyqtSignal()
+    # logout = pyqtSignal()
+    # projectSelected = pyqtSignal()
+    # validationSetSelected = pyqtSignal()
 
     def __init__(self, plugin, parent=None):
         """Constructor."""
@@ -48,12 +51,17 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         self.plugin = plugin
         self.tr = plugin.tr
         self.service = plugin.service
-        self.projectsListWidget.currentRowChanged.connect(self.onProjectListWidgetCurrentRowChanged)
+
+        self.projects = None
+        self.validationSets = None
+        self.contentItem = None
 
         self.loginInput.textChanged.connect(self.onLoginInputChanged)
         self.passwordInput.textChanged.connect(self.onLoginInputChanged)
         self.loginButton.clicked.connect(self.onLoginButtonClicked)
         self.logoutButton.clicked.connect(self.onLogoutButtonClicked)
+        self.projectsListWidget.currentRowChanged.connect(self.onProjectListWidgetCurrentRowChanged)
+        self.validationSetsListWidget.currentRowChanged.connect(self.onValidationSetsListWidgetCurrentRowChanged)
 
     def onLoginInputChanged(self, text: str) -> None:
         pass
@@ -70,6 +78,9 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         try:
             self.service.login(self.loginInput.text(), self.passwordInput.text())
         except Exception as e:
+            msg = e.msg if 'msg' in e else self.tr('Unable to login')
+
+            self.plugin.showMessage(msg, type=Qgis.Error)
             self.loginInput.setEnabled(True)
             self.passwordInput.setEnabled(True)
             self.loginButton.setEnabled(True)
@@ -78,18 +89,18 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
 
         self.logoutButton.setEnabled(True)
 
-        self.projectsGroupBox.setEnabled(True)
-
         try:
             projects = self.plugin.service.get_projects()
         except Exception as e:
             self.plugin.showMessage('Oopsie' + str(e))
             return
 
+        self.projectsGroupBox.setEnabled(True)
+
         assert projects.get('features'), 'Please contact HansaLuftbild, there is "features" missing from ./projects'
 
-        self.setProjects(projects['features'])
-
+        self.projects = projects['features']
+        self.setProjects(self.projects)
 
     def onLogoutButtonClicked(self) -> None:
         self.logoutButton.setEnabled(False)
@@ -99,27 +110,65 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         self.passwordInput.setEnabled(True)
         self.loginButton.setEnabled(True)
 
-        self.projectsGroupBox.setEnabled(False)
+        self.projectsListWidget.clear()
+        self.validationSetsListWidget.clear()
 
-    def onProjectListWidgetCurrentRowChanged(self, index):
+        self.projectsGroupBox.setEnabled(False)
+        self.validationSetsGroupBox.setEnabled(False)
+
+    def onProjectListWidgetCurrentRowChanged(self, index: int) -> None:
         assert self.projects
 
-        if index < 0:
-            self.nameValueLabel.setText('')
-            self.descriptionValueLabel.setText('')
-            self.modelsValueLabel.setText('')
-            self.spatialSourcesValueLabel.setText('')
-            self.tagsValueLabel.setText((''))
+        try:
+            if index >= 0:
+                project = self.projects[index]
+            else:
+                project = None
+        except ValueError:
+            project = None
+        except Exception as e:
+            raise e
 
-            return
+        self._updateProjectDetails(project)
 
-        project = self.projects[index]
+        try:
+            self.validationSets = self.service.get_validation_sets(project['properties']['UID'])
+            self.setValidationSets(project, self.validationSets)
 
-        self.nameValueLabel.setText(project['properties']['Name'])
-        self.descriptionValueLabel.setText(project['properties']['Description'])
-        self.modelsValueLabel.setText(str(len(project['properties']['Models'])))
-        self.spatialSourcesValueLabel.setText(str(len(project['properties']['SpatialSources'])))
-        self.tagsValueLabel.setText(','.join(project['properties']['Tags']))
+            if project:
+                self.validationSetsGroupBox.setEnabled(True)
+        except Its4landException as e:
+            raise e
+            if e.code == 404:
+                msg = self.tr('No validation sets found for this project')
+            else:
+                msg = str(e)
+
+            self.plugin.showMessage(msg)
+        except Exception as e:
+            self.plugin.showMessage(str(e))
+
+    def onValidationSetsListWidgetCurrentRowChanged(self, index: int) -> None:
+        assert self.validationSets
+
+        try:
+            if index >= 0:
+                self.validationSet = self.validationSets[index]
+            else:
+                self.validationSet = None
+        except ValueError:
+            self.validationSet = None
+        except Exception as e:
+            raise e
+
+        if self.validationSet:
+            try:
+                self.contentItem = self.service.get_content_item(self.validationSet['ContentItem'])
+                self.contentItem = self.contentItem[0] if len(self.contentItem) else None
+            except Exception as e:
+                raise e
+
+        self._updateValidationSetDetails(self.validationSet, self.contentItem)
 
     def accept(self):
         self.close()
@@ -129,12 +178,52 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         self.close()
         self.hide()
 
+    def _updateProjectDetails(self, project: Optional[Dict[str, str]]):
+        if not project:
+            self.projectsNameValueLabel.setText('')
+            self.projectsDescriptionValueLabel.setText('')
+            self.projectsModelsValueLabel.setText('')
+            self.projectsSpatialSourcesValueLabel.setText('')
+            self.projectsTagsValueLabel.setText('')
+            return
+
+        self.projectsNameValueLabel.setText(project['properties']['Name'])
+        self.projectsDescriptionValueLabel.setText(project['properties']['Description'])
+        self.projectsModelsValueLabel.setText(str(len(project['properties']['Models'])))
+        self.projectsSpatialSourcesValueLabel.setText(str(len(project['properties']['SpatialSources'])))
+        self.projectsTagsValueLabel.setText(','.join(project['properties']['Tags']))
+
+    def _updateValidationSetDetails(self, validationSet: Optional[Dict[str, str]], contentItem: Optional[Dict[str, str]]) -> None:
+        if validationSet:
+            self.validationSetsNameValueLabel.setText(validationSet['Name'])
+            self.validationSetsDescriptionValueLabel.setText(validationSet['Description'])
+            self.validationSetsModelsValueLabel.setText(str(len(validationSet['Models'])))
+            self.validationSetsTagsValueLabel.setText(','.join(validationSet['Tags']))
+
+            if contentItem:
+                self.validationSetsSizeValueLabel.setText(str(contentItem['ContentSize']))
+        else:
+            self.validationSetsNameValueLabel.setText('')
+            self.validationSetsDescriptionValueLabel.setText('')
+            self.validationSetsModelsValueLabel.setText('')
+            self.validationSetsTagsValueLabel.setText('')
+            self.validationSetsSizeValueLabel.setText('')
+
     def showEvent(self, event: QShowEvent):
-        self.projectsListWidget.clear()
+        pass
+
+    def setValidationSets(self, project, validationSets):
+        list_items = []
+
+        for validationSet in validationSets:
+            assert validationSet.get('Name'), 'Please contact HansaLuftbild, there is "Name" missing from a single validationSet'
+
+            list_items.append(validationSet['Name'])
+
+        self.validationSetsListWidget.clear()
+        self.validationSetsListWidget.addItems(list_items)
 
     def setProjects(self, projects: List[Dict]):
-        self.projects = projects
-
         list_items = []
 
         for project in projects:
@@ -143,5 +232,6 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
 
             list_items.append(project['properties']['Name'])
 
+        self.projectsListWidget.clear()
         self.projectsListWidget.addItems(list_items)
 

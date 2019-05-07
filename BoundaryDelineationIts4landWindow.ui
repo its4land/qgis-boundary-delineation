@@ -91,7 +91,7 @@
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout_3">
       <item>
-       <widget class="QListWidget" name="projectsListWidget_2">
+       <widget class="QListWidget" name="projectsListWidget">
         <property name="minimumSize">
          <size>
           <width>0</width>
@@ -101,7 +101,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QGroupBox" name="projectDetailsGroupBox_2">
+       <widget class="QGroupBox" name="projectsDetailsGroupBox">
         <property name="minimumSize">
          <size>
           <width>300</width>
@@ -119,37 +119,37 @@
         </property>
         <layout class="QGridLayout" name="gridLayout_2">
          <item row="0" column="0">
-          <layout class="QFormLayout" name="formLayout_2">
+          <layout class="QFormLayout" name="projectsFormLayout">
            <item row="1" column="0">
-            <widget class="QLabel" name="nameLabel_2">
+            <widget class="QLabel" name="projectsNameLabel">
              <property name="text">
               <string>Name</string>
              </property>
             </widget>
            </item>
            <item row="2" column="0">
-            <widget class="QLabel" name="descriptionLabel_2">
+            <widget class="QLabel" name="projectsDescriptionLabel">
              <property name="text">
               <string>Description</string>
              </property>
             </widget>
            </item>
            <item row="3" column="0">
-            <widget class="QLabel" name="tagsLabel_2">
+            <widget class="QLabel" name="projectsTagsLabel">
              <property name="text">
               <string>Tags</string>
              </property>
             </widget>
            </item>
            <item row="4" column="0">
-            <widget class="QLabel" name="modelsLabel_2">
+            <widget class="QLabel" name="projectsModelsLabel">
              <property name="text">
               <string>Models</string>
              </property>
             </widget>
            </item>
            <item row="5" column="0">
-            <widget class="QLabel" name="spatialSourcesLabel_2">
+            <widget class="QLabel" name="projectsSpatialSourcesLabel">
              <property name="text">
               <string>Spatial Sources</string>
              </property>
@@ -159,7 +159,7 @@
             </widget>
            </item>
            <item row="1" column="1">
-            <widget class="QLabel" name="nameValueLabel_2">
+            <widget class="QLabel" name="projectsNameValueLabel">
              <property name="text">
               <string/>
              </property>
@@ -172,7 +172,7 @@
             </widget>
            </item>
            <item row="2" column="1">
-            <widget class="QLabel" name="descriptionValueLabel_2">
+            <widget class="QLabel" name="projectsDescriptionValueLabel">
              <property name="text">
               <string/>
              </property>
@@ -185,7 +185,7 @@
             </widget>
            </item>
            <item row="3" column="1">
-            <widget class="QLabel" name="tagsValueLabel_2">
+            <widget class="QLabel" name="projectsTagsValueLabel">
              <property name="text">
               <string/>
              </property>
@@ -198,7 +198,7 @@
             </widget>
            </item>
            <item row="4" column="1">
-            <widget class="QLabel" name="modelsValueLabel_2">
+            <widget class="QLabel" name="projectsModelsValueLabel">
              <property name="text">
               <string/>
              </property>
@@ -208,7 +208,7 @@
             </widget>
            </item>
            <item row="5" column="1">
-            <widget class="QLabel" name="spatialSourcesValueLabel_2">
+            <widget class="QLabel" name="projectsSpatialSourcesValueLabel">
              <property name="text">
               <string/>
              </property>
@@ -247,7 +247,7 @@
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
-       <widget class="QListWidget" name="projectsListWidget">
+       <widget class="QListWidget" name="validationSetsListWidget">
         <property name="minimumSize">
          <size>
           <width>0</width>
@@ -257,7 +257,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QGroupBox" name="projectDetailsGroupBox">
+       <widget class="QGroupBox" name="validationSetstDetailsGroupBox">
         <property name="minimumSize">
          <size>
           <width>300</width>
@@ -275,16 +275,16 @@
         </property>
         <layout class="QGridLayout" name="gridLayout">
          <item row="0" column="0">
-          <layout class="QFormLayout" name="formLayout">
+          <layout class="QFormLayout" name="validationSetsformLayout">
            <item row="1" column="0">
-            <widget class="QLabel" name="nameLabel">
+            <widget class="QLabel" name="validationSetsNameLabel">
              <property name="text">
               <string>Name</string>
              </property>
             </widget>
            </item>
            <item row="1" column="1">
-            <widget class="QLabel" name="nameValueLabel">
+            <widget class="QLabel" name="validationSetsNameValueLabel">
              <property name="text">
               <string/>
              </property>
@@ -297,14 +297,14 @@
             </widget>
            </item>
            <item row="2" column="0">
-            <widget class="QLabel" name="descriptionLabel">
+            <widget class="QLabel" name="validationSetsDescriptionLabel">
              <property name="text">
               <string>Description</string>
              </property>
             </widget>
            </item>
            <item row="2" column="1">
-            <widget class="QLabel" name="descriptionValueLabel">
+            <widget class="QLabel" name="validationSetsDescriptionValueLabel">
              <property name="text">
               <string/>
              </property>
@@ -317,14 +317,14 @@
             </widget>
            </item>
            <item row="3" column="0">
-            <widget class="QLabel" name="tagsLabel">
+            <widget class="QLabel" name="validationSetsTagsLabel">
              <property name="text">
               <string>Tags</string>
              </property>
             </widget>
            </item>
            <item row="3" column="1">
-            <widget class="QLabel" name="tagsValueLabel">
+            <widget class="QLabel" name="validationSetsTagsValueLabel">
              <property name="text">
               <string/>
              </property>
@@ -337,14 +337,31 @@
             </widget>
            </item>
            <item row="4" column="0">
-            <widget class="QLabel" name="modelsLabel">
+            <widget class="QLabel" name="validationSetsModelsLabel">
              <property name="text">
               <string>Models</string>
              </property>
             </widget>
            </item>
+           <item row="5" column="0">
+            <widget class="QLabel" name="validationSetsSizeLabel">
+             <property name="text">
+              <string>Size (B)</string>
+             </property>
+            </widget>
+           </item>
            <item row="4" column="1">
-            <widget class="QLabel" name="modelsValueLabel">
+            <widget class="QLabel" name="validationSetsModelsValueLabel">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="textFormat">
+              <enum>Qt::PlainText</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="1">
+            <widget class="QLabel" name="validationSetsSizeValueLabel">
              <property name="text">
               <string/>
              </property>

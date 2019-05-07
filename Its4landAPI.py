@@ -36,24 +36,42 @@ class ResponseType(Enum):
 Payload = Dict[str, Any]
 
 class Its4landException(Exception):
-    def __init__(self, msg: str = 'API ERROR', error: Exception = None, url: str = None, code: int = 999):
+    def __init__(
+        self,
+        msg: str = None,
+        error: exceptions.RequestException = None,
+        url: str = None,
+        code: int = None
+    ):
+        self.msg = msg
+        self.code = code
+        self.url = url
+        self.error = error
+        self.count = 0
+
         if error:
             if isinstance(error, Its4landException):
-                error.count += 1
+                self.msg = msg or error.msg
+                self.code = code or error.code
+                self.url = url or error.url
+                self.count = error.count + 1
             elif isinstance(error, exceptions.RequestException):
                 self.msg = msg or str(error)
             else:
                 self.msg = msg or str(error)
-                self.code = code or error.response.code
-                self.url = url or error.response.url
 
+                if 'response' in error:
+                    self.code = error.response.code
+                    self.url = error.response.url
+                else:
+                    self.code = code
+                    self.url = url
         else:
             self.msg = msg
             self.code = code
             self.url = url
 
-        self.count = 0
-        self.error = error
+        super().__init__(self.msg)
 
 class Its4landAPI:
     def __init__(self, url: str, api_key: str, response_type: ResponseType = ResponseType.json):
@@ -93,12 +111,15 @@ class Its4landAPI:
                 'headers': headers,
             }
 
-            if encode_as == 'json':
-                send_data['json'] = data
-            elif encode_as == 'form':
-                send_data['data'] = data
+            if method == 'GET':
+                send_data['params'] = data
             else:
-                raise Exception(url, 998, 'Unknown encode type: %s' % encode_as)
+                if encode_as == 'json':
+                    send_data['json'] = data
+                elif encode_as == 'form':
+                    send_data['data'] = data
+                else:
+                    raise Exception(url, 998, 'Unknown encode type: %s' % encode_as)
 
             if files is not None and len(files):
                 send_data['files'] = {}
@@ -109,25 +130,26 @@ class Its4landAPI:
                     except Exception as e:
                         raise Exception(url, 998, 'Unable to open file: %s' % v, e)
 
-            resp = requests.request(method, url, **send_data)
+            resp = request(method, url, **send_data)
 
             if resp is not None:
                 if resp.ok and resp.content is not None:
-                    print(url)
                     if response_type == ResponseType.stream:
                         return resp
                     elif response_type == ResponseType.json:
                         return resp.json()
                     elif response_type == ResponseType.html:
                         return resp.content
-                    else:
-                        raise Exception(resp.url, resp.status_code, resp.reason)
-                raise Exception(resp.url, resp.status_code, resp.reason)
 
+                    assert False, 'Unrecognized response type'
+                else:
+                    raise Its4landException(url=resp.url, code=resp.status_code, msg=resp.reason)
             else:
-                raise Exception(resp.url, 999, 'Unknown exception')
+                raise Its4landException(url=url, msg='There is no response, something bad happened')
+        except exceptions.RequestException as e:
+            raise Its4landException(error=e)
         except Exception as e:
-            raise Exception(url, 999, 'Unknown exception', e)
+            raise Its4landException(url=url, error=e)
 
     def login(self, login: str, password: str) -> str:
         # self.session_token = self.post({
@@ -142,16 +164,24 @@ class Its4landAPI:
     def get_projects(self):
         return self.get(None, url=urljoin(self.url, 'projects'))
 
-    def get_validaiton_sets(self):
-        return self.get(None, url=urljoin(self.url, 'WP5ValidationSets'))
+    def get_validation_sets(self, project_id: str):
+        return self.get({
+            'Projects': project_id
+        }, url=urljoin(self.url, 'WP5ValidationSets'))
 
     def post_boundaries(self, project_id: str, geojson: str):
         url = urljoin(self.url, 'BoundaryFaceFeatures/%s' % quote(project_id, safe=''))
 
         return self.post({'geojson': geojson, }, url=url)
 
+    def get_content_item(self, uid: str):
+        return self.get({
+            'uid': uid
+        }, url=urljoin(self.url, 'contentitems'))
+
     def download_content_item(self, uid: str, filename: str):
-        url = urljoin(self.url, 'contentitem/%s' % quote(uid, safe=''))
+        url = urljoin(self.url, 'contentitems/%s' % quote(uid, safe=''))
+
         return self.download_file(None, url=url, filename=filename)
 
     def download_file(self, data: Optional[Payload], filename: str, **rest) -> str:
