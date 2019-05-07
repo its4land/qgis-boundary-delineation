@@ -320,8 +320,22 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
     def getOutputLayer(self) -> str:
         return self.outputLayerLineEdit.text()
 
-    def getPolygonizeChecked(self) -> str:
+    def getPolygonizeChecked(self) -> bool:
         return self.polygonizeCheckBox.isChecked()
+
+    def getUpdateManualEditsChecked(self) -> bool:
+        return self.updateManualEditsCheckBox.isChecked()
+
+    def getUploadIts4landChecked(self) -> bool:
+        return self.uploadCheckBox.isChecked()
+
+    def toggleUploadIts4land(self, enabled: bool = None) -> bool:
+        if enabled is None:
+            enabled = not self.uploadCheckBox.enabled()
+
+        self.uploadCheckBox.setEnabled(enabled)
+
+        return enabled
 
     def getConfirmation(self, title: str, body: str) -> bool:
         reply = QMessageBox.question(
@@ -343,11 +357,13 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.rejectButton.setEnabled(enable)
         self.editButton.setEnabled(enable)
 
-    def setFinalButtonEnabled(self, enabled: bool = None) -> None:
+    def toggleFinalButtonEnabled(self, enabled: bool = None) -> bool:
         if enabled is None:
             enabled = not self.finishButton.enabled()
 
         self.finishButton.setEnabled(enabled)
+
+        return enabled
 
     def setComboboxLayer(self, layer: QgsVectorLayer) -> None:
         self.weightComboBox.setLayer(layer)

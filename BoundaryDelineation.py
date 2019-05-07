@@ -51,6 +51,7 @@ from .utils import SelectionModes, processing_cursor
 from .BoundaryGraph import NoSuitableGraphError, prepare_graph_from_lines, prepare_subgraphs, calculate_subgraphs_metric_closures, \
     find_steiner_tree, DEFAULT_WEIGHT_NAME
 
+BOUNDARY_ATTR_NAME = 'boundary'
 PRECALCULATE_METRIC_CLOSURES = False
 DEFAULT_SELECTION_MODE = SelectionModes.ENCLOSING
 
@@ -263,13 +264,57 @@ class BoundaryDelineation:
 
         self.dockWidget.setCandidatesButtonsEnabled(enable)
 
-    def onFinalLayerFeaturesChanged(self, featureIds: typing.Union[int, typing.List[int]]) -> None:
+    def onFinalLayerFeaturesAdded(self, featureIds: typing.Union[int, typing.List[int]]) -> None:
         assert self.finalLayer
         assert self.dockWidget
 
         enable = self.finalLayer.featureCount() > 0
 
-        self.dockWidget.setFinalButtonEnabled(enable)
+        self.dockWidget.toggleFinalButtonEnabled(enable)
+
+        if self.dockWidget.getUpdateManualEditsChecked():
+            self.updateLayersTopology()
+
+    def onFinalLayerFeaturesDeleted(self, featureIds: typing.Union[int, typing.List[int]]) -> None:
+        assert self.finalLayer
+        assert self.dockWidget
+
+        enable = self.finalLayer.featureCount() > 0
+
+        self.dockWidget.toggleFinalButtonEnabled(enable)
+
+    @processing_cursor()
+    def updateLayersTopology(self) -> None:
+        assert self.finalLayer
+        assert self.simplifiedSegmentsLayer
+
+        splittedLayer = utils.split_with_lines(self.finalLayer, self.simplifiedSegmentsLayer)
+        diffLayer = utils.difference(splittedLayer, self.simplifiedSegmentsLayer)
+        mergedLinesLayer = utils.merge_lines_layer(diffLayer)
+
+        # if there are no features, that are manually drawn outside the already existing segments, break
+        if mergedLinesLayer.featureCount() == 0:
+            return
+
+        self.simplifiedSegmentsLayer.startEditing()
+
+        assert self.simplifiedSegmentsLayer.isEditable(), 'Unable to begin editing'
+
+        for f in mergedLinesLayer.getFeatures():
+            newFeature = QgsFeature(self.simplifiedSegmentsLayer.fields())
+            newFeature.setGeometry(f.geometry())
+
+            # make the line visible, otherwise there is no value for such values in the QML style
+            newFeature.setAttribute(BOUNDARY_ATTR_NAME, 1)
+
+            assert self.simplifiedSegmentsLayer.addFeature(newFeature), 'Unable to add new feature'
+
+        assert self.simplifiedSegmentsLayer.commitChanges(), 'Unable to commit newly added features'
+
+        # update the supporting layers
+        self.extractSegmentsVertices()
+        self.polygonizeSegmentsLayer()
+        self.buildVerticesGraph()
 
     def onLayerTreeWillRemoveChildren(self, node: QgsLayerTreeNode, startIndex: int, endIndex: int) -> None:
         # TODO try to fix this...
@@ -365,8 +410,8 @@ class BoundaryDelineation:
 
         try:
             if self.finalLayer:
-                self.finalLayer.featureAdded.disconnect(self.onFinalLayerFeaturesChanged)
-                self.finalLayer.featuresDeleted.disconnect(self.onFinalLayerFeaturesChanged)
+                self.finalLayer.featureAdded.disconnect(self.onFinalLayerFeaturesAdded)
+                self.finalLayer.featuresDeleted.disconnect(self.onFinalLayerFeaturesDeleted)
         except:
             self.showMessage(self.tr('Unable clean-up #%s' % 3))
 
@@ -431,8 +476,6 @@ class BoundaryDelineation:
 
         if self.isAddingLengthAttributePossible():
             self.dockWidget.toggleAddLengthAttributeCheckBoxEnabled(True)
-
-        return
 
     def isAddingLengthAttributePossible(self) -> bool:
         if self.segmentsLayer and self.segmentsLayer.fields().indexFromName(self.lengthAttributeName) != -1:
@@ -562,8 +605,8 @@ class BoundaryDelineation:
         candidatesLayer.featureAdded.connect(self.onCandidatesLayerFeatureChanged)
         candidatesLayer.featuresDeleted.connect(self.onCandidatesLayerFeatureChanged)
         candidatesLayer.beforeEditingStarted.connect(self.onCandidatesLayerBeforeEditingStarted)
-        finalLayer.featureAdded.connect(self.onFinalLayerFeaturesChanged)
-        finalLayer.featuresDeleted.connect(self.onFinalLayerFeaturesChanged)
+        finalLayer.featureAdded.connect(self.onFinalLayerFeaturesAdded)
+        finalLayer.featuresDeleted.connect(self.onFinalLayerFeaturesDeleted)
 
         self.candidatesLayer = candidatesLayer
         self.finalLayer = finalLayer

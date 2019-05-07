@@ -218,6 +218,24 @@ def multipart_to_singleparts(vector_layer: QgsVectorLayer, name: str = None) -> 
 
     return result['OUTPUT']
 
+def split_with_lines(vector_layer: QgsVectorLayer, lines_layer: QgsVectorLayer, name: str = 'Splitted') -> QgsVectorLayer:
+    splitted = processing.run('native:splitwithlines', {
+        'INPUT': vector_layer,
+        'LINES': lines_layer,
+        'OUTPUT': 'memory:%s' % name,
+    })
+
+    return splitted['OUTPUT']
+
+def difference(vector_layer: QgsVectorLayer, lines_layer: QgsVectorLayer, name: str = 'Difference') -> QgsVectorLayer:
+    splitted = processing.run('native:difference', {
+        'INPUT': vector_layer,
+        'OVERLAY': lines_layer,
+        'OUTPUT': 'memory:%s' % name,
+    })
+
+    return splitted['OUTPUT']
+
 def polyginize_lines(vector_layer: QgsVectorLayer, name: str = None) -> QgsVectorLayer:
     if name is None:
         name = 'PolygonizedLines'
