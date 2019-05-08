@@ -207,6 +207,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.plugin.acceptCandidates()
         # TODO see the self.onRejectButtonClicked
         self.plugin.refreshSelectionModeBehavior()
+        self.editButton.setChecked(False)
 
     def onRejectButtonClicked(self) -> None:
         self.plugin.rejectCandidates()
@@ -214,6 +215,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         # If we are in manual mode and then rejected, it swtitches to manual too and
         # the selection mode is undefined...
         self.plugin.refreshSelectionModeBehavior()
+        self.editButton.setChecked(False)
 
     def onEditButtonToggled(self) -> None:
         self.plugin.toggleEditCandidates()

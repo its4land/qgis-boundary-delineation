@@ -108,8 +108,9 @@ class BoundaryDelineation:
         self.wasBaseRasterLayerInitiallyInLegend = True
         self.wasSegmentsLayerInitiallyInLegend = True
         self.previousMapTool = None
+        self.selectionMode = SelectionModes.NONE
+        self.previousSelectionMode = SelectionModes.NONE
         self.dockWidget: Optional[BoundaryDelineationDock] = None
-        self.selectionMode: Optional[SelectionModes] = None
         self.edgesWeightField = DEFAULT_WEIGHT_NAME
         self.lengthAttributeName = 'BD_LEN'
         self.metricClosureGraphs: typing.Dict[str, typing.Any] = {}
@@ -652,10 +653,15 @@ class BoundaryDelineation:
     def setSelectionMode(self, mode: SelectionModes) -> None:
         assert self.dockWidget
 
+        self.previousSelectionMode = self.selectionMode
         self.selectionMode = mode
 
         self.refreshSelectionModeBehavior()
         self.dockWidget.updateSelectionModeButtons()
+
+    def restoreSelectionMode(self):
+        if self.selectionMode is not self.previousSelectionMode:
+            self.setSelectionMode(self.previousSelectionMode)
 
     def refreshSelectionModeBehavior(self) -> None:
         if self.selectionMode is SelectionModes.NONE:
@@ -937,6 +943,7 @@ class BoundaryDelineation:
         else:
             # TODO maybe ask before rollBack?
             self.candidatesLayer.rollBack()
+            self.restoreSelectionMode()
             self.refreshSelectionModeBehavior()
 
         self.isEditCandidatesToggled = toggled
