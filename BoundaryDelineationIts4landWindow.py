@@ -25,11 +25,13 @@ from typing import List, Dict, Optional
 
 from .Its4landAPI import Its4landException
 from .utils import get_tmp_dir
+from . import utils
 
+from qgis.core import QgsVectorLayer, QgsWkbTypes
 from PyQt5 import uic
 # from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QShowEvent
-from PyQt5.QtWidgets import QDialog, QAction
+from PyQt5.QtWidgets import QDialog
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'BoundaryDelineationIts4landWindow.ui'))
 
@@ -184,12 +186,36 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
 
         self.contentItemFilename = os.path.join(get_tmp_dir(), self.contentItem['ContentID'])
 
-        self.service.download_content_item(self.contentItem['ContentID'], self.contentItemFilename)
+        # TODO this lock is not working for some reason :/
+        self.loginGroupBox.setEnabled(False)
+        self.projectsGroupBox.setEnabled(False)
+        self.validationSetsGroupBox.setEnabled(False)
 
-        layer = self.plugin.setSegmentsLayer(self.contentItemFilename)
+        try:
+            self.service.download_content_item(self.contentItem['ContentID'], self.contentItemFilename)
+            layer = QgsVectorLayer(self.contentItemFilename, self.validationSet['Name'], 'ogr')
 
-        # TODO the ugliest thing in the whole project
-        self.plugin.dockWidget.segmentsLayerComboBox.setLayer(layer)
+            if layer.geometryType() != QgsWkbTypes.LineGeometry:
+                self.plugin.showMessage(self.tr('Validation set file is not with line geometries'))
+                return
+
+            utils.add_layer(layer, self.validationSet['Name'], parent=self.plugin.getGroup(), index=0)
+            layer = self.plugin.setSegmentsLayer(layer, name=self.validationSet['Name'])
+
+            if layer:
+                # TODO the ugliest thing in the whole project
+                self.plugin.dockWidget.segmentsLayerComboBox.setLayer(layer)
+        except Its4landException as e:
+            if e.code == 404:
+                self.plugin.showMessage(self.tr('Unable to load the selected validation set, check the web interface for more information'))
+                return
+            else:
+                raise e
+        finally:
+            self.loginGroupBox.setEnabled(True)
+            self.projectsGroupBox.setEnabled(True)
+            self.validationSetsGroupBox.setEnabled(True)
+
 
     def accept(self):
         self.close()

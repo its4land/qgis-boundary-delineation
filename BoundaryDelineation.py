@@ -454,30 +454,39 @@ class BoundaryDelineation:
 
         self.baseRasterLayer = baseRasterLayer
 
-    def setSegmentsLayer(self, segmentsLayer: typing.Union[QgsVectorLayer, str]) -> None:
+    def setSegmentsLayer(self, segmentsLayer: typing.Union[QgsVectorLayer, str], name: str = None) -> Optional[QgsVectorLayer]:
         assert self.dockWidget
 
         if self.segmentsLayer is segmentsLayer:
-            return
+            return segmentsLayer
+
+        name = name if name else self.segmentsLayerName
 
         if isinstance(segmentsLayer, str):
             if self.segmentsLayer and not self.wasSegmentsLayerInitiallyInLegend:
                 utils.remove_layer(self.segmentsLayer)
 
             self.wasSegmentsLayerInitiallyInLegend = False
-            segmentsLayer = QgsVectorLayer(segmentsLayer, self.segmentsLayerName, 'ogr')
+            segmentsLayer = QgsVectorLayer(segmentsLayer, name, 'ogr')
 
-            utils.add_layer(segmentsLayer, self.segmentsLayerName, parent=self.getGroup(), index=0)
+            utils.add_layer(segmentsLayer, name, parent=self.getGroup(), index=0)
         else:
             self.wasSegmentsLayerInitiallyInLegend = True
 
+        # BUG if I keep this, I have double adding to the map
+        # if not self.layerTree.findLayer(segmentsLayer.id()):
+        #     utils.add_layer(segmentsLayer, name, parent=self.getGroup(), index=0)
+
         if segmentsLayer.geometryType() != QgsWkbTypes.LineGeometry:
             self.showMessage(self.tr('Please use segments layer that is with lines geometry'))
+            return
 
         self.segmentsLayer = segmentsLayer
 
         if self.isAddingLengthAttributePossible():
             self.dockWidget.toggleAddLengthAttributeCheckBoxEnabled(True)
+
+        return segmentsLayer
 
     def isAddingLengthAttributePossible(self) -> bool:
         if self.segmentsLayer and self.segmentsLayer.fields().indexFromName(self.lengthAttributeName) != -1:
