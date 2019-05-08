@@ -24,6 +24,7 @@ import os
 from typing import List, Dict, Optional
 
 from .Its4landAPI import Its4landException
+from .utils import get_tmp_dir
 
 from PyQt5 import uic
 # from PyQt5.QtCore import pyqtSignal
@@ -55,6 +56,7 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         self.projects = None
         self.validationSets = None
         self.contentItem = None
+        self.contentItemFilename = None
 
         self.loginInput.textChanged.connect(self.onLoginInputChanged)
         self.passwordInput.textChanged.connect(self.onLoginInputChanged)
@@ -62,6 +64,7 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         self.logoutButton.clicked.connect(self.onLogoutButtonClicked)
         self.projectsListWidget.currentRowChanged.connect(self.onProjectListWidgetCurrentRowChanged)
         self.validationSetsListWidget.currentRowChanged.connect(self.onValidationSetsListWidgetCurrentRowChanged)
+        self.validationSetsLoadButton.clicked.connect(self.onValidationSetsLoadButtonClicked)
 
     def onLoginInputChanged(self, text: str) -> None:
         pass
@@ -151,6 +154,8 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
     def onValidationSetsListWidgetCurrentRowChanged(self, index: int) -> None:
         assert self.validationSets
 
+        self.validationSetsLoadButton.setEnabled(False)
+
         try:
             if index >= 0:
                 self.validationSet = self.validationSets[index]
@@ -165,10 +170,26 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
             try:
                 self.contentItem = self.service.get_content_item(self.validationSet['ContentItem'])
                 self.contentItem = self.contentItem[0] if len(self.contentItem) else None
+                self.contentItemFilename = None
+
+                self.validationSetsLoadButton.setEnabled(True)
             except Exception as e:
                 raise e
 
         self._updateValidationSetDetails(self.validationSet, self.contentItem)
+
+    def onValidationSetsLoadButtonClicked(self) -> None:
+        assert self.contentItem
+        assert self.contentItem['ContentID']
+
+        self.contentItemFilename = os.path.join(get_tmp_dir(), self.contentItem['ContentID'])
+
+        self.service.download_content_item(self.contentItem['ContentID'], self.contentItemFilename)
+
+        layer = self.plugin.setSegmentsLayer(self.contentItemFilename)
+
+        # TODO the ugliest thing in the whole project
+        self.plugin.dockWidget.segmentsLayerComboBox.setLayer(layer)
 
     def accept(self):
         self.close()

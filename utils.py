@@ -1,11 +1,12 @@
 import functools
 import collections.abc
 import typing
+import os
 
 from enum import Enum
 from collections import defaultdict
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QDir
 from PyQt5.QtGui import QCursor, QColor
 from PyQt5.QtWidgets import QApplication
 
@@ -14,6 +15,7 @@ import processing
 from qgis.core import QgsProject, QgsMarkerSymbol, QgsLineSymbol, QgsSingleSymbolRenderer, QgsGraduatedSymbolRenderer, QgsLayerTreeNode, QgsVectorLayer, QgsRasterLayer, QgsMapLayer, QgsPoint
 from qgis.utils import iface
 
+TMP_DIR = 'boundarydeleniation'
 
 def processing_cursor(cursor=QCursor(Qt.WaitCursor)) -> typing.Callable:
     def processing_cursor_decorator(func):
@@ -271,6 +273,15 @@ def lines_unique_vertices(vector_layer: QgsVectorLayer, feature_ids: typing.List
         lines.append(f)
 
     return [k for k, v in points.items() if v == 1]
+
+# get temporary directory
+def get_tmp_dir() -> str:
+    tmpDir = str(os.path.join(QDir.tempPath(), TMP_DIR))
+
+    if not QDir(tmpDir).exists():
+        os.makedirs(tmpDir)
+
+    return tmpDir
 
 class SelectionModes(Enum):
     NONE = 0

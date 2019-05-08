@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>496</width>
-    <height>528</height>
+    <height>553</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -97,6 +97,9 @@
           <width>0</width>
           <height>100</height>
          </size>
+        </property>
+        <property name="sortingEnabled">
+         <bool>true</bool>
         </property>
        </widget>
       </item>
@@ -254,6 +257,9 @@
           <height>100</height>
          </size>
         </property>
+        <property name="sortingEnabled">
+         <bool>true</bool>
+        </property>
        </widget>
       </item>
       <item>
@@ -371,6 +377,16 @@
             </widget>
            </item>
           </layout>
+         </item>
+         <item row="1" column="0">
+          <widget class="QPushButton" name="validationSetsLoadButton">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Load as segments layer</string>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>
