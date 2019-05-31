@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>434</width>
-    <height>243</height>
+    <width>469</width>
+    <height>260</height>
    </rect>
   </property>
   <property name="floating">
@@ -25,6 +25,9 @@
         <width>0</width>
         <height>0</height>
        </size>
+      </property>
+      <property name="toolTip">
+       <string>Delineate boundaries</string>
       </property>
       <property name="tabPosition">
        <enum>QTabWidget::North</enum>
@@ -55,6 +58,9 @@
         </item>
         <item row="1" column="0">
          <widget class="QLabel" name="segmentsLayerLabel">
+          <property name="toolTip">
+           <string>Load input image segmentation as vector</string>
+          </property>
           <property name="locale">
            <locale language="English" country="UnitedStates"/>
           </property>
@@ -75,6 +81,9 @@
         </item>
         <item row="2" column="0">
          <widget class="QLabel" name="outputLayerLabel">
+          <property name="toolTip">
+           <string>Save output boundary line as ESRI shapefile (*.shp). Leave blank to save as temporary layer.</string>
+          </property>
           <property name="locale">
            <locale language="English" country="UnitedStates"/>
           </property>
@@ -88,6 +97,9 @@
         </item>
         <item row="0" column="1" colspan="2">
          <widget class="QgsMapLayerComboBox" name="baseRasterLayerComboBox">
+          <property name="toolTip">
+           <string>Load input orthoimage as raster image</string>
+          </property>
           <property name="allowEmptyLayer">
            <bool>true</bool>
           </property>
@@ -108,6 +120,9 @@
           <property name="enabled">
            <bool>false</bool>
           </property>
+          <property name="toolTip">
+           <string>Process input segments layer for step II</string>
+          </property>
           <property name="text">
            <string>Process</string>
           </property>
@@ -115,6 +130,9 @@
         </item>
         <item row="2" column="1" colspan="2">
          <widget class="QLineEdit" name="outputLayerLineEdit">
+          <property name="toolTip">
+           <string>Save output boundary line as ESRI shapefile (*.shp). Leave blank to save as temporary layer.</string>
+          </property>
           <property name="placeholderText">
            <string>[Create temporary layer]</string>
           </property>
@@ -125,6 +143,9 @@
           <property name="enabled">
            <bool>true</bool>
           </property>
+          <property name="toolTip">
+           <string>Load input image segmentation as vector</string>
+          </property>
           <property name="showCrs">
            <bool>true</bool>
           </property>
@@ -132,6 +153,9 @@
         </item>
         <item row="3" column="1">
          <widget class="QToolButton" name="its4landButton">
+          <property name="toolTip">
+           <string>Load data from its4land platform</string>
+          </property>
           <property name="text">
            <string>Its4land Project</string>
           </property>
@@ -176,6 +200,9 @@
         </item>
         <item row="3" column="2">
          <widget class="QCheckBox" name="addLengthAttributeCheckBox">
+          <property name="toolTip">
+           <string>Calculates length as new attribute in input segments layer</string>
+          </property>
           <property name="text">
            <string>Add length attribute</string>
           </property>
@@ -186,6 +213,9 @@
         </item>
         <item row="0" column="0">
          <widget class="QLabel" name="baseRasterLabel">
+          <property name="toolTip">
+           <string>Load input orthoimage as raster image</string>
+          </property>
           <property name="locale">
            <locale language="English" country="UnitedStates"/>
           </property>
@@ -211,41 +241,6 @@
         <string>Step II</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_3">
-        <item row="7" column="4">
-         <widget class="QPushButton" name="editButton">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>30</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>Edit</string>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>icons/edit.png</normaloff>icons/edit.png</iconset>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
         <item row="7" column="2">
          <widget class="QPushButton" name="rejectButton">
           <property name="enabled">
@@ -269,6 +264,9 @@
             <height>16777215</height>
            </size>
           </property>
+          <property name="toolTip">
+           <string>Reject feature in candidates layer (Shift+Ctrl+R). Deletes feature and restarts delineation.</string>
+          </property>
           <property name="layoutDirection">
            <enum>Qt::LeftToRight</enum>
           </property>
@@ -281,8 +279,8 @@
           </property>
          </widget>
         </item>
-        <item row="7" column="3">
-         <widget class="QPushButton" name="acceptButton">
+        <item row="7" column="4">
+         <widget class="QPushButton" name="editButton">
           <property name="enabled">
            <bool>false</bool>
           </property>
@@ -304,118 +302,18 @@
             <height>16777215</height>
            </size>
           </property>
+          <property name="toolTip">
+           <string>Edit feature in candidates layer (Shift+Ctrl+R). Enables Toggle Editing.</string>
+          </property>
           <property name="text">
-           <string>Accept </string>
+           <string>Edit</string>
           </property>
           <property name="icon">
            <iconset>
-            <normaloff>icons/accept.png</normaloff>icons/accept.png</iconset>
+            <normaloff>icons/edit.png</normaloff>icons/edit.png</iconset>
           </property>
-         </widget>
-        </item>
-        <item row="3" column="2" colspan="3">
-         <layout class="QHBoxLayout" name="horizontalLayout">
-          <property name="spacing">
-           <number>0</number>
-          </property>
-          <item>
-           <widget class="QRadioButton" name="modeEnclosingRadio">
-            <property name="text">
-             <string>S&amp;urrounding</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="modeNodesRadio">
-            <property name="text">
-             <string>&amp;Nodes</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="modeLinesRadio">
-            <property name="text">
-             <string>&amp;Lines</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="modeManualRadio">
-            <property name="text">
-             <string>&amp;Manual</string>
-            </property>
-            <property name="autoExclusive">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item row="4" column="2" colspan="3">
-         <widget class="QgsFieldComboBox" name="weightComboBox">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="allowEmptyFieldName">
+          <property name="checkable">
            <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="8" column="2" colspan="3">
-         <layout class="QHBoxLayout" name="horizontalLayout_2">
-          <item>
-           <widget class="QCheckBox" name="polygonizeCheckBox">
-            <property name="text">
-             <string>Polygonize final layer</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="updateManualEditsCheckBox">
-            <property name="text">
-             <string>Update manual edits</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item row="9" column="4">
-         <widget class="QPushButton" name="uploadButton">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>30</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="font">
-           <font>
-            <family>MS Shell Dlg 2</family>
-           </font>
-          </property>
-          <property name="layoutDirection">
-           <enum>Qt::LeftToRight</enum>
-          </property>
-          <property name="text">
-           <string>Upload its4land</string>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>icons/icon.png</normaloff>icons/icon.png</iconset>
           </property>
          </widget>
         </item>
@@ -447,6 +345,9 @@
             <family>MS Shell Dlg 2</family>
            </font>
           </property>
+          <property name="toolTip">
+           <string>Finish boundary delineation. Removes candidate layer and displays final layer only.</string>
+          </property>
           <property name="layoutDirection">
            <enum>Qt::LeftToRight</enum>
           </property>
@@ -456,6 +357,167 @@
           <property name="icon">
            <iconset>
             <normaloff>icons/finishFlag.png</normaloff>icons/finishFlag.png</iconset>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="2" colspan="3">
+         <widget class="QgsFieldComboBox" name="weightComboBox">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="toolTip">
+           <string>Select attribute to consider for least-cost-path calculation in ‘Connect along optimal path’ functionality</string>
+          </property>
+          <property name="allowEmptyFieldName">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="7" column="3">
+         <widget class="QPushButton" name="acceptButton">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Accept feature in candidates layer (Space). Moves feature to final layer and restarts delineation.</string>
+          </property>
+          <property name="text">
+           <string>Accept </string>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>icons/accept.png</normaloff>icons/accept.png</iconset>
+          </property>
+         </widget>
+        </item>
+        <item row="9" column="4">
+         <widget class="QPushButton" name="uploadButton">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <family>MS Shell Dlg 2</family>
+           </font>
+          </property>
+          <property name="toolTip">
+           <string>Upload final layer to its4land platform</string>
+          </property>
+          <property name="layoutDirection">
+           <enum>Qt::LeftToRight</enum>
+          </property>
+          <property name="text">
+           <string>Upload its4land</string>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>icons/icon.png</normaloff>icons/icon.png</iconset>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="2" colspan="3">
+         <layout class="QHBoxLayout" name="horizontalLayout">
+          <property name="spacing">
+           <number>0</number>
+          </property>
+          <item>
+           <widget class="QRadioButton" name="modeEnclosingRadio">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Click inside polygon or select lines around which to create a polygon.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="text">
+             <string>Polygons</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="modeLinesRadio">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Connect lines surrounding a click or a selection of lines.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="text">
+             <string>&amp;Lines</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="modeNodesRadio">
+            <property name="toolTip">
+             <string>Connect between lines’ endpoints</string>
+            </property>
+            <property name="text">
+             <string>&amp;Nodes</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="modeManualRadio">
+            <property name="toolTip">
+             <string>Connect manual clicks</string>
+            </property>
+            <property name="text">
+             <string>&amp;Manual</string>
+            </property>
+            <property name="autoExclusive">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="8" column="2">
+         <widget class="QCheckBox" name="polygonizeCheckBox">
+          <property name="toolTip">
+           <string>Convert final layer to polygon to be saved as polygons vector layer</string>
+          </property>
+          <property name="text">
+           <string>Polygonize final layer</string>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="4">
+         <widget class="QPushButton" name="updateEditsButton">
+          <property name="toolTip">
+           <string>Update simplified segments layer according to edits in candidates </string>
+          </property>
+          <property name="text">
+           <string>Update edits</string>
           </property>
          </widget>
         </item>

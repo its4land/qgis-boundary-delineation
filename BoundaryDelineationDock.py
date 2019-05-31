@@ -85,6 +85,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.acceptButton.clicked.connect(self.onAcceptButtonClicked)
         self.rejectButton.clicked.connect(self.onRejectButtonClicked)
         self.editButton.toggled.connect(self.onEditButtonToggled)
+        self.updateEditsButton.toggled.connect(self.onUpdateEditsButtonClicked)
         self.finishButton.clicked.connect(self.onFinishButtonClicked)
 
         self.weightComboBox.setFilters(QgsFieldProxyModel.Numeric)
@@ -221,6 +222,9 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.plugin.toggleEditCandidates()
         # putting here self.plugin.refreshSelectionModeBehavior() causes infinite loop.
 
+    def onUpdateEditsButtonClicked(self) -> bool:
+        self.plugin.updateLayersTopology()
+
     def onFinishButtonClicked(self) -> None:
         self.plugin.processFinish()
         self.tabs.setCurrentWidget(self.stepOneTab)
@@ -326,9 +330,6 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
 
     def getPolygonizeChecked(self) -> bool:
         return self.polygonizeCheckBox.isChecked()
-
-    def getUpdateManualEditsChecked(self) -> bool:
-        return self.updateManualEditsCheckBox.isChecked()
 
     def getUploadIts4landChecked(self) -> bool:
         return self.uploadCheckBox.isChecked()

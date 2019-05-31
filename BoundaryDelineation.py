@@ -34,9 +34,11 @@ from PyQt5.QtGui import QIcon
 
 from qgis.core import Qgis, QgsProject, QgsCoordinateReferenceSystem, QgsLayerTree, QgsLayerTreeNode, QgsLayerTreeGroup, QgsPointXY, QgsVectorLayer, \
     QgsRasterLayer, QgsMapLayer, QgsWkbTypes, QgsVectorFileWriter, QgsCoordinateTransform, QgsField, QgsDefaultValue, QgsRectangle, QgsFeatureIterator, \
-    QgsFeature, QgsGeometry
+    QgsFeature, QgsGeometry, QgsTolerance, QgsMapSettings
 from qgis.gui import QgisInterface, QgsMapTool
+from qgis.utils import iface
 from qgis.utils import *
+
 
 import processing
 
@@ -273,9 +275,6 @@ class BoundaryDelineation:
         enable = self.finalLayer.featureCount() > 0
 
         self.dockWidget.toggleFinalButtonEnabled(enable)
-
-        if self.dockWidget.getUpdateManualEditsChecked():
-            self.updateLayersTopology()
 
     def onFinalLayerFeaturesDeleted(self, featureIds: typing.Union[int, typing.List[int]]) -> None:
         assert self.finalLayer
@@ -705,6 +704,13 @@ class BoundaryDelineation:
         else:
             selectBehaviour = QgsVectorLayer.SetSelection
 
+        if startPoint.x() == endPoint.x() and startPoint.y() == endPoint.y():
+            tolerance = QgsTolerance.defaultTolerance(iface.activeLayer(), QgsMapSettings())
+            startPoint = QgsPointXY(startPoint.x() - tolerance/20, startPoint.y() - tolerance/20)
+            endPoint = QgsPointXY(endPoint.x() + tolerance/20, endPoint.y() + tolerance/20)
+
+        print(startPoint.x() , endPoint.x(), startPoint.x() == endPoint.x() , startPoint.y() , endPoint.y(), startPoint.y() == endPoint.y())
+
         lines = None
         rect = QgsRectangle(startPoint, endPoint)
 
@@ -767,7 +773,7 @@ class BoundaryDelineation:
         points = list(points_dict.values())
 
         if len(points) != 2 or len(points[0]) != 2 or len(points[1]) != 2:
-            self.showMessage(self.tr('Autoclosing lines is currently supported for two continuous segments only'))
+            self.showMessage(self.tr('Selected lines can have exactly four unconnected endpoints'))
             return tuple(enclosingLineFeatures)
 
         pointX1 = points[0][0]
