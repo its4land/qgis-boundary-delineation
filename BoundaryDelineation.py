@@ -305,8 +305,9 @@ class BoundaryDelineation:
             newFeature = QgsFeature(self.simplifiedSegmentsLayer.fields())
             newFeature.setGeometry(f.geometry())
 
-            # make the line visible, otherwise there is no value for such values in the QML style
-            newFeature.setAttribute(BOUNDARY_ATTR_NAME, 1)
+            # this was used when the ./styles/segments.qml was a graduated style, however is no longer the case
+            # # make the line visible, otherwise there is no value for such values in the QML style
+            # newFeature.setAttribute(BOUNDARY_ATTR_NAME, 1)
 
             assert self.simplifiedSegmentsLayer.addFeature(newFeature), 'Unable to add new feature'
 
@@ -708,8 +709,6 @@ class BoundaryDelineation:
             tolerance = QgsTolerance.defaultTolerance(iface.activeLayer(), QgsMapSettings())
             startPoint = QgsPointXY(startPoint.x() - tolerance/20, startPoint.y() - tolerance/20)
             endPoint = QgsPointXY(endPoint.x() + tolerance/20, endPoint.y() + tolerance/20)
-
-        print(startPoint.x() , endPoint.x(), startPoint.x() == endPoint.x() , startPoint.y() , endPoint.y(), startPoint.y() == endPoint.y())
 
         lines = None
         rect = QgsRectangle(startPoint, endPoint)

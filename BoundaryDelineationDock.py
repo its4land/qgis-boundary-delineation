@@ -85,7 +85,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.acceptButton.clicked.connect(self.onAcceptButtonClicked)
         self.rejectButton.clicked.connect(self.onRejectButtonClicked)
         self.editButton.toggled.connect(self.onEditButtonToggled)
-        self.updateEditsButton.toggled.connect(self.onUpdateEditsButtonClicked)
+        self.updateEditsButton.clicked.connect(self.onUpdateEditsButtonClicked)
         self.finishButton.clicked.connect(self.onFinishButtonClicked)
 
         self.weightComboBox.setFilters(QgsFieldProxyModel.Numeric)
