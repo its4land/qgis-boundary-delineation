@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>496</width>
-    <height>553</height>
+    <height>683</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,6 +16,9 @@
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="QGroupBox" name="loginGroupBox">
+     <property name="visible">
+      <bool>false</bool>
+     </property>
      <property name="acceptDrops">
       <bool>false</bool>
      </property>
@@ -70,6 +73,13 @@
     </widget>
    </item>
    <item>
+    <widget class="QPushButton" name="connectButton">
+     <property name="text">
+      <string>Connect</string>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QGroupBox" name="projectsGroupBox">
      <property name="enabled">
       <bool>false</bool>
@@ -89,8 +99,8 @@
      <property name="checkable">
       <bool>false</bool>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_3">
-      <item>
+     <layout class="QGridLayout" name="horizontalLayout_3">
+      <item row="1" column="0">
        <widget class="QListWidget" name="projectsListWidget">
         <property name="minimumSize">
          <size>
@@ -103,7 +113,7 @@
         </property>
        </widget>
       </item>
-      <item>
+      <item row="1" column="1">
        <widget class="QGroupBox" name="projectsDetailsGroupBox">
         <property name="minimumSize">
          <size>
@@ -130,37 +140,6 @@
              </property>
             </widget>
            </item>
-           <item row="2" column="0">
-            <widget class="QLabel" name="projectsDescriptionLabel">
-             <property name="text">
-              <string>Description</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="0">
-            <widget class="QLabel" name="projectsTagsLabel">
-             <property name="text">
-              <string>Tags</string>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="0">
-            <widget class="QLabel" name="projectsModelsLabel">
-             <property name="text">
-              <string>Models</string>
-             </property>
-            </widget>
-           </item>
-           <item row="5" column="0">
-            <widget class="QLabel" name="projectsSpatialSourcesLabel">
-             <property name="text">
-              <string>Spatial Sources</string>
-             </property>
-             <property name="wordWrap">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
            <item row="1" column="1">
             <widget class="QLabel" name="projectsNameValueLabel">
              <property name="text">
@@ -171,6 +150,13 @@
              </property>
              <property name="wordWrap">
               <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="projectsDescriptionLabel">
+             <property name="text">
+              <string>Description</string>
              </property>
             </widget>
            </item>
@@ -187,6 +173,13 @@
              </property>
             </widget>
            </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="projectsTagsLabel">
+             <property name="text">
+              <string>Tags</string>
+             </property>
+            </widget>
+           </item>
            <item row="3" column="1">
             <widget class="QLabel" name="projectsTagsValueLabel">
              <property name="text">
@@ -200,6 +193,13 @@
              </property>
             </widget>
            </item>
+           <item row="4" column="0">
+            <widget class="QLabel" name="projectsModelsLabel">
+             <property name="text">
+              <string>Models</string>
+             </property>
+            </widget>
+           </item>
            <item row="4" column="1">
             <widget class="QLabel" name="projectsModelsValueLabel">
              <property name="text">
@@ -207,6 +207,16 @@
              </property>
              <property name="textFormat">
               <enum>Qt::PlainText</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0">
+            <widget class="QLabel" name="projectsSpatialSourcesLabel">
+             <property name="text">
+              <string>Spatial Sources</string>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
@@ -225,6 +235,19 @@
         </layout>
        </widget>
       </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="projectsErrorLabel">
+        <property name="visible">
+         <bool>false</bool>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color : red;</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
    </item>
@@ -240,7 +263,7 @@
       <bool>false</bool>
      </property>
      <property name="title">
-      <string>WP5 Validation Sets</string>
+      <string>WP5 validation sets</string>
      </property>
      <property name="flat">
       <bool>true</bool>
@@ -248,22 +271,9 @@
      <property name="checkable">
       <bool>false</bool>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout">
-      <item>
-       <widget class="QListWidget" name="validationSetsListWidget">
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>100</height>
-         </size>
-        </property>
-        <property name="sortingEnabled">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QGroupBox" name="validationSetstDetailsGroupBox">
+     <layout class="QGridLayout" name="horizontalLayout">
+      <item row="1" column="1">
+       <widget class="QGroupBox" name="validationSetsDetailsGroupBox">
         <property name="minimumSize">
          <size>
           <width>300</width>
@@ -389,6 +399,174 @@
           </widget>
          </item>
         </layout>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QListWidget" name="validationSetsListWidget">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>100</height>
+         </size>
+        </property>
+        <property name="sortingEnabled">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="validationSetsErrorLabel">
+        <property name="visible">
+         <bool>false</bool>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color : red;</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="boundaryStringsGroupBox">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="acceptDrops">
+      <bool>false</bool>
+     </property>
+     <property name="autoFillBackground">
+      <bool>false</bool>
+     </property>
+     <property name="title">
+      <string>Boundary face string</string>
+     </property>
+     <property name="flat">
+      <bool>true</bool>
+     </property>
+     <property name="checkable">
+      <bool>false</bool>
+     </property>
+     <layout class="QGridLayout" name="horizontalLayout_5">
+      <item row="1" column="1">
+       <widget class="QGroupBox" name="boundaryStringsDetailsGroupBox">
+        <property name="minimumSize">
+         <size>
+          <width>300</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>300</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="title">
+         <string>Boundary face string details</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_3">
+         <item row="0" column="0">
+          <layout class="QFormLayout" name="boundaryStringsformLayout">
+           <item row="1" column="0">
+            <widget class="QLabel" name="boundaryStringsNameLabel">
+             <property name="text">
+              <string>Name</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLabel" name="boundaryStringsNameValueLabel">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="textFormat">
+              <enum>Qt::PlainText</enum>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="boundaryStringsFeaturesLabel">
+             <property name="text">
+              <string>Features</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QLabel" name="boundaryStringsFeaturesValueLabel">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="textFormat">
+              <enum>Qt::PlainText</enum>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="boundaryStringsSizeLabel">
+             <property name="text">
+              <string>Size (B)</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QLabel" name="boundaryStringsSizeValueLabel">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="textFormat">
+              <enum>Qt::PlainText</enum>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="1" column="0">
+          <widget class="QPushButton" name="boundaryStringsLoadButton">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Show</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QListWidget" name="boundaryStringsListWidget">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>100</height>
+         </size>
+        </property>
+        <property name="sortingEnabled">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="boundaryStringsErrorLabel">
+        <property name="visible">
+         <bool>false</bool>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color : red;</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
        </widget>
       </item>
      </layout>

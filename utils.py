@@ -283,6 +283,9 @@ def get_tmp_dir() -> str:
 
     return tmpDir
 
+def utf8len(s):
+    return len(s.encode('utf-8'))
+
 class SelectionModes(Enum):
     NONE = 0
     MANUAL = 1

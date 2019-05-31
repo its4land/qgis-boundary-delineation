@@ -166,11 +166,16 @@ class Its4landAPI:
 
     def get_validation_sets(self, project_id: str):
         return self.get({
-            'Projects': project_id
+            'projects': project_id
         }, url=urljoin(self.url, 'WP5ValidationSets'))
 
-    def post_boundaries(self, project_id: str, geojson: str):
-        url = urljoin(self.url, 'BoundaryFaceFeatures/%s' % quote(project_id, safe=''))
+    def get_boundary_strings(self, project_id: str):
+        return self.get({
+            'projects': project_id
+        }, url=urljoin(self.url, 'boundaryfacestring'))
+
+    def post_boundary_strings(self, project_id: str, geojson: str):
+        url = urljoin(self.url, 'boundaryfacestring/%s' % quote(project_id, safe=''))
 
         return self.post({'geojson': geojson, }, url=url)
 
