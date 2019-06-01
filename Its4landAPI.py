@@ -153,8 +153,11 @@ class Its4landAPI:
                         raise Exception(url, 998, 'Unable to open file: %s' % v, e)
 
             resp = request(method, url, **send_data)
-            import curlify
-            print(curlify.to_curl(resp.request))
+
+            if DEBUG:
+                import curlify
+
+                print(curlify.to_curl(resp.request))
 
             if resp is not None:
 
