@@ -591,12 +591,17 @@ class BoundaryDelineation:
             finalLayer = QgsVectorLayer(filename, self.finalLayerName, 'ogr')
         else:
             finalLayer = QgsVectorLayer('MultiLineString?crs=%s' % crs.authid(), self.finalLayerName, 'memory')
+            finalLayer.dataProvider().addAttributes([QgsField('FID', QVariant.Int)])
+            finalLayer.updateFields()
+            finalLayer.updateExtents()
 
             if filename:
                 (writeErrorCode, writeErrorMsg) = QgsVectorFileWriter.writeAsVectorFormat(finalLayer, filename, 'utf-8', crs, 'ESRI Shapefile')
 
                 if writeErrorMsg:
                     self.showMessage('[%s] %s' % (writeErrorCode, writeErrorMsg))
+
+                finalLayer = QgsVectorLayer(filename, self.finalLayerName, 'ogr')
 
         return finalLayer
 
@@ -919,13 +924,22 @@ class BoundaryDelineation:
 
         self.finalLayer.startEditing()
 
+        features = []
+
+        for f in self.candidatesLayer.getFeatures():
+            c = QgsFeature(f)
+            c.setFields(self.finalLayer.fields())
+
+            features.append(c)
+
         if self.finalLayer.isEditable() and \
-                self.finalLayer.addFeatures(self.candidatesLayer.getFeatures()) and \
+                self.finalLayer.addFeatures(features) and \
                 self.finalLayer.commitChanges() and \
                 self.rejectCandidates():  # empty the canidates layer :)
             self.simplifiedSegmentsLayer.removeSelection()
             return True
         else:
+            self.showMessage(self.tr('Failed to accept'))
             return False
 
     def rejectCandidates(self) -> bool:
