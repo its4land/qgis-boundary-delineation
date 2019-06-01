@@ -2,6 +2,7 @@ import functools
 import collections.abc
 import typing
 import os
+import json
 
 from enum import Enum
 from collections import defaultdict
@@ -12,7 +13,7 @@ from PyQt5.QtWidgets import QApplication
 
 import processing
 
-from qgis.core import QgsProject, QgsMarkerSymbol, QgsLineSymbol, QgsSingleSymbolRenderer, QgsGraduatedSymbolRenderer, QgsLayerTreeNode, QgsVectorLayer, QgsRasterLayer, QgsMapLayer, QgsPoint
+from qgis.core import QgsProject, QgsMarkerSymbol, QgsLineSymbol, QgsSingleSymbolRenderer, QgsGraduatedSymbolRenderer, QgsLayerTreeNode, QgsVectorLayer, QgsRasterLayer, QgsMapLayer, QgsPoint, QgsVectorFileWriter, QgsCoordinateReferenceSystem
 from qgis.utils import iface
 
 TMP_DIR = 'boundarydeleniation'
@@ -238,6 +239,16 @@ def difference(vector_layer: QgsVectorLayer, lines_layer: QgsVectorLayer, name: 
 
     return splitted['OUTPUT']
 
+def reproject(vector_layer: QgsVectorLayer, target_crs: str, name: str = 'Reprojected') -> QgsVectorLayer:
+    print(target_crs)
+    reprojected = processing.run('native:reprojectlayer', {
+        'INPUT': vector_layer,
+        'TARGET_CRS': QgsCoordinateReferenceSystem(target_crs),
+        'OUTPUT': 'memory:%s' % name,
+    })
+
+    return reprojected['OUTPUT']
+
 def polyginize_lines(vector_layer: QgsVectorLayer, name: str = None) -> QgsVectorLayer:
     if name is None:
         name = 'PolygonizedLines'
@@ -283,8 +294,32 @@ def get_tmp_dir() -> str:
 
     return tmpDir
 
-def utf8len(s):
+def utf8len(s: str) -> int:
     return len(s.encode('utf-8'))
+
+def get_geojson(layer: QgsVectorLayer) -> dict:
+    filename = get_tmp_dir() + '/final'
+    error, msg = QgsVectorFileWriter.writeAsVectorFormat(layer, filename, 'utf-8', driverName='GeoJSON')
+
+    if error != QgsVectorFileWriter.NoError:
+        raise error
+
+    with open(filename + '.geojson', 'r') as file:
+        contents = file.read()
+
+    print('111', contents)
+
+    geojson = json.loads(contents)
+
+    return geojson
+
+def load_geojson(geojson: dict, name: str = 'geojson') -> QgsVectorLayer:
+    filename = os.path.join(get_tmp_dir(), name + '.geojson')
+
+    with open(filename, 'w') as file:
+        print(json.dumps(geojson), file=file)
+
+    return QgsVectorLayer(filename, name, 'ogr')
 
 class SelectionModes(Enum):
     NONE = 0

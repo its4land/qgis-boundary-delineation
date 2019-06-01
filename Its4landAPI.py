@@ -26,6 +26,25 @@ from urllib.parse import urljoin, quote
 
 from requests import request, exceptions
 
+DEBUG = False
+
+if DEBUG:
+    import logging
+
+    # These two lines enable debugging at httplib level (requests->urllib3->http.client)
+    # You will see the REQUEST, including HEADERS and DATA, and RESPONSE with HEADERS but without DATA.
+    # The only thing missing will be the response.body which is not logged.
+    import http.client as http_client
+
+    http_client.HTTPConnection.debuglevel = 1
+
+    # You must initialize logging, otherwise you'll not see debug output.
+    logging.basicConfig()
+    logging.getLogger().setLevel(logging.DEBUG)
+    requests_log = logging.getLogger("requests.packages.urllib3")
+    requests_log.setLevel(logging.DEBUG)
+    requests_log.propagate = True
+
 class ResponseType(Enum):
     json = 1
     text = 2
@@ -86,6 +105,9 @@ class Its4landAPI:
     def post(self, *argv, **kwargs):
         return self.request('POST', *argv, **kwargs)
 
+    def patch(self, *argv, **kwargs):
+        return self.request('PATCH', *argv, **kwargs)
+
     def request(self,
                 method: str,
                 data: Optional[Payload],
@@ -131,8 +153,11 @@ class Its4landAPI:
                         raise Exception(url, 998, 'Unable to open file: %s' % v, e)
 
             resp = request(method, url, **send_data)
+            import curlify
+            print(curlify.to_curl(resp.request))
 
             if resp is not None:
+
                 if resp.ok and resp.content is not None:
                     if response_type == ResponseType.stream:
                         return resp
@@ -174,10 +199,15 @@ class Its4landAPI:
             'projects': project_id
         }, url=urljoin(self.url, 'boundaryfacestring'))
 
-    def post_boundary_strings(self, project_id: str, geojson: str):
+    def post_boundary_strings(self, geojson: str):
+        url = urljoin(self.url, 'boundaryfacestring')
+
+        return self.post(geojson, url=url, encode_as='json')
+
+    def patch_boundary_strings(self, project_id: str, geojson: str):
         url = urljoin(self.url, 'boundaryfacestring/%s' % quote(project_id, safe=''))
 
-        return self.post({'geojson': geojson, }, url=url)
+        return self.patch(geojson, url=url, encode_as='json')
 
     def get_content_item(self, uid: str):
         return self.get({

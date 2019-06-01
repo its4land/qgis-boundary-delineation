@@ -28,13 +28,14 @@ from .Its4landAPI import Its4landException
 from .utils import get_tmp_dir
 from . import utils
 
-from qgis.core import QgsVectorLayer, QgsWkbTypes
+from qgis.core import QgsVectorLayer, QgsWkbTypes, QgsVectorFileWriter
 from PyQt5 import uic
 # from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QShowEvent
 from PyQt5.QtWidgets import QDialog
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'BoundaryDelineationIts4landWindow.ui'))
+HL_HARDCODED_PROJECTION = 'urn:ogc:def:crs:OGC:1.3:CRS84'
 
 class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
     # login = pyqtSignal()
@@ -56,12 +57,13 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         self.tr = plugin.tr
         self.service = plugin.service
 
+        self.project: Optional[str] = None
         self.projects = None
         self.validationSets = None
         self.contentItem = None
         self.contentItemFilename = None
-        self.contentItemBoundaryString = None
-        self.contentItemBoundaryStringFilename = None
+        self.boundaryString: Optional[Dict] = None
+        self.boundaryStrings: Optional[List] = None
 
         self.loginInput.textChanged.connect(self.onLoginInputChanged)
         self.passwordInput.textChanged.connect(self.onLoginInputChanged)
@@ -73,6 +75,13 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         self.validationSetsLoadButton.clicked.connect(self.onValidationSetsLoadButtonClicked)
         self.boundaryStringsListWidget.currentRowChanged.connect(self.onBoundaryStringsListWidgetCurrentRowChanged)
         self.boundaryStringsLoadButton.clicked.connect(self.onBoundaryStringsLoadButtonClicked)
+        self.boundaryStringsUploadButton.clicked.connect(self.onBoundaryStringsUploadButtonClicked)
+        self.boundaryStringsUpdateButton.clicked.connect(self.onBoundaryStringsUpdateButtonClicked)
+
+        self.boundaryStringsUploadButton.setEnabled(True)
+
+        # self.__setIcon(self.uploadButton, 'icon.png')
+
 
     def onLoginInputChanged(self, text: str) -> None:
         pass
@@ -103,6 +112,7 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
             raise e
 
         self.logoutButton.setEnabled(True)
+        self.updateEnabledBoundaryStringButtons()
 
         try:
             projects = self.plugin.service.get_projects()
@@ -145,21 +155,21 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
 
         try:
             if index >= 0:
-                project = self.projects[index]
+                self.project = self.projects[index]
             else:
-                project = None
+                self.project = None
         except ValueError:
-            project = None
+            self.project = None
         except Exception as e:
             raise e
 
-        self._updateProjectDetails(project)
+        self._updateProjectDetails(self.project)
         self.validationSetsListWidget.clear()
         self.boundaryStringsListWidget.clear()
 
         try:
-            self.validationSets = self.service.get_validation_sets(project['properties']['UID'])
-            self.setValidationSets(project, self.validationSets)
+            self.validationSets = self.service.get_validation_sets(self.project['properties']['UID'])
+            self.setValidationSets(self.project, self.validationSets)
 
             self.setValidationSetsError('')
         except Its4landException as e:
@@ -173,14 +183,14 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
             self.setValidationSetsError(self.plugin.tr('[%s] Error has occured!' % '???'))
             self.plugin.showMessage(str(e))
         finally:
-            if project:
+            if self.project:
                 self.validationSetsGroupBox.setEnabled(True)
 
         try:
-            self.boundaryStrings = self.service.get_boundary_strings(project['properties']['UID'])
+            self.boundaryStrings = self.service.get_boundary_strings(self.project['properties']['UID'])
             # TODO this is because hansaluft have funny API
             self.boundaryStrings = self.boundaryStrings if isinstance(self.boundaryStrings, list) else [self.boundaryStrings]
-            self.setBoundaryStrings(project, self.boundaryStrings)
+            self.setBoundaryStrings(self.project, self.boundaryStrings)
 
             self.setBoundaryStringsError('')
         except Its4landException as e:
@@ -194,7 +204,7 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
             self.setBoundaryStringsError(self.plugin.tr('[%s] Error has occured!' % '???'))
             self.plugin.showMessage(str(e))
         finally:
-            if project:
+            if self.project:
                 self.boundaryStringsGroupBox.setEnabled(True)
 
     def onValidationSetsListWidgetCurrentRowChanged(self, index: int) -> None:
@@ -268,7 +278,6 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         assert self.boundaryStrings
 
         self.boundaryStringsLoadButton.setEnabled(False)
-        self.boundaryStringFilename = None
 
         try:
             if index >= 0:
@@ -286,18 +295,78 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
     def onBoundaryStringsLoadButtonClicked(self) -> None:
         assert self.boundaryString
 
-        self.boundaryStringFilename = os.path.join(get_tmp_dir(), self.boundaryString['name'] + '.geojson')
-
-        with open(self.boundaryStringFilename, 'w') as file:
-            print(json.dumps(self.boundaryString), file=file)
-
-        layer = QgsVectorLayer(self.boundaryStringFilename, self.boundaryString['name'], 'ogr')
+        layer = utils.load_geojson(self.boundaryString, self.boundaryString['name'])
 
         if layer.geometryType() != QgsWkbTypes.LineGeometry:
             self.plugin.showMessage(self.tr('Boundary face strings file is not with line geometries'))
             return
 
         utils.add_layer(layer, self.boundaryString['name'], parent=self.plugin.getGroup(), index=0)
+
+    def _prepareBoundaryStringsGeojson(self, layer: QgsVectorLayer, project_id: str) -> dict:
+        layer = utils.multipart_to_singleparts(layer)
+        # layer = utils.reproject(layer, 'EPSG::4326')
+        geojson = utils.get_geojson(layer)
+
+        counter = 1
+
+        for f in geojson['features']:
+            f['properties']['Projects'] = [{
+                'UID': project_id
+            }]
+            # don't use double quotes, cause it is reserved for HL...
+            f['properties']['Name'] = '%s__%s' % (project_id, counter)
+            counter += 1
+
+        geojson['crs']['properties']['name'] = HL_HARDCODED_PROJECTION
+        geojson['name'] = 'BoundaryFaceString'
+
+        return geojson
+
+    def onBoundaryStringsUploadButtonClicked(self) -> None:
+        assert self.project
+        assert self.plugin.finalLayer
+
+        geojson = self._prepareBoundaryStringsGeojson(self.plugin.finalLayer, self.project['properties']['UID'])
+
+        self.boundaryStringsUploadButton.setEnabled(False)
+
+        try:
+            self.service.post_boundary_strings(geojson)
+            self.plugin.showMessage(self.plugin.tr('Successfully uploaded boundary face strings!'))
+        except Its4landException as e:
+            self.plugin.showMessage(self.plugin.tr('[%s] %s' % (str(e.code), str(e))))
+            self.boundaryStringsUploadButton.setEnabled(True)
+        except Exception as e:
+            self.plugin.showMessage(self.plugin.tr('[%s] Error has occured! %s' % ('???', str(e))))
+            self.boundaryStringsUploadButton.setEnabled(True)
+
+    def onBoundaryStringsUpdateButtonClicked(self) -> None:
+        assert self.project
+        assert self.boundaryString
+        assert self.plugin.finalLayer
+
+        geojson = self._prepareBoundaryStringsGeojson(self.plugin.finalLayer, self.project['properties']['UID'])
+
+        self.boundaryStringsUpdateButton.setEnabled(False)
+
+        try:
+            self.service.patch_boundary_strings(self.boundaryString['UID'], geojson)
+            self.plugin.showMessage(self.plugin.tr('Successfully updated boundary face strings!'))
+        except Its4landException as e:
+            self.plugin.showMessage(self.plugin.tr('[%s] %s' % (str(e.code), str(e))))
+            self.boundaryStringsUpdateButton.setEnabled(True)
+        except Exception as e:
+            self.plugin.showMessage(self.plugin.tr('[%s] Error has occured! %s' % ('???', str(e))))
+            self.boundaryStringsUpdateButton.setEnabled(True)
+
+    def updateEnabledBoundaryStringButtons(self) -> None:
+        upload_enabled = bool(self.project and self.plugin.finalLayer)
+        print(111111, str(upload_enabled), bool(self.project), bool(self.plugin.finalLayer))
+        self.boundaryStringsUploadButton.setEnabled(upload_enabled)
+        update_enabled = bool(self.project and self.plugin.finalLayer and self.boundaryString)
+        print(222222, str(update_enabled), bool(self.project), bool(self.plugin.finalLayer), bool(self.boundaryString))
+        self.boundaryStringsUpdateButton.setEnabled(update_enabled)
 
     def setValidationSetsError(self, msg: str) -> None:
         self.validationSetsErrorLabel.setVisible(msg != '')
@@ -320,6 +389,8 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         self.hide()
 
     def _updateProjectDetails(self, project: Optional[Dict[str, str]]):
+        self.updateEnabledBoundaryStringButtons()
+
         if not project:
             self.projectsNameValueLabel.setText('')
             self.projectsDescriptionValueLabel.setText('')
@@ -335,6 +406,8 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         self.projectsTagsValueLabel.setText(','.join(project['properties']['Tags']))
 
     def _updateValidationSetDetails(self, validationSet: Optional[Dict[str, str]], contentItem: Optional[Dict[str, str]]) -> None:
+        self.updateEnabledBoundaryStringButtons()
+
         if validationSet:
             self.validationSetsNameValueLabel.setText(validationSet['Name'])
             self.validationSetsDescriptionValueLabel.setText(validationSet['Description'])
@@ -351,6 +424,8 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
             self.validationSetsSizeValueLabel.setText('')
 
     def _updateBoundaryStringDetails(self, boundaryString: Optional[Dict[str, str]]) -> None:
+        self.updateEnabledBoundaryStringButtons()
+
         if boundaryString:
             self.boundaryStringsNameValueLabel.setText(boundaryString['name'])
             self.boundaryStringsFeaturesValueLabel.setText(str(len(boundaryString['features'])))
@@ -396,4 +471,3 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
 
         self.projectsListWidget.clear()
         self.projectsListWidget.addItems(list_items)
-

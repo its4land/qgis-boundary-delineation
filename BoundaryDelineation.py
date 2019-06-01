@@ -383,6 +383,9 @@ class BoundaryDelineation:
 
         self.resetProcessed()
 
+        self.dockWidget.its4landWindow.updateEnabledBoundaryStringButtons()
+
+
     def resetProcessed(self) -> None:
         self.toggleMapSelectionTool(False)
 

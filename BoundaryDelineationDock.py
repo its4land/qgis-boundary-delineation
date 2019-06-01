@@ -106,7 +106,6 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.__setIcon(self.editButton, 'edit.png')
         self.__setIcon(self.rejectButton, 'reject.png')
         self.__setIcon(self.finishButton, 'finishFlag.png')
-        self.__setIcon(self.uploadButton, 'icon.png')
 
         self.action = QAction(self.__getIcon('icon.png'), 'ITS4LAND Settings', iface.mainWindow())
         self.action.setWhatsThis('Settings')
@@ -402,17 +401,6 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
 
     def getPolygonizeChecked(self) -> bool:
         return self.polygonizeCheckBox.isChecked()
-
-    def getUploadIts4landChecked(self) -> bool:
-        return self.uploadCheckBox.isChecked()
-
-    def toggleUploadIts4land(self, enabled: bool = None) -> bool:
-        if enabled is None:
-            enabled = not self.uploadCheckBox.enabled()
-
-        self.uploadCheckBox.setEnabled(enabled)
-
-        return enabled
 
     def getConfirmation(self, title: str, body: str) -> bool:
         reply = QMessageBox.question(
