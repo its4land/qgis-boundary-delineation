@@ -26,16 +26,27 @@
 
 import os
 
+from typing import Any, Callable
+
 from PyQt5 import uic
 from PyQt5.QtCore import pyqtSignal, QSettings, QTranslator, qVersion, Qt
-from PyQt5.QtGui import QIcon, QColor, QPixmap, QCloseEvent
-from PyQt5.QtWidgets import QDockWidget, QAction, QFileDialog, QToolBar, QMessageBox, QPushButton, QLabel
+from PyQt5.QtGui import QIcon, QColor, QPixmap, QCloseEvent, QKeySequence
+from PyQt5.QtWidgets import QDockWidget, QAction, QFileDialog, QWidget, QMessageBox, QPushButton, QLabel, QShortcut
 
 from qgis.core import QgsMapLayerProxyModel, QgsFieldProxyModel, QgsVectorLayer, QgsRasterLayer
 from qgis.utils import iface
 
 from .utils import SelectionModes
 from .BoundaryDelineationIts4landWindow import BoundaryDelineationIts4landWindow
+
+SC_MODE_POLYGONS = 'Ctrl+Alt+1'
+SC_MODE_LINES = 'Ctrl+Alt+2'
+SC_MODE_VERTICES = 'Ctrl+Alt+3'
+SC_MODE_MANUAL = 'Ctrl+Alt+4'
+SC_ACCEPT = 'Ctrl+Alt+A'
+SC_REJECT = 'Ctrl+Alt+C'
+SC_EDIT = 'Ctrl+Alt+E'
+SC_UPDATE = 'Ctrl+Alt+U'
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'BoundaryDelineationDock.ui'))
 class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
@@ -75,8 +86,8 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.addLengthAttributeCheckBox.toggled.connect(self.onAddLengthAttributeCheckBoxToggled)
         self.processButton.clicked.connect(self.onProcessButtonClicked)
 
-        self.modeEnclosingRadio.toggled.connect(self.onModeEnclosingRadioToggled)
-        self.modeNodesRadio.toggled.connect(self.onModeNodesRadioToggled)
+        self.modePolygonsRadio.toggled.connect(self.onModePolygonsRadioToggled)
+        self.modeVerticesRadio.toggled.connect(self.onModeVerticesRadioToggled)
         self.modeLinesRadio.toggled.connect(self.onModeLinesRadioToggled)
         self.modeManualRadio.toggled.connect(self.onModeManualRadioToggled)
 
@@ -113,6 +124,67 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
 
         if self.segmentsLayerComboBox.currentLayer():
             self.segmentsLayerComboBox.layerChanged.emit(self.segmentsLayerComboBox.currentLayer())
+
+        self.createShortcut(SC_MODE_POLYGONS, self.modePolygonsRadio, self.onShortcutModePolygons)
+        self.createShortcut(SC_MODE_LINES, self.modeLinesRadio, self.onShortcutModeLines)
+        self.createShortcut(SC_MODE_VERTICES, self.modeVerticesRadio, self.onShortcutModeVertices)
+        self.createShortcut(SC_MODE_MANUAL, self.modeManualRadio, self.onShortcutModeManual)
+        self.createShortcut(SC_ACCEPT, self.acceptButton, self.onShortcutAccept)
+        self.createShortcut(SC_REJECT, self.rejectButton, self.onShortcutReject)
+        self.createShortcut(SC_EDIT, self.editButton, self.onShortcutEdit)
+        self.createShortcut(SC_UPDATE, self.updateEditsButton, self.onShortcutUpdate)
+
+    def createShortcut(self, sequence: str, widget: QWidget, callback: Callable):
+        """Create shortcut and add the key sequence to the tooltip.
+
+        Args:
+            sequence (str): The key sequece of the shorcut (e.g. Ctrl+2)
+            widget (QWidget): The widget that is applied on
+            callback (Callable): Callback
+        """
+        widget.setToolTip(widget.toolTip() + ' (%s)' % sequence)
+        shortcut = QShortcut(QKeySequence(sequence), self)
+        shortcut.activated.connect(callback)
+
+    def onShortcutModePolygons(self) -> None:
+        """Trigger activation of mode Polygons."""
+        if self.isAlreadyProcessed:
+            self.plugin.setSelectionMode(SelectionModes.ENCLOSING)
+
+    def onShortcutModeLines(self) -> None:
+        """Trigger activation of mode Lines."""
+        if self.isAlreadyProcessed:
+            self.plugin.setSelectionMode(SelectionModes.LINES)
+
+    def onShortcutModeVertices(self) -> None:
+        """Trigger activation of mode Vertices."""
+        if self.isAlreadyProcessed:
+            self.plugin.setSelectionMode(SelectionModes.NODES)
+
+    def onShortcutModeManual(self) -> None:
+        """Trigger activation of mode Manual."""
+        if self.isAlreadyProcessed:
+            self.plugin.setSelectionMode(SelectionModes.MANUAL)
+
+    def onShortcutAccept(self) -> None:
+        """Accept the current candidate."""
+        if self.isAlreadyProcessed:
+            self.acceptButton.animateClick()
+
+    def onShortcutReject(self) -> None:
+        """Reject the current candidate."""
+        if self.isAlreadyProcessed:
+            self.rejectButton.animateClick()
+
+    def onShortcutEdit(self) -> None:
+        """Edit the current candidate."""
+        if self.isAlreadyProcessed:
+            self.editButton.animateClick()
+
+    def onShortcutUpdate(self) -> None:
+        """Update the edits."""
+        if self.isAlreadyProcessed:
+            self.updateEditsButton.animateClick()
 
     def onIts4landButtonClicked(self):
         self.its4landWindow.show()
@@ -179,7 +251,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
     def onOutputLayerLineEditChanged(self, text: str) -> None:
         pass
 
-    def onModeNodesRadioToggled(self, checked: bool) -> None:
+    def onModeVerticesRadioToggled(self, checked: bool) -> None:
         self.weightComboBox.setEnabled(checked)
 
         if checked:
@@ -191,7 +263,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
             self.plugin.setSelectionMode(SelectionModes.LINES)
             self.editButton.setChecked(False)
 
-    def onModeEnclosingRadioToggled(self, checked: bool) -> None:
+    def onModePolygonsRadioToggled(self, checked: bool) -> None:
         if checked:
             self.plugin.setSelectionMode(SelectionModes.ENCLOSING)
             self.editButton.setChecked(False)
@@ -222,7 +294,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.plugin.toggleEditCandidates()
         # putting here self.plugin.refreshSelectionModeBehavior() causes infinite loop.
 
-    def onUpdateEditsButtonClicked(self) -> bool:
+    def onUpdateEditsButtonClicked(self) -> None:
         self.plugin.updateLayersTopology()
 
     def onFinishButtonClicked(self) -> None:
@@ -279,12 +351,12 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
     def updateSelectionModeButtons(self) -> None:
         if self.plugin.selectionMode is SelectionModes.NONE:
             # using QRadioButton.setAutoExclusive gives the ability to deselect all the radio buttons at once
-            self.modeEnclosingRadio.setAutoExclusive(False)
-            self.modeEnclosingRadio.setChecked(False)
-            self.modeEnclosingRadio.setAutoExclusive(True)
-            self.modeNodesRadio.setAutoExclusive(False)
-            self.modeNodesRadio.setChecked(False)
-            self.modeNodesRadio.setAutoExclusive(True)
+            self.modePolygonsRadio.setAutoExclusive(False)
+            self.modePolygonsRadio.setChecked(False)
+            self.modePolygonsRadio.setAutoExclusive(True)
+            self.modeVerticesRadio.setAutoExclusive(False)
+            self.modeVerticesRadio.setChecked(False)
+            self.modeVerticesRadio.setAutoExclusive(True)
             self.modeLinesRadio.setAutoExclusive(False)
             self.modeLinesRadio.setChecked(False)
             self.modeLinesRadio.setAutoExclusive(True)
@@ -294,11 +366,11 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
             return
 
         if self.plugin.isMapSelectionToolEnabled and self.plugin.selectionMode == SelectionModes.ENCLOSING:
-            self.modeEnclosingRadio.setChecked(True)
+            self.modePolygonsRadio.setChecked(True)
             return
 
         if self.plugin.isMapSelectionToolEnabled and self.plugin.selectionMode == SelectionModes.NODES:
-            self.modeNodesRadio.setChecked(True)
+            self.modeVerticesRadio.setChecked(True)
             return
 
         if self.plugin.isMapSelectionToolEnabled and self.plugin.selectionMode == SelectionModes.LINES:

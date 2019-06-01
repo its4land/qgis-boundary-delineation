@@ -14,7 +14,7 @@
    <bool>false</bool>
   </property>
   <property name="windowTitle">
-   <string>&amp;Delineation Widget</string>
+   <string>Delineation Widget</string>
   </property>
   <widget class="QWidget" name="dockWidgetContents">
    <layout class="QGridLayout" name="gridLayout">
@@ -265,7 +265,7 @@
            </size>
           </property>
           <property name="toolTip">
-           <string>Reject feature in candidates layer (Shift+Ctrl+R). Deletes feature and restarts delineation.</string>
+           <string>Reject feature in candidates layer. Deletes feature and restarts delineation.</string>
           </property>
           <property name="layoutDirection">
            <enum>Qt::LeftToRight</enum>
@@ -303,7 +303,7 @@
            </size>
           </property>
           <property name="toolTip">
-           <string>Edit feature in candidates layer (Shift+Ctrl+R). Enables Toggle Editing.</string>
+           <string>Edit feature in candidates layer. Enables Toggle Editing.</string>
           </property>
           <property name="text">
            <string>Edit</string>
@@ -397,7 +397,7 @@
            </size>
           </property>
           <property name="toolTip">
-           <string>Accept feature in candidates layer (Space). Moves feature to final layer and restarts delineation.</string>
+           <string>Accept feature in candidates layer. Moves feature to final layer and restarts delineation.</string>
           </property>
           <property name="text">
            <string>Accept </string>
@@ -457,9 +457,9 @@
            <number>0</number>
           </property>
           <item>
-           <widget class="QRadioButton" name="modeEnclosingRadio">
+           <widget class="QRadioButton" name="modePolygonsRadio">
             <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Click inside polygon or select lines around which to create a polygon.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             <string>Click inside polygon or select lines around which to create a polygon.</string>
             </property>
             <property name="text">
              <string>Polygons</string>
@@ -469,20 +469,20 @@
           <item>
            <widget class="QRadioButton" name="modeLinesRadio">
             <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Connect lines surrounding a click or a selection of lines.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             <string>Connect lines surrounding a click or a selection of lines.</string>
             </property>
             <property name="text">
-             <string>&amp;Lines</string>
+             <string>Lines</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QRadioButton" name="modeNodesRadio">
+           <widget class="QRadioButton" name="modeVerticesRadio">
             <property name="toolTip">
              <string>Connect between lines’ endpoints</string>
             </property>
             <property name="text">
-             <string>&amp;Nodes</string>
+             <string>Vertices</string>
             </property>
            </widget>
           </item>
@@ -492,7 +492,7 @@
              <string>Connect manual clicks</string>
             </property>
             <property name="text">
-             <string>&amp;Manual</string>
+             <string>Manual</string>
             </property>
             <property name="autoExclusive">
              <bool>true</bool>
