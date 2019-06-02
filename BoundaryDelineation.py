@@ -26,7 +26,7 @@
 
 import os
 import typing
-from typing import Optional
+from typing import Optional, Collection
 
 from PyQt5.QtCore import QSettings, QTranslator, Qt, QVariant, QCoreApplication
 from PyQt5.QtWidgets import QAction, QToolBar, QMessageBox
@@ -56,6 +56,8 @@ from .BoundaryGraph import NoSuitableGraphError, prepare_graph_from_lines, prepa
 BOUNDARY_ATTR_NAME = 'boundary'
 PRECALCULATE_METRIC_CLOSURES = False
 DEFAULT_SELECTION_MODE = SelectionModes.ENCLOSING
+MODE_VERTICES_EXTENT_LIMIT = 300
+MODE_VERTICES_LIMIT = 1000
 
 SelectBehaviour = int
 MessageLevel = int
@@ -186,6 +188,8 @@ class BoundaryDelineation:
         self.dockWidget.closingPlugin.connect(self.onClosePlugin)
 
         self.canvas.mapToolSet.connect(self.onMapToolSet)
+        self.canvas.extentsChanged.connect(self.onExtentsChanged)
+
 
     def unload(self) -> None:
         """Removes the plugin menu item and icon from QGIS GUI."""
@@ -341,6 +345,26 @@ class BoundaryDelineation:
 
     def onClosePlugin(self) -> None:
         self.actions[0].setChecked(False)
+
+    def onExtentsChanged(self) -> None:
+        assert self.dockWidget
+
+        if not self.verticesLayer:
+            return
+
+        extent = self.canvas.extent()
+        count = len(list(self.verticesLayer.getFeatures(extent)))
+
+        self.buildVerticesGraph()
+
+        if count <= MODE_VERTICES_EXTENT_LIMIT:
+            self.verticesLayer.selectByIds([])
+            self.dockWidget.toggleVerticesRadioEnabled(True)
+        else:
+            self.setSelectionMode(DEFAULT_SELECTION_MODE)
+            self.showMessage(self.tr('Selection mode change to default'))
+
+            self.dockWidget.toggleVerticesRadioEnabled(False)
 
     @processing_cursor()
     def processFirstStep(self) -> None:
@@ -657,13 +681,28 @@ class BoundaryDelineation:
         self.polygonizedLayer = utils.polyginize_lines(self.simplifiedSegmentsLayer)
 
     def buildVerticesGraph(self) -> None:
+        assert self.verticesLayer
         assert self.simplifiedSegmentsLayer
 
-        self.graph = prepare_graph_from_lines(self.simplifiedSegmentsLayer)
-        self.subgraphs = prepare_subgraphs(self.graph)
-        self.metricClosureGraphs[self.edgesWeightField] = self.calculateMetricClosure() if PRECALCULATE_METRIC_CLOSURES else None
+        extent = self.canvas.extent()
+        count = len(list(self.verticesLayer.getFeatures(extent)))
 
-    def calculateMetricClosure(self) -> typing.List[typing.Any]:
+        if self.verticesLayer.featureCount() <= MODE_VERTICES_LIMIT:
+            if not self.graph:
+                self.graph = prepare_graph_from_lines(self.simplifiedSegmentsLayer)
+                self.subgraphs = prepare_subgraphs(self.graph)
+                self.metricClosureGraphs[self.edgesWeightField] = self.calculateMetricClosure(self.subgraphs) if PRECALCULATE_METRIC_CLOSURES else None
+        elif count <= MODE_VERTICES_EXTENT_LIMIT:
+            self.graph = prepare_graph_from_lines(self.simplifiedSegmentsLayer, filter_expr=extent)
+            self.subgraphs = prepare_subgraphs(self.graph)
+            self.metricClosureGraphs[self.edgesWeightField] = self.calculateMetricClosure(self.subgraphs) if PRECALCULATE_METRIC_CLOSURES else None
+        else:
+            self.graph = None
+            self.subgraphs = None
+            self.metricClosureGraphs[self.edgesWeightField] = None
+
+    @processing_cursor()
+    def calculateMetricClosure(self, subgraphs: Collection) -> typing.List[typing.Any]:
         self.showMessage(self.tr('It may take some time to precalculate the most optimal boundaries...'))
         return calculate_subgraphs_metric_closures(self.subgraphs, weight=self.edgesWeightField)
 
@@ -726,7 +765,7 @@ class BoundaryDelineation:
         elif self.selectionMode == SelectionModes.LINES:
             lines = self.getLinesSelectionModeLines(selectBehaviour, rect)
         elif self.selectionMode == SelectionModes.NODES:
-            lines = self.getLinesSelectionModeNodes(selectBehaviour, rect)
+            lines = self.getLinesSelectionModeVertices(selectBehaviour, rect)
 
             if lines is None:
                 return
@@ -810,7 +849,7 @@ class BoundaryDelineation:
 
         return tuple(dissolvedLinesLayer2.getFeatures())
 
-    def getLinesSelectionModeNodes(self, selectBehaviour: SelectBehaviour, rect: QgsRectangle) -> Optional[typing.Tuple]:
+    def getLinesSelectionModeVertices(self, selectBehaviour: SelectBehaviour, rect: QgsRectangle) -> Optional[typing.Tuple]:
         assert self.verticesLayer
         assert self.simplifiedSegmentsLayer
         assert self.candidatesLayer
@@ -835,17 +874,17 @@ class BoundaryDelineation:
                 return [f for f in self.simplifiedSegmentsLayer.getFeatures([edgeId])]
 
             self.candidatesLayer.rollBack()
-            # TODO there are self enclosing blocks that can be handled here (one node that is conected to itself)
-            self.showMessage(self.tr('Please select two or more nodes to be connected'))
+            # TODO there are self enclosing blocks that can be handled here (one vertex that is conected to itself)
+            self.showMessage(self.tr('Please select two or more vertices to be connected'))
             return
 
         try:
             if self.metricClosureGraphs[self.edgesWeightField] is None:
-                self.metricClosureGraphs[self.edgesWeightField] = self.calculateMetricClosure()
+                self.metricClosureGraphs[self.edgesWeightField] = self.calculateMetricClosure(self.subgraphs)
 
             T = find_steiner_tree(self.subgraphs, selectedPoints, metric_closures=self.metricClosureGraphs[self.edgesWeightField])
         except NoSuitableGraphError:
-            # this is hapenning when the user selects nodes from two separate graphs
+            # this is hapenning when the user selects vertices from two separate graphs
             return
 
         # edge[2] stays for the line ids
@@ -862,7 +901,7 @@ class BoundaryDelineation:
             bestEdgeValue = None
 
             for k, e in edgesDict.items():
-                # find the cheapest edge that is not already selected (in case there are two nodes
+                # find the cheapest edge that is not already selected (in case there are two vertices
                 # selected and there are more than one edges connecting them)
                 if k not in featureIds and (bestEdgeValue is None or bestEdgeValue > e[self.edgesWeightField]):
                     bestEdgeKey = k

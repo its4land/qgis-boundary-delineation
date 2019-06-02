@@ -378,6 +378,12 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
 
         self.modeManualRadio.setChecked(True)
 
+    def toggleVerticesRadioEnabled(self, enabled: bool = None) -> None:
+        if enabled is None:
+            enabled = not self.modeVerticesRadio.enabled()
+
+        self.modeVerticesRadio.setEnabled(enabled)
+
     def toggleAddLengthAttributeCheckBoxEnabled(self, enabled: bool = None) -> None:
         if enabled is None:
             enabled = not self.addLengthAttributeCheckBox.enabled()

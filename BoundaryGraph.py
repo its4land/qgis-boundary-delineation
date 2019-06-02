@@ -31,8 +31,8 @@ if LOCAL_NETWORKX_PATH not in sys.path:
 
 import networkx as nx
 from networkx.algorithms.approximation.steinertree import steiner_tree, metric_closure
-from qgis.core import QgsWkbTypes, QgsExpression
-from typing import Collection as CollectionT
+from qgis.core import QgsWkbTypes, QgsExpression, QgsRectangle, QgsVectorLayer
+from typing import Collection as CollectionT, Union, List
 
 DEFAULT_WEIGHT_NAME = 'weight'
 DEFAULT_WEIGHT_VALUE = 1
@@ -46,7 +46,7 @@ class NoSuitableGraphError(BoundaryDelineationError):
         self.message = message
 
 
-def prepare_graph_from_lines(layer, weight_expr_str: str = None) -> nx.MultiGraph:
+def prepare_graph_from_lines(layer: QgsVectorLayer, weight_expr_str: str = None, filter_expr: Union[QgsRectangle, str, List] = '') -> nx.MultiGraph:
     if layer.geometryType() != QgsWkbTypes.LineGeometry:
         raise Exception('Only line layers are accepted')
 
@@ -63,7 +63,7 @@ def prepare_graph_from_lines(layer, weight_expr_str: str = None) -> nx.MultiGrap
         if field.isNumeric():
             numeric_fields_names.append(field.name())
 
-    for f in layer.getFeatures():
+    for f in layer.getFeatures(filter_expr):
         geom = f.geometry()
         is_multipart = geom.isMultipart()
 
@@ -95,7 +95,7 @@ def prepare_graph_from_lines(layer, weight_expr_str: str = None) -> nx.MultiGrap
 
     return G
 
-def prepare_subgraphs(G: nx.MultiGraph) -> tuple:
+def prepare_subgraphs(G: nx.MultiGraph) -> CollectionT:
     return tuple(nx.connected_component_subgraphs(G))
 
 def find_steiner_tree(graphs: CollectionT, terminal_nodes: CollectionT, metric_closures: typing.List[nx.Graph] = None) -> nx.Graph:

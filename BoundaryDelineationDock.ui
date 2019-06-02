@@ -392,8 +392,11 @@
           </item>
           <item>
            <widget class="QRadioButton" name="modeVerticesRadio">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="toolTip">
-             <string>Connect between lines’ endpoints</string>
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Connect between lines’ endpoints&lt;/p&gt;&lt;p&gt;This is enabled only when it's considered to be computationally effective.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
             <property name="text">
              <string>Vertices</string>
