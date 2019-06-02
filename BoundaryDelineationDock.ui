@@ -202,7 +202,7 @@
          <widget class="QDoubleSpinBox" name="segmentsLayerSimplifyInput">
           <property name="maximumSize">
            <size>
-            <width>155</width>
+            <width>140</width>
             <height>16777215</height>
            </size>
           </property>
@@ -215,6 +215,9 @@ Simply setting the tolerance lower produces better results for the UAV data, but
           </property>
           <property name="suffix">
            <string>m</string>
+          </property>
+          <property name="decimals">
+           <number>1</number>
           </property>
           <property name="maximum">
            <double>10.000000000000000</double>
