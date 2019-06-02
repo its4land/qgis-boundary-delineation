@@ -526,10 +526,11 @@ class BoundaryDelineation:
         assert self.segmentsLayer
         assert self.dockWidget
 
+        tolerance = self.dockWidget.getSimplificationValue()
         result = processing.run('qgis:simplifygeometries', {
             'INPUT': self.segmentsLayer,
             'METHOD': 0,
-            'TOLERANCE': 1.0,
+            'TOLERANCE': tolerance,
             'OUTPUT': 'memory:simplifygeometries'
         })
 

@@ -347,6 +347,9 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.its4landButton.setDisabled(disabled)
         self.addLengthAttributeCheckBox.setDisabled(disabled or not self.plugin.isAddingLengthAttributePossible())
 
+    def getSimplificationValue(self) -> float:
+        return self.segmentsLayerSimplifyInput.value()
+
     def updateSelectionModeButtons(self) -> None:
         if self.plugin.selectionMode is SelectionModes.NONE:
             # using QRadioButton.setAutoExclusive gives the ability to deselect all the radio buttons at once
