@@ -361,8 +361,9 @@ class BoundaryDelineation:
             self.verticesLayer.selectByIds([])
             self.dockWidget.toggleVerticesRadioEnabled(True)
         else:
-            self.setSelectionMode(DEFAULT_SELECTION_MODE)
-            self.showMessage(self.tr('Selection mode change to default'))
+            if self.selectionMode == SelectionModes.NODES:
+                self.setSelectionMode(DEFAULT_SELECTION_MODE)
+                self.showMessage(self.tr('Selection mode change to default'))
 
             self.dockWidget.toggleVerticesRadioEnabled(False)
 
