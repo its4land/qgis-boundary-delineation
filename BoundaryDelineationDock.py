@@ -340,6 +340,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.baseRasterLayerButton.setDisabled(disabled)
         self.baseRasterLayerComboBox.setDisabled(disabled)
         self.segmentsLayerButton.setDisabled(disabled)
+        self.segmentsLayerSimplifyInput.setDisabled(disabled)
         self.segmentsLayerComboBox.setDisabled(disabled)
         self.outputLayerLineEdit.setDisabled(disabled)
         self.outputLayerButton.setDisabled(disabled)
