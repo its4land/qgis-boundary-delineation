@@ -27,7 +27,7 @@ from typing import List, Dict, Optional
 from .Its4landAPI import Its4landException
 from .utils import get_tmp_dir
 from . import utils
-from .utils import __, show_info, show_error
+from .utils import __, show_info, show_error, get_group
 
 from qgis.core import QgsVectorLayer, QgsWkbTypes, QgsVectorFileWriter
 from PyQt5 import uic
@@ -256,7 +256,7 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
                 show_info(__('Validation set file is not with line geometries'))
                 return
 
-            utils.add_layer(layer, self.validationSet['Name'], parent=self.plugin.getGroup(), index=0)
+            utils.add_layer(layer, self.validationSet['Name'], parent=get_group(), index=0)
             layer = self.plugin.setSegmentsLayer(layer, name=self.validationSet['Name'])
 
             if layer:
@@ -301,7 +301,7 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
             show_info(__('Boundary face strings file is not with line geometries'))
             return
 
-        utils.add_layer(layer, self.boundaryString['name'], parent=self.plugin.getGroup(), index=0)
+        utils.add_layer(layer, self.boundaryString['name'], parent=get_group(), index=0)
 
     def _prepareBoundaryStringsGeojson(self, layer: QgsVectorLayer, project_id: str) -> dict:
         layer = utils.multipart_to_singleparts(layer)

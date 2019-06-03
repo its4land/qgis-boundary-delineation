@@ -13,12 +13,13 @@ from PyQt5.QtWidgets import QApplication, QPushButton, QLabel
 
 import processing
 
-from qgis.core import Qgis, QgsProject, QgsMarkerSymbol, QgsLineSymbol, QgsSingleSymbolRenderer, QgsGraduatedSymbolRenderer, QgsLayerTreeNode, QgsVectorLayer, QgsRasterLayer, QgsMapLayer, QgsPoint, QgsVectorFileWriter, QgsCoordinateReferenceSystem
+from qgis.core import Qgis, QgsProject, QgsMarkerSymbol, QgsLineSymbol, QgsSingleSymbolRenderer, QgsGraduatedSymbolRenderer, QgsLayerTreeNode, QgsVectorLayer, QgsRasterLayer, QgsMapLayer, QgsPoint, QgsVectorFileWriter, QgsCoordinateReferenceSystem, QgsLayerTreeGroup
 from qgis.utils import iface
 
 PLUGIN_DIR = os.path.dirname(__file__)
 TMP_DIR = 'boundarydeleniation'
 APP_NAME = 'BoundaryDelineation'
+GROUP_NAME = 'BoundaryDelineation'
 
 def __(msg: str) -> str:
     """Get the translation for a string using Qt translation API.
@@ -82,6 +83,23 @@ def set_label_icon(label: QLabel, icon: str) -> None:
     """
     label.setPixmap(QPixmap(os.path.join(PLUGIN_DIR, 'icons', icon)))
 
+def get_group(index: int = 0) -> QgsLayerTreeGroup:
+    """Get or create group in the layer tree.
+
+    Args:
+        index (int, optional): Index position where to put the group in case of creation
+
+    Returns:
+        QgsLayerTreeGroup: The group element
+
+    """
+    layerTree = QgsProject.instance().layerTreeRoot()
+    group = layerTree.findGroup(GROUP_NAME)
+
+    if not group:
+        group = layerTree.insertGroup(index, GROUP_NAME)
+
+    return group
 
 def processing_cursor(cursor=QCursor(Qt.WaitCursor)) -> typing.Callable:
     def processing_cursor_decorator(func):

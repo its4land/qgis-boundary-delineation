@@ -32,7 +32,7 @@ from PyQt5.QtCore import QSettings, QTranslator, Qt, QVariant, QCoreApplication
 from PyQt5.QtWidgets import QAction, QToolBar, QMessageBox
 from PyQt5.QtGui import QIcon
 
-from qgis.core import QgsProject, QgsCoordinateReferenceSystem, QgsLayerTree, QgsLayerTreeNode, QgsLayerTreeGroup, QgsPointXY, QgsVectorLayer, \
+from qgis.core import QgsProject, QgsCoordinateReferenceSystem, QgsLayerTree, QgsLayerTreeNode, QgsPointXY, QgsVectorLayer, \
     QgsRasterLayer, QgsMapLayer, QgsWkbTypes, QgsVectorFileWriter, QgsCoordinateTransform, QgsField, QgsDefaultValue, QgsRectangle, QgsFeatureIterator, \
     QgsFeature, QgsGeometry, QgsTolerance, QgsMapSettings
 from qgis.gui import QgisInterface, QgsMapTool
@@ -49,7 +49,7 @@ from .Its4landAPI import Its4landAPI
 from .BoundaryDelineationDock import BoundaryDelineationDock
 from .MapSelectionTool import MapSelectionTool
 from . import utils
-from .utils import PLUGIN_DIR, APP_NAME, SelectionModes, processing_cursor, __, show_info
+from .utils import PLUGIN_DIR, APP_NAME, SelectionModes, processing_cursor, __, show_info, get_group
 from .BoundaryGraph import NoSuitableGraphError, prepare_graph_from_lines, prepare_subgraphs, calculate_subgraphs_metric_closures, \
     find_steiner_tree, DEFAULT_WEIGHT_NAME
 
@@ -211,14 +211,6 @@ class BoundaryDelineation:
             self.dockWidget.hide()
         else:
             self.dockWidget.show()
-
-    def getGroup(self, index: int = 0) -> QgsLayerTreeGroup:
-        group = self.layerTree.findGroup(self.groupName)
-
-        if not group:
-            group = self.layerTree.insertGroup(index, self.groupName)
-
-        return group
 
     def toggleMapSelectionTool(self, toggle: bool = None) -> None:
         if toggle is None:
@@ -386,7 +378,7 @@ class BoundaryDelineation:
 
         if self.dockWidget.getPolygonizeChecked():
             self.finalLayerPolygons = utils.polyginize_lines(self.finalLayer)
-            utils.add_layer(self.finalLayerPolygons, self.finalLayerPolygonsName, parent=self.getGroup())
+            utils.add_layer(self.finalLayerPolygons, self.finalLayerPolygonsName, parent=get_group())
 
         self.resetProcessed()
 
@@ -457,7 +449,7 @@ class BoundaryDelineation:
 
             baseRasterLayerTreeIdx = utils.get_tree_node_index(baseRasterLayer, top=True) or 0
 
-            group = self.getGroup(baseRasterLayerTreeIdx)
+            group = get_group(baseRasterLayerTreeIdx)
 
             if baseRasterLayerTreeIdx is not None and not group.findLayer(baseRasterLayer.id()):
                 utils.move_tree_node(group, baseRasterLayerTreeIdx)
@@ -479,13 +471,13 @@ class BoundaryDelineation:
             self.wasSegmentsLayerInitiallyInLegend = False
             segmentsLayer = QgsVectorLayer(segmentsLayer, name, 'ogr')
 
-            utils.add_layer(segmentsLayer, name, parent=self.getGroup(), index=0)
+            utils.add_layer(segmentsLayer, name, parent=get_group(), index=0)
         else:
             self.wasSegmentsLayerInitiallyInLegend = True
 
         # BUG if I keep this, I have double adding to the map
         # if not self.layerTree.findLayer(segmentsLayer.id()):
-        #     utils.add_layer(segmentsLayer, name, parent=self.getGroup(), index=0)
+        #     utils.add_layer(segmentsLayer, name, parent=get_group(), index=0)
 
         if segmentsLayer.geometryType() != QgsWkbTypes.LineGeometry:
             show_info(__('Please use segments layer that is with lines geometry'))
@@ -532,7 +524,7 @@ class BoundaryDelineation:
             self.simplifiedSegmentsLayerName,
             color=(0, 255, 0),
             file=self.__getStylePath('segments.qml'),
-            parent=self.getGroup(),
+            parent=get_group(),
             index=layerTreeIndex
         )
 
@@ -574,7 +566,7 @@ class BoundaryDelineation:
 
             # All my other attempts also failed miserably
             # group = self.layerTree.findGroup(self.groupName)
-            # return group is self.getGroup()
+            # return group is get_group()
             pass
         else:
             layer = self.project.mapLayer(node.layerId())
@@ -624,8 +616,8 @@ class BoundaryDelineation:
 
         layerTreeIndex = utils.get_tree_node_index(self.simplifiedSegmentsLayer)
 
-        utils.add_layer(candidatesLayer, file=self.__getStylePath('candidates.qml'), parent=self.getGroup(), index=layerTreeIndex + 1)
-        utils.add_layer(finalLayer, file=self.__getStylePath('final.qml'), parent=self.getGroup(), index=layerTreeIndex + 2)
+        utils.add_layer(candidatesLayer, file=self.__getStylePath('candidates.qml'), parent=get_group(), index=layerTreeIndex + 1)
+        utils.add_layer(finalLayer, file=self.__getStylePath('final.qml'), parent=get_group(), index=layerTreeIndex + 2)
 
         candidatesLayer.featureAdded.connect(self.onCandidatesLayerFeatureChanged)
         candidatesLayer.featuresDeleted.connect(self.onCandidatesLayerFeatureChanged)
@@ -655,7 +647,7 @@ class BoundaryDelineation:
 
         self.verticesLayer = verticesNoDuplicatesResult['OUTPUT']
 
-        utils.add_layer(self.verticesLayer, self.verticesLayerName, color=(255, 0, 0), size=1.3, parent=self.getGroup(), index=0)
+        utils.add_layer(self.verticesLayer, self.verticesLayerName, color=(255, 0, 0), size=1.3, parent=get_group(), index=0)
 
         return self.verticesLayer
 
