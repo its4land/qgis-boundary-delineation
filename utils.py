@@ -8,14 +8,15 @@ from enum import Enum
 from collections import defaultdict
 
 from PyQt5.QtCore import Qt, QDir, QCoreApplication
-from PyQt5.QtGui import QCursor, QColor
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtGui import QCursor, QColor, QIcon, QPixmap
+from PyQt5.QtWidgets import QApplication, QPushButton, QLabel
 
 import processing
 
 from qgis.core import Qgis, QgsProject, QgsMarkerSymbol, QgsLineSymbol, QgsSingleSymbolRenderer, QgsGraduatedSymbolRenderer, QgsLayerTreeNode, QgsVectorLayer, QgsRasterLayer, QgsMapLayer, QgsPoint, QgsVectorFileWriter, QgsCoordinateReferenceSystem
 from qgis.utils import iface
 
+PLUGIN_DIR = os.path.dirname(__file__)
 TMP_DIR = 'boundarydeleniation'
 APP_NAME = 'BoundaryDelineation'
 
@@ -40,7 +41,7 @@ def show_info(msg: str, duration: int = 5) -> None:
     """
     iface.messageBar().pushMessage(APP_NAME, msg, Qgis.Info, duration)
 
-def show_error(self, msg: str, duration: int = 5) -> None:
+def show_error(msg: str, duration: int = 5) -> None:
     """Show error message.
 
     Args:
@@ -48,6 +49,38 @@ def show_error(self, msg: str, duration: int = 5) -> None:
         duration (int, optional): Duration to have the message visible
     """
     iface.messageBar().pushMessage(APP_NAME, msg, Qgis.Error, duration)
+
+def create_icon(icon: str) -> QIcon:
+    """Create icon object with icon image.
+
+    Args:
+        icon (str): path to file inside the icons dir
+
+    Returns:
+        QIcon: created icon
+
+    """
+    return QIcon(os.path.join(PLUGIN_DIR, 'icons', icon))
+
+def set_button_icon(button: QPushButton, icon: str) -> None:
+    """Set icon object on a button.
+
+    Args:
+        button (QPushButton): Button to set the icon to
+        icon (str): path to file inside the icons dir
+
+    """
+    button.setIcon(create_icon(icon))
+
+def set_label_icon(label: QLabel, icon: str) -> None:
+    """Set icon as background of an label.
+
+    Args:
+        label (QLabel): Label to set the icon to
+        icon (str): path to file inside the icons dir
+
+    """
+    label.setPixmap(QPixmap(os.path.join(PLUGIN_DIR, 'icons', icon)))
 
 
 def processing_cursor(cursor=QCursor(Qt.WaitCursor)) -> typing.Callable:

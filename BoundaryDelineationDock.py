@@ -30,13 +30,13 @@ from typing import Callable
 
 from PyQt5 import uic
 from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtGui import QIcon, QPixmap, QCloseEvent, QKeySequence
-from PyQt5.QtWidgets import QDockWidget, QAction, QFileDialog, QWidget, QMessageBox, QPushButton, QLabel, QShortcut
+from PyQt5.QtGui import QCloseEvent, QKeySequence
+from PyQt5.QtWidgets import QDockWidget, QAction, QFileDialog, QWidget, QMessageBox, QShortcut
 
 from qgis.core import QgsMapLayerProxyModel, QgsFieldProxyModel, QgsVectorLayer, QgsRasterLayer
 from qgis.utils import iface
 
-from .utils import SelectionModes, __
+from .utils import SelectionModes, __, create_icon, set_button_icon, set_label_icon
 from .BoundaryDelineationIts4landWindow import BoundaryDelineationIts4landWindow
 
 SC_MODE_POLYGONS = 'Ctrl+Alt+1'
@@ -100,13 +100,13 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
 
         self.weightComboBox.setFilters(QgsFieldProxyModel.Numeric)
 
-        self.__setImage(self.its4landLabel, 'its4landLogo.png')
-        self.__setIcon(self.acceptButton, 'accept.png')
-        self.__setIcon(self.editButton, 'edit.png')
-        self.__setIcon(self.rejectButton, 'reject.png')
-        self.__setIcon(self.finishButton, 'finishFlag.png')
+        set_label_icon(self.its4landLabel, 'its4landLogo.png')
+        set_button_icon(self.acceptButton, 'accept.png')
+        set_button_icon(self.editButton, 'edit.png')
+        set_button_icon(self.rejectButton, 'reject.png')
+        set_button_icon(self.finishButton, 'finishFlag.png')
 
-        self.action = QAction(self.__getIcon('icon.png'), 'ITS4LAND Settings', iface.mainWindow())
+        self.action = QAction(create_icon('icon.png'), 'ITS4LAND Settings', iface.mainWindow())
         self.action.setWhatsThis('Settings')
         self.action.setStatusTip('ITS4LAND Settings')
         self.action.setObjectName('its4landButton')
@@ -441,12 +441,3 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
 
     def setComboboxLayer(self, layer: QgsVectorLayer) -> None:
         self.weightComboBox.setLayer(layer)
-
-    def __getIcon(self, icon: str) -> QIcon:
-        return QIcon(os.path.join(self.plugin.pluginDir, 'icons', icon))
-
-    def __setImage(self, label: QLabel, icon: str) -> None:
-        label.setPixmap(QPixmap(os.path.join(self.plugin.pluginDir, 'icons', icon)))
-
-    def __setIcon(self, button: QPushButton, icon: str) -> None:
-        button.setIcon(self.__getIcon(icon))

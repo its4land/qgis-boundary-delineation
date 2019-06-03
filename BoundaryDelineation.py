@@ -32,7 +32,7 @@ from PyQt5.QtCore import QSettings, QTranslator, Qt, QVariant, QCoreApplication
 from PyQt5.QtWidgets import QAction, QToolBar, QMessageBox
 from PyQt5.QtGui import QIcon
 
-from qgis.core import Qgis, QgsProject, QgsCoordinateReferenceSystem, QgsLayerTree, QgsLayerTreeNode, QgsLayerTreeGroup, QgsPointXY, QgsVectorLayer, \
+from qgis.core import QgsProject, QgsCoordinateReferenceSystem, QgsLayerTree, QgsLayerTreeNode, QgsLayerTreeGroup, QgsPointXY, QgsVectorLayer, \
     QgsRasterLayer, QgsMapLayer, QgsWkbTypes, QgsVectorFileWriter, QgsCoordinateTransform, QgsField, QgsDefaultValue, QgsRectangle, QgsFeatureIterator, \
     QgsFeature, QgsGeometry, QgsTolerance, QgsMapSettings
 from qgis.gui import QgisInterface, QgsMapTool
@@ -49,7 +49,7 @@ from .Its4landAPI import Its4landAPI
 from .BoundaryDelineationDock import BoundaryDelineationDock
 from .MapSelectionTool import MapSelectionTool
 from . import utils
-from .utils import SelectionModes, processing_cursor, __, show_info
+from .utils import PLUGIN_DIR, APP_NAME, SelectionModes, processing_cursor, __, show_info
 from .BoundaryGraph import NoSuitableGraphError, prepare_graph_from_lines, prepare_subgraphs, calculate_subgraphs_metric_closures, \
     find_steiner_tree, DEFAULT_WEIGHT_NAME
 
@@ -64,7 +64,6 @@ MessageLevel = int
 
 API_URL = 'http://i4ldev1dmz.hansaluftbild.de/sub/'
 API_KEY = '1'
-APP_NAME = 'BoundaryDelineation'
 
 
 class BoundaryDelineation:
@@ -80,8 +79,6 @@ class BoundaryDelineation:
         self.iface = iface
         self.project = QgsProject.instance()
         self.layerTree = self.project.layerTreeRoot()
-        self.pluginDir = os.path.dirname(__file__)
-        self.appName = APP_NAME
 
         self.service = Its4landAPI(API_URL, API_KEY)
 
@@ -143,7 +140,7 @@ class BoundaryDelineation:
     def _initLocale(self) -> None:
         # Initialize locale
         locale = QSettings().value('locale/userLocale')[0:2]
-        localePath = os.path.join(self.pluginDir, 'i18n', '{}_{}.qm'.format(self.appName, locale))
+        localePath = os.path.join(PLUGIN_DIR, 'i18n', '{}_{}.qm'.format(APP_NAME, locale))
 
         if os.path.exists(localePath):
             self.translator = QTranslator()
@@ -153,16 +150,16 @@ class BoundaryDelineation:
 
     def initGui(self) -> None:
         # Create action that will start plugin configuration
-        action = QAction(QIcon(os.path.join(self.pluginDir, 'icons/icon.png')), self.appName, self.iface.mainWindow())
+        action = QAction(QIcon(os.path.join(PLUGIN_DIR, 'icons/icon.png')), APP_NAME, self.iface.mainWindow())
         self.actions.append(action)
 
-        action.setWhatsThis(self.appName)
+        action.setWhatsThis(APP_NAME)
 
         # Add toolbar button to the Plugins toolbar
         self.iface.addToolBarIcon(action)
 
         # Add menu item to the Plugins menu
-        self.iface.addPluginToMenu(self.appName, action)
+        self.iface.addPluginToMenu(APP_NAME, action)
 
         # Connect the action to the run method
         action.triggered.connect(self.run)
@@ -182,7 +179,7 @@ class BoundaryDelineation:
     def unload(self) -> None:
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
-            self.iface.removePluginMenu(__(self.appName), action)
+            self.iface.removePluginMenu(__(APP_NAME), action)
             self.iface.removeToolBarIcon(action)
 
         # TODO very stupid workaround. Should find a way to check if method is connected!
@@ -1021,4 +1018,4 @@ class BoundaryDelineation:
         )
 
     def __getStylePath(self, file: str) -> str:
-        return os.path.join(self.pluginDir, 'styles', file)
+        return os.path.join(PLUGIN_DIR, 'styles', file)
