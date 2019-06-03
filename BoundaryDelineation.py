@@ -523,7 +523,7 @@ class BoundaryDelineation:
             self.simplifiedSegmentsLayer,
             self.simplifiedSegmentsLayerName,
             color=(0, 255, 0),
-            file=self.__getStylePath('segments.qml'),
+            # file=self.__getStylePath('segments.qml'), # behaves funny with some features different width ...
             parent=get_group(),
             index=layerTreeIndex
         )
