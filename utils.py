@@ -323,10 +323,9 @@ def difference(vector_layer: QgsVectorLayer, lines_layer: QgsVectorLayer, name: 
     return splitted['OUTPUT']
 
 def reproject(vector_layer: QgsVectorLayer, target_crs: str, name: str = 'Reprojected') -> QgsVectorLayer:
-    print(target_crs)
-    reprojected = processing.run('native:reprojectlayer', {
+    reprojected = processing.run('qgis:reprojectlayer', {
         'INPUT': vector_layer,
-        'TARGET_CRS': QgsCoordinateReferenceSystem(target_crs),
+        'TARGET_CRS': target_crs,
         'OUTPUT': 'memory:%s' % name,
     })
 
