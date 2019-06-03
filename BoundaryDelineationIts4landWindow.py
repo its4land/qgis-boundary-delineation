@@ -27,6 +27,7 @@ from typing import List, Dict, Optional
 from .Its4landAPI import Its4landException
 from .utils import get_tmp_dir
 from . import utils
+from .utils import __, show_info, show_error
 
 from qgis.core import QgsVectorLayer, QgsWkbTypes, QgsVectorFileWriter
 from PyQt5 import uic
@@ -54,7 +55,6 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         self.setupUi(self)
 
         self.plugin = plugin
-        self.tr = plugin.tr
         self.service = plugin.service
 
         self.project: Optional[str] = None
@@ -102,9 +102,9 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         try:
             self.service.login(self.loginInput.text(), self.passwordInput.text())
         except Exception as e:
-            msg = e.msg if 'msg' in e else self.tr('Unable to login')
+            msg = e.msg if 'msg' in e else __('Unable to login')
 
-            self.plugin.showMessage(msg, type=Qgis.Error)
+            show_error(msg)
             self.loginInput.setEnabled(True)
             self.passwordInput.setEnabled(True)
             self.loginButton.setEnabled(True)
@@ -118,13 +118,13 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
             projects = self.plugin.service.get_projects()
             self.setProjectsError('')
         except Its4landException as e:
-            msg = self.plugin.tr('[%s] %s' % (str(e.code), str(e)))
+            msg = __('[%s] %s' % (str(e.code), str(e)))
             self.setProjectsError(msg)
-            self.plugin.showMessage(msg)
+            show_info(msg)
             return
         except Exception as e:
-            self.setProjectsError(self.plugin.tr('[%s] Error has occured!' % '???'))
-            self.plugin.showMessage(str(e))
+            self.setProjectsError(__('[%s] Error has occured!' % '???'))
+            show_info(str(e))
             return
 
         self.projectsGroupBox.setEnabled(True)
@@ -174,14 +174,14 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
             self.setValidationSetsError('')
         except Its4landException as e:
             if e.code == 404:
-                msg = self.tr('No validation sets found for this project')
+                msg = __('No validation sets found for this project')
             else:
-                msg = str(self.plugin.tr('[%s] %s' % (str(e.code), str(e))))
+                msg = str(__('[%s] %s' % (str(e.code), str(e))))
 
             self.setValidationSetsError(msg)
         except Exception as e:
-            self.setValidationSetsError(self.plugin.tr('[%s] Error has occured!' % '???'))
-            self.plugin.showMessage(str(e))
+            self.setValidationSetsError(__('[%s] Error has occured!' % '???'))
+            show_info(str(e))
         finally:
             if self.project:
                 self.validationSetsGroupBox.setEnabled(True)
@@ -195,14 +195,14 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
             self.setBoundaryStringsError('')
         except Its4landException as e:
             if e.code == 404:
-                msg = self.tr('No boundary strings found for this project')
+                msg = __('No boundary strings found for this project')
             else:
-                msg = str(self.plugin.tr('[%s] %s' % (str(e.code), str(e))))
+                msg = str(__('[%s] %s' % (str(e.code), str(e))))
 
             self.setBoundaryStringsError(msg)
         except Exception as e:
-            self.setBoundaryStringsError(self.plugin.tr('[%s] Error has occured!' % '???'))
-            self.plugin.showMessage(str(e))
+            self.setBoundaryStringsError(__('[%s] Error has occured!' % '???'))
+            show_info(str(e))
         finally:
             if self.project:
                 self.boundaryStringsGroupBox.setEnabled(True)
@@ -253,7 +253,7 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
             layer = QgsVectorLayer(self.contentItemFilename, self.validationSet['Name'], 'ogr')
 
             if layer.geometryType() != QgsWkbTypes.LineGeometry:
-                self.plugin.showMessage(self.tr('Validation set file is not with line geometries'))
+                show_info(__('Validation set file is not with line geometries'))
                 return
 
             utils.add_layer(layer, self.validationSet['Name'], parent=self.plugin.getGroup(), index=0)
@@ -264,7 +264,7 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
                 self.plugin.dockWidget.segmentsLayerComboBox.setLayer(layer)
         except Its4landException as e:
             if e.code == 404:
-                self.plugin.showMessage(self.tr('Unable to load the selected validation set, check the web interface for more information'))
+                show_info(__('Unable to load the selected validation set, check the web interface for more information'))
                 return
             else:
                 raise e
@@ -298,7 +298,7 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         layer = utils.load_geojson(self.boundaryString, self.boundaryString['name'])
 
         if layer.geometryType() != QgsWkbTypes.LineGeometry:
-            self.plugin.showMessage(self.tr('Boundary face strings file is not with line geometries'))
+            show_info(__('Boundary face strings file is not with line geometries'))
             return
 
         utils.add_layer(layer, self.boundaryString['name'], parent=self.plugin.getGroup(), index=0)
@@ -333,12 +333,12 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
 
         try:
             self.service.post_boundary_strings(geojson)
-            self.plugin.showMessage(self.plugin.tr('Successfully uploaded boundary face strings!'))
+            show_info(__('Successfully uploaded boundary face strings!'))
         except Its4landException as e:
-            self.plugin.showMessage(self.plugin.tr('[%s] %s' % (str(e.code), str(e))))
+            show_info(__('[%s] %s' % (str(e.code), str(e))))
             self.boundaryStringsUploadButton.setEnabled(True)
         except Exception as e:
-            self.plugin.showMessage(self.plugin.tr('[%s] Error has occured! %s' % ('???', str(e))))
+            show_info(__('[%s] Error has occured! %s' % ('???', str(e))))
             self.boundaryStringsUploadButton.setEnabled(True)
 
     def onBoundaryStringsUpdateButtonClicked(self) -> None:
@@ -352,12 +352,12 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
 
         try:
             self.service.patch_boundary_strings(self.boundaryString['UID'], geojson)
-            self.plugin.showMessage(self.plugin.tr('Successfully updated boundary face strings!'))
+            show_info(__('Successfully updated boundary face strings!'))
         except Its4landException as e:
-            self.plugin.showMessage(self.plugin.tr('[%s] %s' % (str(e.code), str(e))))
+            show_info(__('[%s] %s' % (str(e.code), str(e))))
             self.boundaryStringsUpdateButton.setEnabled(True)
         except Exception as e:
-            self.plugin.showMessage(self.plugin.tr('[%s] Error has occured! %s' % ('???', str(e))))
+            show_info(__('[%s] Error has occured! %s' % ('???', str(e))))
             self.boundaryStringsUpdateButton.setEnabled(True)
 
     def updateEnabledBoundaryStringButtons(self) -> None:

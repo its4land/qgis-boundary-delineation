@@ -49,7 +49,7 @@ from .Its4landAPI import Its4landAPI
 from .BoundaryDelineationDock import BoundaryDelineationDock
 from .MapSelectionTool import MapSelectionTool
 from . import utils
-from .utils import SelectionModes, processing_cursor
+from .utils import SelectionModes, processing_cursor, __, show_info
 from .BoundaryGraph import NoSuitableGraphError, prepare_graph_from_lines, prepare_subgraphs, calculate_subgraphs_metric_closures, \
     find_steiner_tree, DEFAULT_WEIGHT_NAME
 
@@ -64,6 +64,8 @@ MessageLevel = int
 
 API_URL = 'http://i4ldev1dmz.hansaluftbild.de/sub/'
 API_KEY = '1'
+APP_NAME = 'BoundaryDelineation'
+
 
 class BoundaryDelineation:
     """Functions created by Plugin Builder"""
@@ -79,20 +81,20 @@ class BoundaryDelineation:
         self.project = QgsProject.instance()
         self.layerTree = self.project.layerTreeRoot()
         self.pluginDir = os.path.dirname(__file__)
-        self.appName = 'BoundaryDelineation'
+        self.appName = APP_NAME
 
         self.service = Its4landAPI(API_URL, API_KEY)
 
         self._initLocale()
 
-        self.baseRasterLayerName = self.tr('Raster')
-        self.segmentsLayerName = self.tr('Segments')
-        self.simplifiedSegmentsLayerName = self.tr('Simplified Segments')
-        self.verticesLayerName = self.tr('Vertices')
-        self.candidatesLayerName = self.tr('Candidates')
-        self.finalLayerName = self.tr('Final')
-        self.finalLayerPolygonsName = self.tr('Final Polygons')
-        self.groupName = self.tr('BoundaryDelineation')
+        self.baseRasterLayerName = __('Raster')
+        self.segmentsLayerName = __('Segments')
+        self.simplifiedSegmentsLayerName = __('Simplified Segments')
+        self.verticesLayerName = __('Vertices')
+        self.candidatesLayerName = __('Candidates')
+        self.finalLayerName = __('Final')
+        self.finalLayerPolygonsName = __('Final Polygons')
+        self.groupName = __('BoundaryDelineation')
 
         # map layers
         self.baseRasterLayer: Optional[QgsRasterLayer] = None
@@ -149,20 +151,6 @@ class BoundaryDelineation:
 
             QCoreApplication.installTranslator(self.translator)
 
-    def tr(self, message: str) -> str:
-        """Get the translation for a string using Qt translation API.
-
-        We implement this ourselves since we do not inherit QObject.
-
-        :param message: String for translation.
-        :type message: str, QString
-
-        :returns: Translated version of message.
-        :rtype: QString
-        """
-        # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
-        return QCoreApplication.translate(self.appName, message)
-
     def initGui(self) -> None:
         # Create action that will start plugin configuration
         action = QAction(QIcon(os.path.join(self.pluginDir, 'icons/icon.png')), self.appName, self.iface.mainWindow())
@@ -194,7 +182,7 @@ class BoundaryDelineation:
     def unload(self) -> None:
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
-            self.iface.removePluginMenu(self.tr(self.appName), action)
+            self.iface.removePluginMenu(__(self.appName), action)
             self.iface.removeToolBarIcon(action)
 
         # TODO very stupid workaround. Should find a way to check if method is connected!
@@ -234,9 +222,6 @@ class BoundaryDelineation:
             group = self.layerTree.insertGroup(index, self.groupName)
 
         return group
-
-    def showMessage(self, message: str, level: MessageLevel = Qgis.Info, duration: int = 5) -> None:
-        self.iface.messageBar().pushMessage(self.appName, message, level, duration)
 
     def toggleMapSelectionTool(self, toggle: bool = None) -> None:
         if toggle is None:
@@ -363,7 +348,7 @@ class BoundaryDelineation:
         else:
             if self.selectionMode == SelectionModes.NODES:
                 self.setSelectionMode(DEFAULT_SELECTION_MODE)
-                self.showMessage(self.tr('Selection mode change to default'))
+                show_info(__('Selection mode change to default'))
 
             self.dockWidget.toggleVerticesRadioEnabled(False)
 
@@ -399,7 +384,7 @@ class BoundaryDelineation:
     def processFinish(self) -> None:
         assert self.dockWidget
 
-        self.showMessage(self.tr('Boundary deliniation finished, see the currently active layer for all the results'))
+        show_info(__('Boundary deliniation finished, see the currently active layer for all the results'))
         self.iface.setActiveLayer(self.finalLayer)
 
         if self.dockWidget.getPolygonizeChecked():
@@ -429,21 +414,21 @@ class BoundaryDelineation:
                 self.candidatesLayer.beforeEditingStarted.disconnect(self.onCandidatesLayerBeforeEditingStarted)
                 self.candidatesLayer.rollBack()
         except:
-            self.showMessage(self.tr('Unable clean-up #%s' % 1))
+            show_info(__('Unable clean-up #%s' % 1))
 
         try:
             utils.remove_layer(self.simplifiedSegmentsLayer)
             utils.remove_layer(self.verticesLayer)
             utils.remove_layer(self.candidatesLayer)
         except:
-            self.showMessage(self.tr('Unable clean-up #%s' % 2))
+            show_info(__('Unable clean-up #%s' % 2))
 
         try:
             if self.finalLayer:
                 self.finalLayer.featureAdded.disconnect(self.onFinalLayerFeaturesAdded)
                 self.finalLayer.featuresDeleted.disconnect(self.onFinalLayerFeaturesDeleted)
         except:
-            self.showMessage(self.tr('Unable clean-up #%s' % 3))
+            show_info(__('Unable clean-up #%s' % 3))
 
         self.simplifiedSegmentsLayer = None
         self.verticesLayer = None
@@ -506,7 +491,7 @@ class BoundaryDelineation:
         #     utils.add_layer(segmentsLayer, name, parent=self.getGroup(), index=0)
 
         if segmentsLayer.geometryType() != QgsWkbTypes.LineGeometry:
-            self.showMessage(self.tr('Please use segments layer that is with lines geometry'))
+            show_info(__('Please use segments layer that is with lines geometry'))
             return
 
         self.segmentsLayer = segmentsLayer
@@ -625,7 +610,7 @@ class BoundaryDelineation:
                 (writeErrorCode, writeErrorMsg) = QgsVectorFileWriter.writeAsVectorFormat(finalLayer, filename, 'utf-8', crs, 'ESRI Shapefile')
 
                 if writeErrorMsg:
-                    self.showMessage('[%s] %s' % (writeErrorCode, writeErrorMsg))
+                    show_info('[%s] %s' % (writeErrorCode, writeErrorMsg))
 
                 finalLayer = QgsVectorLayer(filename, self.finalLayerName, 'ogr')
 
@@ -705,7 +690,7 @@ class BoundaryDelineation:
 
     @processing_cursor()
     def calculateMetricClosure(self, subgraphs: Collection) -> typing.List[typing.Any]:
-        self.showMessage(self.tr('It may take some time to precalculate the most optimal boundaries...'))
+        show_info(__('It may take some time to precalculate the most optimal boundaries...'))
         return calculate_subgraphs_metric_closures(self.subgraphs, weight=self.edgesWeightField)
 
     def setSelectionMode(self, mode: SelectionModes) -> None:
@@ -775,12 +760,12 @@ class BoundaryDelineation:
             raise Exception('Wrong selection mode selected, should never be the case')
 
         if not len(lines):
-            self.showMessage(self.tr('No results found!'))
+            show_info(__('No results found!'))
             self.deleteAllCandidates()
             return
 
         if not self.addCandidates(lines):
-            self.showMessage(self.tr('Unable to add candidates'))
+            show_info(__('Unable to add candidates'))
             return
 
     def getLinesSelectionModeEnclosing(self, selectBehaviour: SelectBehaviour, rect: QgsRectangle) -> typing.Tuple:
@@ -821,7 +806,7 @@ class BoundaryDelineation:
         points = list(points_dict.values())
 
         if len(points) != 2 or len(points[0]) != 2 or len(points[1]) != 2:
-            self.showMessage(self.tr('Selected lines can have exactly four unconnected endpoints'))
+            show_info(__('Selected lines can have exactly four unconnected endpoints'))
             return tuple(enclosingLineFeatures)
 
         pointX1 = points[0][0]
@@ -877,7 +862,7 @@ class BoundaryDelineation:
 
             self.candidatesLayer.rollBack()
             # TODO there are self enclosing blocks that can be handled here (one vertex that is conected to itself)
-            self.showMessage(self.tr('Please select two or more vertices to be connected'))
+            show_info(__('Please select two or more vertices to be connected'))
             return
 
         try:
@@ -894,7 +879,7 @@ class BoundaryDelineation:
         points = utils.lines_unique_vertices(self.simplifiedSegmentsLayer, featureIds)
 
         if len(points) != 2:
-            self.showMessage(self.tr('Unable to find the shortest path'))
+            show_info(__('Unable to find the shortest path'))
             return
 
         if self.graph.has_edge(*points):
@@ -921,7 +906,7 @@ class BoundaryDelineation:
         self.candidatesLayer.startEditing()
 
         if not self.candidatesLayer.isEditable():
-            self.showMessage(self.tr('Unable to add features as candidates #1'))
+            show_info(__('Unable to add features as candidates #1'))
             return False
 
         features = []
@@ -932,7 +917,7 @@ class BoundaryDelineation:
             features.append(f)
 
         if not self.candidatesLayer.addFeatures(features):
-            self.showMessage(self.tr('Unable to add features as candidates #2'))
+            show_info(__('Unable to add features as candidates #2'))
             return False
 
         self.candidatesLayer.triggerRepaint()
@@ -946,11 +931,11 @@ class BoundaryDelineation:
         self.candidatesLayer.startEditing()
 
         if not self.candidatesLayer.isEditable():
-            self.showMessage(self.tr('Unable to add features as candidates #1'))
+            show_info(__('Unable to add features as candidates #1'))
             return False
 
         if not self.candidatesLayer.deleteFeatures([f.id() for f in self.candidatesLayer.getFeatures()]):
-            self.showMessage(self.tr('Unable to delete all candidate features'))
+            show_info(__('Unable to delete all candidate features'))
             return False
 
         self.candidatesLayer.triggerRepaint()
@@ -980,7 +965,7 @@ class BoundaryDelineation:
             self.simplifiedSegmentsLayer.removeSelection()
             return True
         else:
-            self.showMessage(self.tr('Failed to accept'))
+            show_info(__('Failed to accept'))
             return False
 
     def rejectCandidates(self) -> bool:

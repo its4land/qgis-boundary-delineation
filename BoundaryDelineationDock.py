@@ -26,17 +26,17 @@
 
 import os
 
-from typing import Any, Callable
+from typing import Callable
 
 from PyQt5 import uic
-from PyQt5.QtCore import pyqtSignal, QSettings, QTranslator, qVersion, Qt
-from PyQt5.QtGui import QIcon, QColor, QPixmap, QCloseEvent, QKeySequence
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtGui import QIcon, QPixmap, QCloseEvent, QKeySequence
 from PyQt5.QtWidgets import QDockWidget, QAction, QFileDialog, QWidget, QMessageBox, QPushButton, QLabel, QShortcut
 
 from qgis.core import QgsMapLayerProxyModel, QgsFieldProxyModel, QgsVectorLayer, QgsRasterLayer
 from qgis.utils import iface
 
-from .utils import SelectionModes
+from .utils import SelectionModes, __
 from .BoundaryDelineationIts4landWindow import BoundaryDelineationIts4landWindow
 
 SC_MODE_POLYGONS = 'Ctrl+Alt+1'
@@ -63,7 +63,6 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.setupUi(self)
 
         self.plugin = plugin
-        self.tr = plugin.tr
         self.its4landWindow = BoundaryDelineationIts4landWindow(plugin)
         self.isAlreadyProcessed = False
         self.isLoadingLayer = False
@@ -189,7 +188,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.its4landWindow.show()
 
     def onBaseRasterInputButtonClicked(self):
-        result = QFileDialog.getOpenFileName(self, self.tr('Open Base Raster Layer File'), '', 'Raster Image (*.tif *.tiff *.geotiff *.ascii *.map)')
+        result = QFileDialog.getOpenFileName(self, __('Open Base Raster Layer File'), '', 'Raster Image (*.tif *.tiff *.geotiff *.ascii *.map)')
 
         if not result or not result[0]:
             return
@@ -198,7 +197,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.baseRasterLayerComboBox.setLayer(layer)
 
     def onSegmentsLayerButtonClicked(self):
-        result = QFileDialog.getOpenFileName(self, self.tr('Open Segments Layer File'), '', 'ESRI Shapefile (*.shp)')
+        result = QFileDialog.getOpenFileName(self, __('Open Segments Layer File'), '', 'ESRI Shapefile (*.shp)')
 
         if not result or not result[0]:
             return
@@ -240,7 +239,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
             self.processButton.setEnabled(True)
 
     def onOutputLayerButtonClicked(self) -> None:
-        result = QFileDialog.getSaveFileName(self, self.tr('Save Boundary Layer File'), '', 'ESRI Shapefile (*.shp)')
+        result = QFileDialog.getSaveFileName(self, __('Save Boundary Layer File'), '', 'ESRI Shapefile (*.shp)')
 
         if not result or not result[0]:
             return
@@ -309,8 +308,8 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
 
         if self.isAlreadyProcessed:
             userConfirms = self.getConfirmation(
-                self.tr('Already processed'),
-                self.tr('Are you sure you want to proceed?')
+                __('Already processed'),
+                __('Are you sure you want to proceed?')
             )
 
             if userConfirms:
@@ -396,8 +395,8 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
 
     # def closeEvent(self, event: QCloseEvent):
     #     userConfirm = self.getConfirmation(
-    #       self.tr('Message'),
-    #       self.tr('Are you sure you want to quit? All the layers execpt the results will be removed.')
+    #       __('Message'),
+    #       __('Are you sure you want to quit? All the layers execpt the results will be removed.')
     #     )
     #
     #     if reply == QMessageBox.Yes:

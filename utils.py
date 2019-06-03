@@ -7,16 +7,48 @@ import json
 from enum import Enum
 from collections import defaultdict
 
-from PyQt5.QtCore import Qt, QDir
+from PyQt5.QtCore import Qt, QDir, QCoreApplication
 from PyQt5.QtGui import QCursor, QColor
 from PyQt5.QtWidgets import QApplication
 
 import processing
 
-from qgis.core import QgsProject, QgsMarkerSymbol, QgsLineSymbol, QgsSingleSymbolRenderer, QgsGraduatedSymbolRenderer, QgsLayerTreeNode, QgsVectorLayer, QgsRasterLayer, QgsMapLayer, QgsPoint, QgsVectorFileWriter, QgsCoordinateReferenceSystem
+from qgis.core import Qgis, QgsProject, QgsMarkerSymbol, QgsLineSymbol, QgsSingleSymbolRenderer, QgsGraduatedSymbolRenderer, QgsLayerTreeNode, QgsVectorLayer, QgsRasterLayer, QgsMapLayer, QgsPoint, QgsVectorFileWriter, QgsCoordinateReferenceSystem
 from qgis.utils import iface
 
 TMP_DIR = 'boundarydeleniation'
+APP_NAME = 'BoundaryDelineation'
+
+def __(msg: str) -> str:
+    """Get the translation for a string using Qt translation API.
+
+    Args:
+        msg (str): string to translate
+
+    Returns:
+        str: translated string
+
+    """
+    return QCoreApplication.translate(APP_NAME, msg)
+
+def show_info(msg: str, duration: int = 5) -> None:
+    """Show info message.
+
+    Args:
+        msg (str): Message to be shown
+        duration (int, optional): Duration to have the message visible
+    """
+    iface.messageBar().pushMessage(APP_NAME, msg, Qgis.Info, duration)
+
+def show_error(self, msg: str, duration: int = 5) -> None:
+    """Show error message.
+
+    Args:
+        msg (str): Message to be shown
+        duration (int, optional): Duration to have the message visible
+    """
+    iface.messageBar().pushMessage(APP_NAME, msg, Qgis.Error, duration)
+
 
 def processing_cursor(cursor=QCursor(Qt.WaitCursor)) -> typing.Callable:
     def processing_cursor_decorator(func):
@@ -306,8 +338,6 @@ def get_geojson(layer: QgsVectorLayer) -> dict:
 
     with open(filename + '.geojson', 'r') as file:
         contents = file.read()
-
-    print('111', contents)
 
     geojson = json.loads(contents)
 
