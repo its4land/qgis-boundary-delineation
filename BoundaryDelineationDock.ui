@@ -421,6 +421,9 @@ Simply setting the tolerance lower produces better results for the UAV data, but
         </item>
         <item row="9" column="2">
          <widget class="QPushButton" name="updateEditsButton">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="toolTip">
            <string>Update simplified segments layer according to edits in candidates </string>
           </property>

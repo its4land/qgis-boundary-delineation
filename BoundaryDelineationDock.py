@@ -436,6 +436,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
             enabled = not self.finishButton.enabled()
 
         self.finishButton.setEnabled(enabled)
+        self.updateEditsButton.setEnabled(enabled)
 
         return enabled
 
