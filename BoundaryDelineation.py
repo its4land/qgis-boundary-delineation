@@ -43,7 +43,7 @@ from qgis.utils import *
 import processing
 
 # Initialize Qt resources from file resources.py
-from .resources import *
+# from .resources import *
 
 from .Its4landAPI import Its4landAPI
 from .BoundaryDelineationDock import BoundaryDelineationDock
