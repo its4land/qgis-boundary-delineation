@@ -9,7 +9,7 @@
         git sha              : $Format:%H$
         copyright            : (C) 2018 by Sophie Crommelinck
         email                : s.crommelinck@utwente.nl
-        development          : Reiner Borchert, Hansa Luftbild AG Münster
+        development          : Reiner Borchert, Hansa Luftbild AG Münster, Ivan Ivanov <ivan.ivanov@suricactus.com> ITC, University of Twente
         email                : borchert@hansaluftbild.de
  ***************************************************************************/
 
@@ -29,15 +29,32 @@ from PyQt5.QtGui import QIcon, QColor, QPixmap, QCursor
 from PyQt5.QtWidgets import QApplication, QAction, QFileDialog, QToolBar
 
 from qgis.core import QgsProject, Qgis, QgsMapLayer, QgsVectorLayer, QgsVectorFileWriter, \
-    QgsLineSymbol, QgsMarkerSymbol, QgsProcessingUtils, QgsFeature, QgsGeometry, QgsField, \
-    QgsSingleSymbolRenderer, QgsLineSymbol, QgsProperty, QgsCoordinateReferenceSystem
+    QgsMarkerSymbol, QgsFeature, QgsField, QgsLineSymbol, QgsCoordinateReferenceSystem, \
+    QgsFeatureSink, QgsWkbTypes, QgsRectangle
 from qgis.utils import iface
+
+from qgis.gui import QgsMapToolIdentify, QgsMapToolEmitPoint
+from .MapSelectionTool import MapSelectionTool
+
 
 import processing
 import os
 
+
+BD_SELECT_NONE = 0
+BD_SELECT_NODES = 1
+BD_SELECT_POLYGONS = 2
+BD_SELECT_DEFAULT = BD_SELECT_NODES
+
+from .BoundaryGraph import prepareLinesGraph, prepareSubgraphs, calculateMetricClosures, steinerTree, printGraph
+
+from .utils import processing_cursor
+
+PRECALCULATE_METRIC_CLOSURES = False
+
+
 class DelineationController:
-    
+
     # Define layer and plugin name
     appName = 'BoundaryDelineation'
     pluginName = appName + ' plugin'
@@ -48,40 +65,36 @@ class DelineationController:
     boundaryColumnName = 'boundary'
     finalBoundaryLayerName = 'final boundary'
     pluginPath = os.path.dirname(__file__)
-    
+
     mainWidget = None
 
     inputRaster = None
     inputFileName = None
     outputFileName = None
     edgesGraph = None
+    subgraphs = None
     metricClosureGraph = None
-    
+    candidatesLayer = None
+
+    # TODO one day I should rewrite this to something more meaningful... no idea who put everything into static methods, but defintitely has lack of experience with OOP paradigm
+    @staticmethod
+    def init():
+        DelineationController.canvas = iface.mapCanvas()
+        DelineationController.mapSelectionTool = MapSelectionTool(DelineationController.canvas)
+        DelineationController.mapSelectionTool.polygonCreated.connect(DelineationController.onPolygonSelectionCreated)
+
+
     @staticmethod
     def showMessage(message, level = Qgis.Info, duration=5):
         iface.messageBar().pushMessage(DelineationController.pluginName, message, level, duration)
-        
-    @staticmethod
-    def showBusyCursor():
-        QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
-        QApplication.processEvents()
 
-    @staticmethod
-    def hideBusyCursor():
-        QApplication.restoreOverrideCursor()
-        QApplication.processEvents()
-
-    @staticmethod
-    def getActiveLayer():
-        return iface.activeLayer()
-    
     @staticmethod
     def setActiveLayer(layer):
         if not isinstance(layer, QgsMapLayer):
             layer = DelineationController.getLayerByName(layer)
         if layer is not None:
             iface.setActiveLayer(layer)
-    
+
     @staticmethod
     def setLayerVisibility (layer, visible):
         if layer is not None:
@@ -101,23 +114,19 @@ class DelineationController:
             return None
 
     @staticmethod
-    def addRasterLayer (layerName, fileName):
-        return iface.addRasterLayer(fileName, layerName)
-
-    @staticmethod
     def checkRasterLayer (layerName, fileName, showMsg = False):
         layer = DelineationController.getLayerByName (layerName)
         if layer is None:
             if fileName:
                 try:
-                    return DelineationController.addRasterLayer(layerName, fileName)
+                    return iface.addRasterLayer(fileName, layerName)
                 except:
                     DelineationController.showMessage("Unable to open %s" % fileName, Qgis.Critical)
             return None
         if showMsg:
             DelineationController.showMessage("%s already loaded" % layerName, Qgis.Warning)
         return layer
-    
+
     @staticmethod
     def _getCrs():
         layer = DelineationController.getLineLayer()
@@ -134,7 +143,7 @@ class DelineationController:
 
     @staticmethod
     def addVectorLayer (layerName, fileName, create = True):
-        if bool(fileName) and os.path.isfile(fileName): 
+        if bool(fileName) and os.path.isfile(fileName):
             layer = QgsVectorLayer(fileName, layerName, 'ogr')
         elif create:
             layer = QgsVectorLayer(DelineationController._getLineVectorPath(), layerName, 'ogr')
@@ -170,7 +179,7 @@ class DelineationController:
         # Check if layer is already loaded
         layer = DelineationController.getLayerByName (layerName, False)
         if layer is not None:
-            return DelineationController.replaceLayerUri(layer, DelineationController.getLayerUri(layer), newUri) 
+            return DelineationController.replaceLayerUri(layer, DelineationController.getLayerUri(layer), newUri)
         return None
 
     @staticmethod
@@ -186,11 +195,11 @@ class DelineationController:
     @staticmethod
     def getRasterLayer(showError = True):
         return DelineationController.getLayerByName(DelineationController.rasterLayerName, showError)
-    
+
     @staticmethod
     def getLineLayer(showError = True):
         return DelineationController.getLayerByName(DelineationController.lineLayerName, showError)
-    
+
     @staticmethod
     def getNodeLayer(showError = True):
         return DelineationController.getLayerByName(DelineationController.nodeLayerName, showError)
@@ -202,6 +211,48 @@ class DelineationController:
             layer = DelineationController.createMemoryLayer(DelineationController.candidateBoundaryLayerName)
         DelineationController.addLayerToMap(layer, DelineationController.candidateBoundaryLayerName)
         return layer
+
+    @staticmethod
+    def getCandidatesLayer2():
+        if DelineationController.candidatesLayer:
+            return DelineationController.candidatesLayer
+
+        if not DelineationController.getLineLayer():
+            raise Exception('Cannot create candidate layer without line layer!')
+
+        lineLayerFields = DelineationController.getLineLayer().dataProvider().fields().toList()
+        # TODO fix the hardcoded part here: the epsg and the name
+        candidatesLayer = QgsVectorLayer('MultiLineString?crs=epsg:32737', 'BD_candidates', 'memory')
+        candidatesLayerFields= [QgsField(field.name(),field.type()) for field in lineLayerFields]
+        # candidatesLayer.dataProvider().addAttributes(candidatesLayerFields)
+        # candidatesLayer.updateFields()
+
+        QgsProject.instance().addMapLayer(candidatesLayer)
+
+        DelineationController.candidatesLayer = candidatesLayer
+
+        return candidatesLayer
+
+    def addCandidates(lineFeatures, revertUncommited=True):
+        candidatesLayer = DelineationController.getCandidatesLayer2()
+
+        if revertUncommited == True:
+            candidatesLayer.rollBack()
+
+        candidatesLayer.startEditing()
+        features = []
+
+        for f in lineFeatures:
+            features.append(f)
+
+        if not candidatesLayer.addFeatures(features):
+            DelineationController.showMessage('Unable to add features as candidates')
+            return False
+
+        candidatesLayer.commitChanges()
+
+        return True
+
 
     @staticmethod
     def getFinalBoundaryLayer(create = True, showError = True):
@@ -234,9 +285,9 @@ class DelineationController:
             uri = layer.dataProvider().dataSourceUri(expandAuthConfig = False)
             if uri:
                 return uri.split('|')[0]
-            return 
+            return
         return None
-    
+
     @staticmethod
     def _setLayerEditable(layer, activateAdd):
         if layer is not None:
@@ -267,7 +318,7 @@ class DelineationController:
                     return False
             return True
         return False
-    
+
     # Set symbology for vector layer (lines and points)
     @staticmethod
     def addLayerToMap(layer, name = None, red = None, green = None, blue = None, size = None):
@@ -304,25 +355,24 @@ class DelineationController:
 
 
     ### Step I ###
-    
+
     @staticmethod
     def currentInputRasterUri():
-        return DelineationController.getLayerNameUri(DelineationController.rasterLayerName)
-    
+        return DelineationController.getLayerUri(DelineationController.getLayerByName(DelineationController.rasterLayerName))
+
     @staticmethod
     def currentInputLineUri():
         if DelineationController.getLineLayer(False) is None:
             DelineationController.inputFileName = None
         return DelineationController.inputFileName
-        #return DelineationController.getLayerNameUri(DelineationController.lineLayerName)
-    
+
     @staticmethod
     def currentOutputLineUri():
         layer = DelineationController.getFinalBoundaryLayer(create = False, showError = False)
         if layer is not None:
             DelineationController.outputFileName = DelineationController.getLayerUri(layer)
         return DelineationController.outputFileName
-    
+
     # Load layer to canvas
     @staticmethod
     def openRaster(rasterFile):
@@ -338,15 +388,17 @@ class DelineationController:
 
     # Load layer to canvas
     @staticmethod
+    @processing_cursor()
     def openInputVector(vectorFile):
         # Check if layer is already loaded
         layer = DelineationController.replaceLayerUri(DelineationController.getLineLayer(False), DelineationController.inputFileName, vectorFile)
+
         if layer is None:
             DelineationController.inputFileName = None
             DelineationController.edgesGraph = None
             DelineationController.metricClosureGraph = None
+
             try:
-                DelineationController.showBusyCursor()
                 # Douglas-Peucker line simplification
                 result = processing.run('qgis:simplifygeometries',
                                              {"INPUT": vectorFile,
@@ -354,6 +406,7 @@ class DelineationController:
                                               "TOLERANCE": 1.0,
                                               "OUTPUT": 'memory:simplifygeometries'})
                 layer = result['OUTPUT']
+
                 if isinstance(layer, QgsMapLayer):
                     DelineationController.removeLayer(DelineationController.getNodeLayer(False))
                     DelineationController.removeLayer(DelineationController.getCandidatesLayer(create = False, showError = False))
@@ -368,7 +421,8 @@ class DelineationController:
                     styleFilepath = DelineationController.pluginPath + "/style.qml"
                     layer.loadNamedStyle(styleFilepath)
             finally:
-                DelineationController.hideBusyCursor()
+                pass
+
         return layer
 
     @staticmethod
@@ -401,7 +455,7 @@ class DelineationController:
         if layer is None:
             layerPath = DelineationController._getLineVectorPath()
             layer = QgsVectorLayer(path = layerPath, baseName = layerName, providerLib = "memory")
-        return layer        
+        return layer
 
     # Get layer extent
     @staticmethod
@@ -415,27 +469,34 @@ class DelineationController:
 
     # Create nodes where two or more input lines intersect
     @staticmethod
+    @processing_cursor()
     def extractVertices(layer):
         DelineationController.removeLayer(DelineationController.getNodeLayer(False))
-        
+
         try:
-            DelineationController.showBusyCursor()
-            result1 = processing.run('qgis:extractspecificvertices',
+            verticesResult = processing.run('qgis:extractspecificvertices',
                                          {"INPUT": layer,
                                           "VERTICES": '0',
                                           "OUTPUT": 'memory:extract'})
-            tempLayer = result1['OUTPUT']
 
-            if isinstance(tempLayer, QgsMapLayer):
-                result2 = processing.run('qgis:deleteduplicategeometries',
-                                             {"INPUT": tempLayer,
-                                              "OUTPUT": 'memory:nodes'})
-                nodes = result2['OUTPUT']
+            verticesNoDuplicatesResult = processing.run('qgis:deleteduplicategeometries',
+                                         {"INPUT": verticesResult['OUTPUT'],
+                                          "OUTPUT": 'memory:nodes'})
+
+            nodes = verticesNoDuplicatesResult['OUTPUT']
         finally:
-            DelineationController.hideBusyCursor()
+            pass
 
         nodeLayer = DelineationController.checkVectorLayer("Vertices", None, False)
         DelineationController.addLayerToMap(nodes, DelineationController.nodeLayerName, 255, 0, 0, 1.3)
+
+    @staticmethod
+    def buildGraph(lineLayer):
+        DelineationController.G = prepareLinesGraph(lineLayer)
+        DelineationController.subgraphs = prepareSubgraphs(DelineationController.G)
+        DelineationController.metricClosureGraphs = calculateMetricClosures(DelineationController.subgraphs) if PRECALCULATE_METRIC_CLOSURES else None
+
+        return DelineationController.G
 
     @staticmethod
     def _xy2str(point):
@@ -443,72 +504,63 @@ class DelineationController:
 
     ### Step II ###
     @staticmethod
+    @processing_cursor()
     def connectNodes():
-        lineLayer = DelineationController.getLineLayer() 
+        # TODO ask @SCrommelinck why we are missing the self here, would be
+        # much nicer to have access to this with self.linesLayer && self.nodesLayer?
+        lineLayer = DelineationController.getLineLayer()
         nodeLayer = DelineationController.getNodeLayer()
-        if lineLayer is not None and nodeLayer is not None:
-            # Check if user has selected 2 or more nodes
-            if nodeLayer.selectedFeatureCount() > 1:
-                try:
-                    DelineationController.showBusyCursor()
-                    
-                    # Save selected nodes in new layer
-                    nodesLayerFilename = QgsProcessingUtils.generateTempFilename('nodeLayer.shp')
-                    processing.run('native:saveselectedfeatures',
-                                      {"INPUT": nodeLayer,
-                                       "OUTPUT": nodesLayerFilename})
 
-                    # Create output file names
-                    networkLayerFilename = QgsProcessingUtils.generateTempFilename('networkLayer.shp')
-                    # Steiner least-cost path calculation
-                    processing.run('grass7:v.net.steiner',
-                                     {"input": lineLayer,
-                                      "points": nodesLayerFilename,
-                                      "threshold": 50,
-                                      "arc_type": [0, 1],
-                                      "terminal_cats": '1-100000',
-                                      "acolumn": DelineationController.boundaryColumnName,
-                                      "npoints": -1,
-                                      "-g": False,
-                                      "GRASS_REGION_PARAMETER": DelineationController.getExtent(lineLayer),
-                                      "GRASS_OUTPUT_TYPE_PARAMETER": 0,
-                                      "GRASS_SNAP_TOLERANCE_PARAMETER": -1,
-                                      "GRASS_MIN_AREA_PARAMETER": 0.0001,
-                                      "GRASS_VECTOR_DSCO": '',
-                                      "GRASS_VECTOR_LCO": '',
-                                      "output": networkLayerFilename})
+        # TODO ask @SCrommelinck why we need to return False (used to be like this), as we don't check it later?
+        # TODO ask @SCrommelinck why we need this check here in the first place?
+        if lineLayer is None and nodeLayer is None:
+            return
 
-                    # Check if nodes could be connected
-                    DelineationController.initialview()
-                    candidatesLayer = QgsVectorLayer(networkLayerFilename, "Network Steiner", 'ogr')
-                    if candidatesLayer is not None:
-                        if candidatesLayer.featureCount() <= 0:
-                            DelineationController.showMessage("Could not connect these nodes to boundaries! Please "
-                                                              "select nodes that are connected via %s. The layer "
-                                                              "should contain a 'boundary' attribute that represents its "
-                                                              "boundary likelikhood."
-                                                              % DelineationController.lineLayerName,
-                                                              Qgis.Warning)
-                        else:
-                            DelineationController.addLayerToMap(candidatesLayer,
-                                                                DelineationController.candidateBoundaryLayerName,
-                                                                255, 255, 0, 1)
-                            # DelineationController.checkVectorLayer(DelineationController.candidateBoundaryLayerName,
-                            #                                         networkLayerFilename, False)
-                            # candidateBoundaryLayer = DelineationController.getActiveLayer()
-                            # candidateBoundaryLayer.setName(DelineationController.candidateBoundaryLayerName)
-                            # DelineationController.updateSymbology(tempLayer, 255, 0, 0, 0.3)
-                            return True
+        if nodeLayer.selectedFeatureCount() <= 1:
+            DelineationController.showMessage('Please select two or more nodes to be connected from %s'% DelineationController.nodeLayerName, Qgis.Warning)
+            return
 
-                except Exception as exc:
-                    DelineationController.showMessage("Error in running Steiner algorithm: {0}".format(exc),
-                                                      Qgis.Critical)
-                finally:
-                    DelineationController.hideBusyCursor()
-            else:
-                DelineationController.showMessage("Please select two or more nodes to be connected from %s"% DelineationController.nodeLayerName,  
-                                                  Qgis.Warning)
-        return False
+        selectedPoints = [f.geometry().asPoint() for f in nodeLayer.selectedFeatures()]
+
+        # keep in mind that his can thow any other exception that occurs
+        try:
+            if DelineationController.metricClosureGraphs is None:
+                DelineationController.metricClosureGraphs = calculateMetricClosures(DelineationController.subgraphs)
+
+            T = steinerTree(DelineationController.subgraphs, selectedPoints, metric_closures=DelineationController.metricClosureGraphs)
+        except NoResultsGraphError:
+            DelineationController.showMessage('No paths connecting the selected nodes found')
+            return
+
+        lineIds = [edge[2] for edge in T.edges(keys=True)]
+        lineFeatures = [f for f in lineLayer.getFeatures(lineIds)]
+
+        DelineationController.addCandidates(lineFeatures)
+
+        # Check if nodes could be connected
+        DelineationController.initialview()
+
+        if DelineationController.candidatesLayer.featureCount() <= 0:
+            DelineationController.showMessage('Could not connect these nodes to boundaries! Please '
+                                              'select nodes that are connected via %s. The layer '
+                                              'should contain a `boundary` attribute that represents its '
+                                              'boundary likelikhood.'
+                                              % DelineationController.lineLayerName,
+                                              Qgis.Warning)
+        else:
+            DelineationController.addLayerToMap(DelineationController.candidatesLayer, DelineationController.candidateBoundaryLayerName, 255, 255, 0, 1)
+
+    def simplifyFeatures(layer, selectedOnly=False):
+        # QgsProject.instance().addMapLayer(layer, False)
+
+        result = processing.run('qgis:polygonstolines', {
+            'INPUT': QgsProcessingFeatureSourceDefinition(layer.id(), selectedOnly),
+            'OUTPUT': 'memory:'
+        })
+
+        # QgsProject.instance().removeMapLayer(layer)
+
+        return result['OUTPUT']
 
     # Restore canvas view to its initial state
     @staticmethod
@@ -519,28 +571,29 @@ class DelineationController:
             DelineationController.removeLayer(layer)
             # Enable feature selection
             DelineationController.setActiveLayer(DelineationController.nodeLayerName)
-            iface.actionSelect().trigger()
+            # iface.actionSelect().trigger()
         finalLayer = DelineationController.getFinalBoundaryLayer(create = False, showError = False)
         if finalLayer is not None:
             DelineationController.updateSymbology(finalLayer, 0, 0, 255, 0.5)
 
+        DelineationController.toggleSelectionSwitcher(BD_SELECT_NODES)
+
     # Candidate boundary should be accepted
     @staticmethod
+    @processing_cursor()
     def acceptCandidate():
         candidates = DelineationController.getCandidatesLayer(create = False, showError = True)
         if candidates is not None and candidates.featureCount() > 0:
             tempLayer = None
             # Merge layer geometries into multipart geometry
             try:
-                DelineationController.showBusyCursor()
                 result = processing.run('native:dissolve',
                                         {"INPUT": candidates,
                                          "FIELD": [],
                                          "OUTPUT": 'memory:collect'})
                 tempLayer = result['OUTPUT']
-
             finally:
-                DelineationController.hideBusyCursor()
+                pass
 
             if isinstance(tempLayer, QgsMapLayer):
                 finalLayer = DelineationController.getFinalBoundaryLayer(create = True, showError = True)
@@ -596,5 +649,95 @@ class DelineationController:
             DelineationController.removeLayer(DelineationController.getLineLayer(False))
             # Zoom to full extent
             iface.actionZoomFullExtent().trigger()
-            
+
+    # TODO whatcha gonna do on error?
+    @staticmethod
+    def polygonizeSegmentsLayer(segmentsLayer):
+        polygonizedResult = processing.run('qgis:polygonize',
+                     {"INPUT": segmentsLayer,
+                      "OUTPUT": 'memory:polygonize'})
+
+        DelineationController.polygonizedLayer = polygonizedResult['OUTPUT']
+
+        # QgsProject.instance().addMapLayer(DelineationController.polygonizedLayer)
+
+    @staticmethod
+    def onPolygonSelectionCreated(startPoint, endPoint):
+        DelineationController.syntheticFeatureSelection(startPoint, endPoint)
+        pass
+
+    @staticmethod
+    def syntheticFeatureSelection(startPoint, endPoint):
+        if startPoint is None or endPoint is None:
+            raise Exception('Something went very bad, unable to create selection without start or end point')
+
+        nodesLayer = DelineationController.getLayerByName(DelineationController.nodeLayerName)
+        polygonizedLayer = DelineationController.polygonizedLayer
+        isControlPressed = False
+
+        if isControlPressed:
+            selectBehaviour = QgsVectorLayer.AddToSelection
+        else:
+            selectBehaviour = QgsVectorLayer.SetSelection
+
+        # TODO make a bigger rectangle/tollerance
+        rect = QgsRectangle(startPoint, endPoint)
+        nodesLayer.selectByRect(rect, selectBehaviour)
+
+        if polygonizedLayer.selectedFeatureCount() > 1:
+            # go for rectangles only
+            pass
+        else:
+            # go for 
+            pass
+
+        rect = QgsRectangle(startPoint, endPoint)
+        polygonizedLayer.selectByRect(rect, selectBehaviour)
+
+        selectedPolygonsLayer = selectedFeaturesToNewLayer(polygonizedLayer)
+        dissolvedPolygonsLayer = dissolveLayer(selectedPolygonsLayer)
+        lines = polygonLayerToPolylines(dissolvedPolygonsLayer).getFeatures()
+
+        DelineationController.addCandidates(lines)
+
+    @staticmethod
+    def toggleSelectionSwitcher(selectionMode = BD_SELECT_NONE):
+        if selectionMode == BD_SELECT_NONE:
+            iface.mapCanvas().unsetMapTool(DelineationController.mapSelectionTool)
+        else:
+            iface.mapCanvas().setMapTool(DelineationController.mapSelectionTool)
+
+def selectedFeaturesToNewLayer(vectorLayer, name=None):
+    if name is None:
+        name = 'SelectedFeatures'
+
+    result = processing.run('native:saveselectedfeatures', {
+        'INPUT': vectorLayer,
+        'OUTPUT': 'memory:%s' % name
+    })
+
+    return result['OUTPUT']
+
+def dissolveLayer(vectorLayer, name=None):
+    if name is None:
+        name = 'DissolvedFeatures'
+
+    result = processing.run('native:dissolve', {
+        'INPUT': vectorLayer,
+        'FIELD': [],
+        'OUTPUT': 'memory:%s' % name
+        })
+
+    return result['OUTPUT']
+
+def polygonLayerToPolylines(vectorLayer, name=None):
+    if name is None:
+        name = 'DissolvedFeatures'
+
+    result = processing.run('qgis:polygonstolines', {
+        'INPUT': vectorLayer,
+        'OUTPUT': 'memory:%s' % name
+        })
+
+    return result['OUTPUT']
 

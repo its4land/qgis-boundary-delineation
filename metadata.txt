@@ -10,7 +10,7 @@
 name=BoundaryDelineation
 qgisMinimumVersion=3.0
 description=Supports interactive delineation of visible (cadastral) boundaries in orthoimages
-version=3.0
+version=4.0
 author=Sophie Crommelink
 email=s.crommelinck@utwente.nl
 

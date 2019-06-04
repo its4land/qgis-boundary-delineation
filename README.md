@@ -1,2 +1,5 @@
 # BoundaryDelineation
-Source code of BoundaryDelineation plugin for QGIS3 (in the master branch) and for QGIS2 (in the QGIS2 branch).
+Source code of BoundaryDelineation plugin for QGIS3.
+
+### Intallation
+Download the plugin as zip and unarchive it in you QGIS directory OR install it from zip.
