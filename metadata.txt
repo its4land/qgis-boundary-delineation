@@ -11,7 +11,7 @@ name=BoundaryDelineation
 qgisMinimumVersion=3.0
 description=Supports interactive delineation of visible (cadastral) boundaries in orthoimages
 version=4.0
-author=Sophie Crommelink, Ivan Ivanov
+author=Sophie Crommelinck, Ivan Ivanov
 email=s.crommelinck@utwente.nl
 
 about=The plugin is designed to support the interactive delineation of visible (cadastral) boundaries in orthoimages. This work is supported by its4land, which is part of the Horizon 2020 program of the European Union (project number 687828).
