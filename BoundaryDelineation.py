@@ -515,7 +515,12 @@ class BoundaryDelineation:
 
         self.simplifiedSegmentsLayer = result['OUTPUT']
 
-        self.dockWidget.setComboboxLayer(self.simplifiedSegmentsLayer)
+        weight_attribute = None
+
+        if self.simplifiedSegmentsLayer.fields().indexFromName(BOUNDARY_ATTR_NAME) != -1:
+            weight_attribute = BOUNDARY_ATTR_NAME
+
+        self.dockWidget.setComboboxLayer(self.simplifiedSegmentsLayer, weight_attribute)
 
         layerTreeIndex = utils.get_tree_node_index(self.verticesLayer) + 1 if self.verticesLayer else 0
 

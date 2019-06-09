@@ -440,5 +440,8 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
 
         return enabled
 
-    def setComboboxLayer(self, layer: QgsVectorLayer) -> None:
+    def setComboboxLayer(self, layer: QgsVectorLayer, weight_attribute: str = None) -> None:
         self.weightComboBox.setLayer(layer)
+
+        if weight_attribute is not None:
+            self.weightComboBox.setField(weight_attribute)
