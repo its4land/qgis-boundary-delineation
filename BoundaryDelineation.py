@@ -794,14 +794,19 @@ class BoundaryDelineation:
 
         points = list(points_dict.values())
 
-        if len(points) != 2 or len(points[0]) != 2 or len(points[1]) != 2:
-            show_info(__('Selected lines can have exactly four unconnected endpoints'))
+        if len(points) == 1 and len(points[0]) == 2:
+            pointX1 = points[0][0]
+            pointY1 = points[0][0]
+            pointX2 = points[0][1]
+            pointY2 = points[0][1]
+        elif len(points) == 2 and len(points[0]) == 2 and len(points[1]) == 2:
+            pointX1 = points[0][0]
+            pointY1 = points[0][1]
+            pointX2 = points[1][0]
+            pointY2 = points[1][1]
+        else:
+            show_info(__('Selected lines can have exactly two or four unconnected endpoints'))
             return tuple(enclosingLineFeatures)
-
-        pointX1 = points[0][0]
-        pointY1 = points[0][1]
-        pointX2 = points[1][0]
-        pointY2 = points[1][1]
 
         selectedLinesLayer.startEditing()
 
