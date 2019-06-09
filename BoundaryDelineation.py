@@ -590,7 +590,7 @@ class BoundaryDelineation:
         assert self.dockWidget
 
         filename = self.dockWidget.getOutputLayer()
-        crs = self.__getCrs()
+        crs = self.__getCrs(self.segmentsLayer)
 
         if os.path.isfile(filename):
             finalLayer = QgsVectorLayer(filename, self.finalLayerName, 'ogr')
