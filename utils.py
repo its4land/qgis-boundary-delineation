@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import QApplication, QPushButton, QLabel
 
 import processing
 
-from qgis.core import Qgis, QgsProject, QgsMarkerSymbol, QgsLineSymbol, QgsSingleSymbolRenderer, QgsGraduatedSymbolRenderer, QgsLayerTreeNode, QgsVectorLayer, QgsRasterLayer, QgsMapLayer, QgsPoint, QgsVectorFileWriter, QgsCoordinateReferenceSystem, QgsLayerTreeGroup
+from qgis.core import Qgis, QgsProject, QgsMarkerSymbol, QgsLineSymbol, QgsSingleSymbolRenderer, QgsGraduatedSymbolRenderer, QgsLayerTreeNode, QgsLayerTreeLayer, QgsVectorLayer, QgsRasterLayer, QgsMapLayer, QgsPoint, QgsVectorFileWriter, QgsCoordinateReferenceSystem, QgsLayerTreeGroup
 from qgis.utils import iface
 
 PLUGIN_DIR = os.path.dirname(__file__)
@@ -173,7 +173,7 @@ def add_group(group: QgsLayerTreeNode, name: str = None, index: int = -1, parent
     parent = parent if parent else QgsProject.instance().layerTreeRoot()
     parent.insertGroup(index, group)
 
-def add_layer(layer: QgsMapLayer, name: str = None, index: int = -1, color: typing.Tuple[int, int, int] = None, size: float = None, file: str = None, parent: QgsLayerTreeNode = None) -> None:
+def add_layer(layer: QgsMapLayer, name: str = None, index: int = -1, color: typing.Tuple[int, int, int] = None, size: float = None, file: str = None, parent: QgsLayerTreeNode = None, show_feature_count: bool = True) -> None:
     if name:
         layer.setName(name)
 
@@ -187,8 +187,11 @@ def add_layer(layer: QgsMapLayer, name: str = None, index: int = -1, color: typi
     instance = QgsProject.instance()
     instance.addMapLayer(layer, False)
 
+    layerTreeNode = QgsLayerTreeLayer(layer)
+    layerTreeNode.setCustomProperty('showFeatureCount', show_feature_count)
+
     parent = parent if parent else instance.layerTreeRoot()
-    parent.insertLayer(index, layer)
+    parent.insertChildNode(index, layerTreeNode)
 
 def update_symbology(layer: QgsMapLayer, color: typing.Tuple[int, int, int] = None, size: float = None, file: str = None) -> None:
     assert layer, 'Layer is not defined'
