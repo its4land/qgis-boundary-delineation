@@ -3,7 +3,6 @@
 Attributes:
     DEFAULT_WEIGHT_NAME (str): the graph attribute to be used as weight
     DEFAULT_WEIGHT_VALUE (int): the value to be used as weight, in case it's missing
-    LOCAL_NETWORKX_PATH (TYPE): path to local networkx library copy
 
 Notes:
     begin                : 2019-03-03
@@ -29,10 +28,8 @@ import os
 import sys
 import typing
 
-LOCAL_NETWORKX_PATH = os.path.join(os.path.dirname(__file__) + '/lib')
-
-if LOCAL_NETWORKX_PATH not in sys.path:
-    sys.path.insert(0, LOCAL_NETWORKX_PATH)
+if os.path.join(os.path.dirname(__file__) + '/lib') not in sys.path:
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__) + '/lib'))
 
 import networkx as nx
 from networkx.algorithms.approximation.steinertree import steiner_tree, metric_closure

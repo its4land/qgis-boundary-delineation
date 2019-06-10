@@ -38,8 +38,15 @@ License:
 """
 
 import os
+import sys
 import typing
 from typing import Optional, Collection
+
+if os.path.join(os.path.dirname(__file__) + '/lib') not in sys.path:
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__) + '/lib'))
+
+import networkx as nx
+import processing
 
 from PyQt5.QtCore import QSettings, QTranslator, Qt, QVariant, QCoreApplication
 from PyQt5.QtWidgets import QAction, QToolBar, QMessageBox
@@ -51,10 +58,6 @@ from qgis.core import QgsProject, QgsCoordinateReferenceSystem, QgsLayerTree, Qg
 from qgis.gui import QgisInterface, QgsMapTool
 from qgis.utils import iface
 from qgis.utils import *
-
-
-import networkx as nx
-import processing
 
 # Initialize Qt resources from file resources.py
 # from .resources import *
