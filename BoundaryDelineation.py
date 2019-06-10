@@ -192,6 +192,9 @@ class BoundaryDelineation:
 
         self.toggleMapSelectionTool(False)
 
+        self.canvas.mapToolSet.disconnect(self.onMapToolSet)
+        self.canvas.extentsChanged.disconnect(self.onExtentsChanged)
+
         if self.dockWidget:
             self.iface.removeDockWidget(self.dockWidget)
 
