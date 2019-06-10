@@ -118,6 +118,7 @@ class BoundaryDelineation:
         self.lengthAttributeName = 'BD_LEN'
         self.metricClosureGraphs: typing.Dict[str, typing.Any] = {}
         self.graph = None
+        self.subgraphs = None
 
         self.mapSelectionTool = MapSelectionTool(self.canvas)
         self.mapSelectionTool.polygonCreated.connect(self.onPolygonSelectionCreated)
@@ -559,6 +560,9 @@ class BoundaryDelineation:
         self.edgesWeightField = name or DEFAULT_WEIGHT_NAME
 
         if PRECALCULATE_METRIC_CLOSURES:
+            if not self.graph:
+                self.buildVerticesGraph()
+
             self.metricClosureGraphs[self.edgesWeightField] = calculate_subgraphs_metric_closures(self.subgraphs, weight=self.edgesWeightField)
         else:
             self.metricClosureGraphs[self.edgesWeightField] = None
@@ -839,7 +843,9 @@ class BoundaryDelineation:
         assert self.verticesLayer
         assert self.simplifiedSegmentsLayer
         assert self.candidatesLayer
-        assert self.graph
+
+        if not self.graph:
+            self.buildVerticesGraph()
 
         rect = self.__getCoordinateTransform(self.polygonizedLayer).transform(rect)
 
