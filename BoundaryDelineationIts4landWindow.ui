@@ -74,6 +74,9 @@
    </item>
    <item>
     <widget class="QPushButton" name="connectButton">
+     <property name="toolTip">
+      <string></string>
+     </property>
      <property name="text">
       <string>Connect</string>
      </property>
@@ -108,6 +111,9 @@
           <height>100</height>
          </size>
         </property>
+        <property name="toolTip">
+         <string></string>
+        </property>
         <property name="sortingEnabled">
          <bool>true</bool>
         </property>
@@ -140,6 +146,9 @@
           <height>16777215</height>
          </size>
         </property>
+        <property name="toolTip">
+         <string></string>
+        </property>
         <property name="title">
          <string>Project details</string>
         </property>
@@ -148,6 +157,9 @@
           <layout class="QFormLayout" name="projectsFormLayout">
            <item row="1" column="0">
             <widget class="QLabel" name="projectsNameLabel">
+             <property name="toolTip">
+              <string></string>
+             </property>
              <property name="text">
               <string>Name</string>
              </property>
@@ -155,6 +167,9 @@
            </item>
            <item row="1" column="1">
             <widget class="QLabel" name="projectsNameValueLabel">
+             <property name="toolTip">
+              <string></string>
+             </property>
              <property name="text">
               <string/>
              </property>
@@ -168,6 +183,9 @@
            </item>
            <item row="2" column="0">
             <widget class="QLabel" name="projectsDescriptionLabel">
+             <property name="toolTip">
+              <string></string>
+             </property>
              <property name="text">
               <string>Description</string>
              </property>
@@ -175,6 +193,9 @@
            </item>
            <item row="2" column="1">
             <widget class="QLabel" name="projectsDescriptionValueLabel">
+             <property name="toolTip">
+              <string></string>
+             </property>
              <property name="text">
               <string/>
              </property>
@@ -188,6 +209,9 @@
            </item>
            <item row="3" column="0">
             <widget class="QLabel" name="projectsTagsLabel">
+             <property name="toolTip">
+              <string></string>
+             </property>
              <property name="text">
               <string>Tags</string>
              </property>
@@ -195,6 +219,9 @@
            </item>
            <item row="3" column="1">
             <widget class="QLabel" name="projectsTagsValueLabel">
+             <property name="toolTip">
+              <string></string>
+             </property>
              <property name="text">
               <string/>
              </property>
@@ -208,6 +235,9 @@
            </item>
            <item row="4" column="0">
             <widget class="QLabel" name="projectsModelsLabel">
+             <property name="toolTip">
+              <string></string>
+             </property>
              <property name="text">
               <string>Models</string>
              </property>
@@ -215,6 +245,9 @@
            </item>
            <item row="4" column="1">
             <widget class="QLabel" name="projectsModelsValueLabel">
+             <property name="toolTip">
+              <string></string>
+             </property>
              <property name="text">
               <string/>
              </property>
@@ -225,6 +258,9 @@
            </item>
            <item row="5" column="0">
             <widget class="QLabel" name="projectsSpatialSourcesLabel">
+             <property name="toolTip">
+              <string></string>
+             </property>
              <property name="text">
               <string>Spatial Sources</string>
              </property>
@@ -235,6 +271,9 @@
            </item>
            <item row="5" column="1">
             <widget class="QLabel" name="projectsSpatialSourcesValueLabel">
+             <property name="toolTip">
+              <string></string>
+             </property>
              <property name="text">
               <string/>
              </property>
@@ -259,6 +298,9 @@
      <property name="acceptDrops">
       <bool>false</bool>
      </property>
+     <property name="toolTip">
+      <string></string>
+     </property>
      <property name="autoFillBackground">
       <bool>false</bool>
      </property>
@@ -279,6 +321,9 @@
           <width>0</width>
           <height>100</height>
          </size>
+        </property>
+        <property name="toolTip">
+         <string></string>
         </property>
         <property name="sortingEnabled">
          <bool>true</bool>
@@ -312,6 +357,9 @@
           <height>16777215</height>
          </size>
         </property>
+        <property name="toolTip">
+         <string></string>
+        </property>
         <property name="title">
          <string>Validation set details</string>
         </property>
@@ -320,6 +368,9 @@
           <layout class="QFormLayout" name="validationSetsformLayout">
            <item row="1" column="0">
             <widget class="QLabel" name="validationSetsNameLabel">
+             <property name="toolTip">
+              <string></string>
+             </property>
              <property name="text">
               <string>Name</string>
              </property>
@@ -327,6 +378,9 @@
            </item>
            <item row="1" column="1">
             <widget class="QLabel" name="validationSetsNameValueLabel">
+             <property name="toolTip">
+              <string></string>
+             </property>
              <property name="text">
               <string/>
              </property>
@@ -340,6 +394,9 @@
            </item>
            <item row="2" column="0">
             <widget class="QLabel" name="validationSetsDescriptionLabel">
+             <property name="toolTip">
+              <string></string>
+             </property>
              <property name="text">
               <string>Description</string>
              </property>
@@ -347,6 +404,9 @@
            </item>
            <item row="2" column="1">
             <widget class="QLabel" name="validationSetsDescriptionValueLabel">
+             <property name="toolTip">
+              <string></string>
+             </property>
              <property name="text">
               <string/>
              </property>
@@ -360,6 +420,9 @@
            </item>
            <item row="3" column="0">
             <widget class="QLabel" name="validationSetsTagsLabel">
+             <property name="toolTip">
+              <string></string>
+             </property>
              <property name="text">
               <string>Tags</string>
              </property>
@@ -367,6 +430,9 @@
            </item>
            <item row="3" column="1">
             <widget class="QLabel" name="validationSetsTagsValueLabel">
+             <property name="toolTip">
+              <string></string>
+             </property>
              <property name="text">
               <string/>
              </property>
@@ -380,6 +446,9 @@
            </item>
            <item row="4" column="0">
             <widget class="QLabel" name="validationSetsModelsLabel">
+             <property name="toolTip">
+              <string></string>
+             </property>
              <property name="text">
               <string>Models</string>
              </property>
@@ -387,6 +456,9 @@
            </item>
            <item row="5" column="0">
             <widget class="QLabel" name="validationSetsSizeLabel">
+             <property name="toolTip">
+              <string></string>
+             </property>
              <property name="text">
               <string>Size (B)</string>
              </property>
@@ -394,6 +466,9 @@
            </item>
            <item row="4" column="1">
             <widget class="QLabel" name="validationSetsModelsValueLabel">
+             <property name="toolTip">
+              <string></string>
+             </property>
              <property name="text">
               <string/>
              </property>
@@ -404,6 +479,9 @@
            </item>
            <item row="5" column="1">
             <widget class="QLabel" name="validationSetsSizeValueLabel">
+             <property name="toolTip">
+              <string></string>
+             </property>
              <property name="text">
               <string/>
              </property>
@@ -418,6 +496,9 @@
           <widget class="QPushButton" name="validationSetsLoadButton">
            <property name="enabled">
             <bool>false</bool>
+           </property>
+           <property name="toolTip">
+            <string></string>
            </property>
            <property name="text">
             <string>Load as segments layer</string>
@@ -441,6 +522,9 @@
        <height>0</height>
       </size>
      </property>
+     <property name="toolTip">
+      <string></string>
+     </property>
      <property name="title">
       <string>Boundary face strings</string>
      </property>
@@ -462,6 +546,9 @@
        <layout class="QFormLayout" name="boundaryStringsformLayout">
         <item row="1" column="0">
          <widget class="QLabel" name="boundaryStringsNameLabel">
+          <property name="toolTip">
+           <string></string>
+          </property>
           <property name="text">
            <string>Name</string>
           </property>
@@ -469,6 +556,9 @@
         </item>
         <item row="1" column="1">
          <widget class="QLabel" name="boundaryStringsNameValueLabel">
+          <property name="toolTip">
+           <string></string>
+          </property>
           <property name="text">
            <string/>
           </property>
@@ -482,6 +572,9 @@
         </item>
         <item row="2" column="0">
          <widget class="QLabel" name="boundaryStringsFeaturesLabel">
+          <property name="toolTip">
+           <string></string>
+          </property>
           <property name="text">
            <string>Features</string>
           </property>
@@ -489,6 +582,9 @@
         </item>
         <item row="2" column="1">
          <widget class="QLabel" name="boundaryStringsFeaturesValueLabel">
+          <property name="toolTip">
+           <string></string>
+          </property>
           <property name="text">
            <string/>
           </property>
@@ -502,6 +598,9 @@
         </item>
         <item row="3" column="0">
          <widget class="QLabel" name="boundaryStringsSizeLabel">
+          <property name="toolTip">
+           <string></string>
+          </property>
           <property name="text">
            <string>Size (B)</string>
           </property>
@@ -509,6 +608,9 @@
         </item>
         <item row="3" column="1">
          <widget class="QLabel" name="boundaryStringsSizeValueLabel">
+          <property name="toolTip">
+           <string></string>
+          </property>
           <property name="text">
            <string/>
           </property>
@@ -523,6 +625,9 @@
        <widget class="QPushButton" name="boundaryStringsLoadButton">
         <property name="enabled">
          <bool>false</bool>
+        </property>
+        <property name="toolTip">
+         <string></string>
         </property>
         <property name="text">
          <string>Load layer</string>
@@ -575,6 +680,9 @@
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="enabled">
       <bool>true</bool>
+     </property>
+     <property name="toolTip">
+      <string></string>
      </property>
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
