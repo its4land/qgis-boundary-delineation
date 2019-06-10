@@ -1,11 +1,3 @@
-# This file contains metadata for your plugin. Since 
-# version 2.0 of QGIS this is the proper way to supply 
-# information about a plugin. The old method of 
-# embedding metadata in __init__.py will 
-# is no longer supported since version 2.0.
-
-# This file should be included when you package your plugin.# Mandatory items:
-
 [general]
 name=BoundaryDelineation
 qgisMinimumVersion=3.4
@@ -18,9 +10,7 @@ about=The plugin is designed to support the interactive delineation of visible (
 
 tracker=https://github.com/SCrommelinck/BoundaryDelineation/issues
 repository=https://github.com/SCrommelinck/BoundaryDelineation
-# End of mandatory metadata
 
-# Recommended items:
 
 # Uncomment the following line and add your changelog:
 # changelog=
@@ -32,4 +22,6 @@ experimental=True
 
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False
+
+
 
