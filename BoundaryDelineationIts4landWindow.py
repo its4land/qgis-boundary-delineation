@@ -79,11 +79,12 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         self.boundaryStringsUploadButton.clicked.connect(self.onBoundaryStringsUploadButtonClicked)
         # self.__setIcon(self.uploadButton, 'icon.png')
 
-
     def onLoginInputChanged(self, text: str) -> None:
+        """Dummy, currently not used due to lack of authentication in its4land."""
         pass
 
     def onPasswordInputChanged(self, text: str) -> None:
+        """Dummy, currently not used due to lack of authentication in its4land."""
         pass
 
     def onConnectButtonClicked(self) -> None:
@@ -91,6 +92,7 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         self.onLoginButtonClicked()
 
     def onLoginButtonClicked(self) -> None:
+        """Responsible for login of the user."""
         self.loginInput.setEnabled(False)
         self.passwordInput.setEnabled(False)
         self.loginButton.setEnabled(False)
