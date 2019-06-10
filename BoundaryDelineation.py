@@ -729,6 +729,11 @@ class BoundaryDelineation:
         if startPoint is None or endPoint is None:
             raise Exception('Something went very bad, unable to create selection without start or end point')
 
+        assert self.simplifiedSegmentsLayer
+
+        if self.selectionMode != SelectionModes.LINES:
+            self.simplifiedSegmentsLayer.removeSelection()
+
         # check the Shift and Control modifiers to reproduce the navive selection
         if modifiers & Qt.ShiftModifier:
             selectBehaviour = QgsVectorLayer.AddToSelection
