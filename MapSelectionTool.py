@@ -1,25 +1,28 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- MapSelectionTool
-                                 A QGIS plugin
- MapSelectioNTool. This script was based on https://github.com/lcoandrade/OSMDownloader/blob/master/rectangleAreaTool.py
-                              -------------------
-        begin                : 2019-02-09
-        git sha              : $Format:%H$
-        copyright            : (C) 2019 by Ivan Ivanov @ ITC, University of Twente
-        development          : 2019, Ivan Ivanov @ ITC, University of Twente <ivan.ivanov@suricactus.com>
- ***************************************************************************/
+"""MapSelectionTool to draw a polygon and get the coordinates of it.
 
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
+This script was based on https://github.com/lcoandrade/OSMDownloader/blob/master/rectangleAreaTool.py
+
+Notes:
+    begin                : 2019-02-09
+    git sha              : $Format:%H$
+
+    development          : 2019, Ivan Ivanov @ ITC, University of Twente
+    email                : ivan.ivanov@suricactus.com
+    copyright            : (C) 2019 by Ivan Ivanov
+
+License:
+    /***************************************************************************
+     *                                                                         *
+     *   This program is free software; you can redistribute it and/or modify  *
+     *   it under the terms of the GNU General Public License as published by  *
+     *   the Free Software Foundation; either version 2 of the License, or     *
+     *   (at your option) any later version.                                   *
+     *                                                                         *
+    /***************************************************************************
+
 """
+
+
 from qgis.gui import QgsMapTool, QgsRubberBand, QgsMapMouseEvent, QgsMapCanvas
 from qgis.core import QgsWkbTypes, QgsPointXY
 from qgis.PyQt.QtCore import pyqtSignal, Qt

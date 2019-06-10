@@ -1,3 +1,31 @@
+"""Utility functions and definitions.
+
+Attributes:
+    APP_NAME (str): application name
+    GROUP_NAME (str): layer tree group name
+    PLUGIN_DIR (TYPE): plugin directory absolute path
+    TMP_DIR (str): temporary directory path
+
+Notes:
+    begin                : 2019-02-14
+    git sha              : $Format:%H$
+
+    development          : 2019, Ivan Ivanov @ ITC, University of Twente
+    email                : ivan.ivanov@suricactus.com
+    copyright            : (C) 2019 by Ivan Ivanov
+
+License:
+    /***************************************************************************
+     *                                                                         *
+     *   This program is free software; you can redistribute it and/or modify  *
+     *   it under the terms of the GNU General Public License as published by  *
+     *   the Free Software Foundation; either version 2 of the License, or     *
+     *   (at your option) any later version.                                   *
+     *                                                                         *
+    /***************************************************************************
+
+"""
+
 import functools
 import collections.abc
 import typing

@@ -1,23 +1,26 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- BoundaryDelineation
-                                 A QGIS plugin
- BoundaryDelineation
-                             -------------------
-        begin                : 2019-05-23
-        git sha              : $Format:%H$
-        development          : 2019, Ivan Ivanov @ ITC, University of Twente <ivan.ivanov@suricactus.com>
- ***************************************************************************/
+"""UI controller of the its4land window.
 
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
+Attributes:
+    HL_HARDCODED_PROJECTION (str): the hardcoded projection expected by Hansaluft (officially part of the geojson RFC)
+
+Notes:
+    begin                : 2019-05-23
+    git sha              : $Format:%H$
+
+    development          : 2019, Ivan Ivanov @ ITC, University of Twente
+    email                : ivan.ivanov@suricactus.com
+    copyright            : (C) 2019 by Ivan Ivanov
+
+License:
+    /***************************************************************************
+     *                                                                         *
+     *   This program is free software; you can redistribute it and/or modify  *
+     *   it under the terms of the GNU General Public License as published by  *
+     *   the Free Software Foundation; either version 2 of the License, or     *
+     *   (at your option) any later version.                                   *
+     *                                                                         *
+    /***************************************************************************
+
 """
 
 import os

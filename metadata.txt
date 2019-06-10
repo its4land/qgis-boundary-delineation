@@ -8,7 +8,7 @@
 
 [general]
 name=BoundaryDelineation
-qgisMinimumVersion=3.0
+qgisMinimumVersion=3.4
 description=Supports interactive delineation of visible (cadastral) boundaries in orthoimages
 version=3.0
 author=Sophie Crommelink
@@ -25,13 +25,9 @@ repository=https://github.com/SCrommelinck/BoundaryDelineation
 # Uncomment the following line and add your changelog:
 # changelog=
 
-# Tags are comma separated with spaces allowed
-tags=python, analysis, cadastre, digitizing, processing, remote sensing, vector
-
+tags=cadastre, digitizing, processing, vector, boundary, delineation
 homepage=https://its4land.com/
-category=Plugins
-icon=icon.png
-# experimental flag
+icon=icons/icon.png
 experimental=True
 
 # deprecated flag (applies to the whole plugin, not just a single version)

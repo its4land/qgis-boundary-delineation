@@ -1,27 +1,40 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- BoundaryDelineation
-                                 A QGIS plugin
- BoundaryDelineation
-                             -------------------
-        begin                : 2018-05-23
-        git sha              : $Format:%H$
-        copyright            : (C) 2018 by Sophie Crommelinck
-        email                : s.crommelinck@utwente.nl
-        development          : Reiner Borchert, Hansa Luftbild AG Münster
-        email                : borchert@hansaluftbild.de
-        development          : 2019, Ivan Ivanov @ ITC, University of Twente <ivan.ivanov@suricactus.com>
- ***************************************************************************/
+"""Main file boundary delineation.
 
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
+Attributes:
+    API_KEY (str): ITS4LAND API key
+    API_URL (str): its4land API url
+    BOUNDARY_ATTR_NAME (str): default boundary weight attribute, that comes from the extraction algorithm
+    DEFAULT_SELECTION_MODE (SelectionMode): the default values that is preselected as candidate selection mode
+    MODE_VERTICES_EXTENT_LIMIT (int): the maximum number of vertices in the current map extent, when the NODES mode can be enabled
+    MODE_VERTICES_LIMIT (int): the maximum number of vertices in the whole map, when the NODES mode graph can be precalculated
+    PRECALCULATE_METRIC_CLOSURES (bool): should precalculate vertices graphs, or delay it until immediate need
+    SelectBehaviour (TYPE): Default select behaviour
+
+Notes:
+    begin                : 2018-05-23
+    git sha              : $Format:%H$
+
+    development          : Sophie Crommelinck
+    email                : s.crommelinck@utwente.nl
+    copyright            : (C) 2018 by Sophie Crommelinck
+
+    development          : Reiner Borchert, Hansa Luftbild AG Münster
+    email                : borchert@hansaluftbild.de
+
+    development          : 2019, Ivan Ivanov @ ITC, University of Twente
+    email                : ivan.ivanov@suricactus.com
+    copyright            : (C) 2019 by Ivan Ivanov
+
+License:
+    /***************************************************************************
+     *                                                                         *
+     *   This program is free software; you can redistribute it and/or modify  *
+     *   it under the terms of the GNU General Public License as published by  *
+     *   the Free Software Foundation; either version 2 of the License, or     *
+     *   (at your option) any later version.                                   *
+     *                                                                         *
+    /***************************************************************************
+
 """
 
 import os
@@ -40,6 +53,7 @@ from qgis.utils import iface
 from qgis.utils import *
 
 
+import networkx as nx
 import processing
 
 # Initialize Qt resources from file resources.py
@@ -60,7 +74,6 @@ MODE_VERTICES_EXTENT_LIMIT = 300
 MODE_VERTICES_LIMIT = 1000
 
 SelectBehaviour = int
-MessageLevel = int
 
 API_URL = 'http://i4ldev1dmz.hansaluftbild.de/sub/'
 API_KEY = '1'
@@ -70,6 +83,7 @@ class BoundaryDelineation:
     """Functions created by Plugin Builder"""
     def __init__(self, iface: QgisInterface):
         """Constructor.
+
         :param iface: An interface instance that will be passed to this class
             which provides the hook by which you can manipulate the QGIS
             application at run time.
@@ -117,8 +131,8 @@ class BoundaryDelineation:
         self.edgesWeightField = DEFAULT_WEIGHT_NAME
         self.lengthAttributeName = 'BD_LEN'
         self.metricClosureGraphs: typing.Dict[str, typing.Any] = {}
-        self.graph = None
-        self.subgraphs = None
+        self.graph: Optional[nx.MultiGraph] = None
+        self.subgraphs: Optional[Collection[nx.Graph]] = None
 
         self.mapSelectionTool = MapSelectionTool(self.canvas)
         self.mapSelectionTool.polygonCreated.connect(self.onPolygonSelectionCreated)
@@ -847,13 +861,16 @@ class BoundaryDelineation:
 
         return tuple(dissolvedLinesLayer2.getFeatures())
 
-    def getLinesSelectionModeVertices(self, selectBehaviour: SelectBehaviour, rect: QgsRectangle) -> Optional[typing.Tuple]:
+    def getLinesSelectionModeVertices(self, selectBehaviour: SelectBehaviour, rect: QgsRectangle) -> Optional[Collection]:
         assert self.verticesLayer
         assert self.simplifiedSegmentsLayer
         assert self.candidatesLayer
 
         if not self.graph:
             self.buildVerticesGraph()
+
+        assert self.graph
+        assert self.subgraphs
 
         rect = self.__getCoordinateTransform(self.polygonizedLayer).transform(rect)
 
@@ -876,7 +893,7 @@ class BoundaryDelineation:
             self.candidatesLayer.rollBack()
             # TODO there are self enclosing blocks that can be handled here (one vertex that is conected to itself)
             show_info(__('Please select two or more vertices to be connected'))
-            return
+            return None
 
         try:
             if self.metricClosureGraphs[self.edgesWeightField] is None:
@@ -885,7 +902,7 @@ class BoundaryDelineation:
             T = find_steiner_tree(self.subgraphs, selectedPoints, metric_closures=self.metricClosureGraphs[self.edgesWeightField])
         except NoSuitableGraphError:
             # this is hapenning when the user selects vertices from two separate graphs
-            return
+            return None
 
         # edge[2] stays for the line ids
         featureIds = [edge[2] for edge in T.edges(keys=True)]
@@ -893,7 +910,7 @@ class BoundaryDelineation:
 
         if len(points) != 2:
             show_info(__('Unable to find the shortest path'))
-            return
+            return None
 
         if self.graph.has_edge(*points):
             edgesDict = self.graph[points[0]][points[1]]

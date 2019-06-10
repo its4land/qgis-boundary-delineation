@@ -1,25 +1,30 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- BoundaryDelineation
-                                 A QGIS plugin
- BoundaryGraph
-                             -------------------
-        begin                : 2019-03-03
-        git sha              : $Format:%H$
-        copyright            : (C) 2019 by Ivan Ivanov @ ITC, University of Twente
-        development          : 2019, Ivan Ivanov @ ITC, University of Twente <ivan.ivanov@suricactus.com>
- ***************************************************************************/
+"""Working with graphs for vertices selection mode.
 
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
+Attributes:
+    DEFAULT_WEIGHT_NAME (str): the graph attribute to be used as weight
+    DEFAULT_WEIGHT_VALUE (int): the value to be used as weight, in case it's missing
+    LOCAL_NETWORKX_PATH (TYPE): path to local networkx library copy
+
+Notes:
+    begin                : 2019-03-03
+    git sha              : $Format:%H$
+
+    development          : 2019, Ivan Ivanov @ ITC, University of Twente
+    email                : ivan.ivanov@suricactus.com
+    copyright            : (C) 2019 by Ivan Ivanov
+
+License:
+    /***************************************************************************
+     *                                                                         *
+     *   This program is free software; you can redistribute it and/or modify  *
+     *   it under the terms of the GNU General Public License as published by  *
+     *   the Free Software Foundation; either version 2 of the License, or     *
+     *   (at your option) any later version.                                   *
+     *                                                                         *
+    /***************************************************************************
+
 """
+
 import os
 import sys
 import typing
@@ -32,7 +37,7 @@ if LOCAL_NETWORKX_PATH not in sys.path:
 import networkx as nx
 from networkx.algorithms.approximation.steinertree import steiner_tree, metric_closure
 from qgis.core import QgsWkbTypes, QgsExpression, QgsRectangle, QgsVectorLayer
-from typing import Collection as CollectionT, Union, List
+from typing import Collection, Union, List
 
 DEFAULT_WEIGHT_NAME = 'weight'
 DEFAULT_WEIGHT_VALUE = 1
@@ -95,10 +100,10 @@ def prepare_graph_from_lines(layer: QgsVectorLayer, weight_expr_str: str = None,
 
     return G
 
-def prepare_subgraphs(G: nx.MultiGraph) -> CollectionT:
+def prepare_subgraphs(G: nx.MultiGraph) -> Collection[nx.Graph]:
     return tuple(nx.connected_component_subgraphs(G))
 
-def find_steiner_tree(graphs: CollectionT, terminal_nodes: CollectionT, metric_closures: typing.List[nx.Graph] = None) -> nx.Graph:
+def find_steiner_tree(graphs: Collection, terminal_nodes: Collection, metric_closures: typing.List[nx.Graph] = None) -> nx.Graph:
     terminal_graph = None
     terminal_metric_closure = None
 
@@ -117,7 +122,7 @@ def find_steiner_tree(graphs: CollectionT, terminal_nodes: CollectionT, metric_c
     return T
 
 
-def calculate_subgraphs_metric_closures(graphs: CollectionT, weight: str = None) -> typing.List[nx.Graph]:
+def calculate_subgraphs_metric_closures(graphs: Collection, weight: str = None) -> typing.List[nx.Graph]:
     metric_closures = []
 
     for g in graphs:
