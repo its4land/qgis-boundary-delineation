@@ -52,7 +52,7 @@
         <item row="0" column="0">
          <widget class="QLabel" name="baseRasterLabel">
           <property name="toolTip">
-           <string>Load input orthoimage as raster image</string>
+           <string>Load input orthoimage as raster image.</string>
           </property>
           <property name="locale">
            <locale language="English" country="UnitedStates"/>
@@ -94,7 +94,7 @@
            <bool>false</bool>
           </property>
           <property name="toolTip">
-           <string>Process input segments layer for step II</string>
+           <string>Process input segments layer for step II.</string>
           </property>
           <property name="text">
            <string>Process</string>
@@ -128,7 +128,7 @@
         <item row="1" column="0">
          <widget class="QLabel" name="segmentsLayerLabel">
           <property name="toolTip">
-           <string>Load input image segmentation as vector</string>
+           <string>Load input image segmentation as vector.</string>
           </property>
           <property name="locale">
            <locale language="English" country="UnitedStates"/>
@@ -188,7 +188,7 @@
         <item row="0" column="1" colspan="2">
          <widget class="QgsMapLayerComboBox" name="baseRasterLayerComboBox">
           <property name="toolTip">
-           <string>Load input orthoimage as raster image</string>
+           <string>Load input orthoimage as raster image.</string>
           </property>
           <property name="allowEmptyLayer">
            <bool>true</bool>
@@ -208,7 +208,7 @@
           </property>
           <property name="toolTip">
            <string>Simplification tolerance of the input segments layer. 0.4m provides visually the best results for the UAV data (2-6cm GSD) and 1m for the aerial data (25cm GSD).
-Simply setting the tolerance lower produces better results for the UAV data, but worse for the aerial data (too zig-zagged outlines)</string>
+Simply setting the tolerance lower produces better results for the UAV data, but worse for the aerial data (too zig-zagged outlines).</string>
           </property>
           <property name="prefix">
            <string>Simplify by </string>
@@ -236,7 +236,7 @@ Simply setting the tolerance lower produces better results for the UAV data, but
            <bool>true</bool>
           </property>
           <property name="toolTip">
-           <string>Load input image segmentation as vector</string>
+           <string>Load input image segmentation as vector.</string>
           </property>
           <property name="showCrs">
            <bool>true</bool>
@@ -248,7 +248,7 @@ Simply setting the tolerance lower produces better results for the UAV data, but
           <item>
            <widget class="QToolButton" name="its4landButton">
             <property name="toolTip">
-             <string>Load data from its4land platform</string>
+             <string>Load data from its4land platform.</string>
             </property>
             <property name="text">
              <string>Its4land Project</string>
@@ -258,7 +258,7 @@ Simply setting the tolerance lower produces better results for the UAV data, but
           <item>
            <widget class="QCheckBox" name="addLengthAttributeCheckBox">
             <property name="toolTip">
-             <string>Calculates length as new attribute in input segments layer</string>
+             <string>Calculates length as new attribute in input segments layer.</string>
             </property>
             <property name="text">
              <string>Add length attribute</string>
@@ -295,7 +295,7 @@ Simply setting the tolerance lower produces better results for the UAV data, but
           <item>
            <widget class="QRadioButton" name="modeLinesRadio">
             <property name="toolTip">
-             <string>Connect lines surrounding a click or a selection of lines.</string>
+             <string>Select lines for which endpoints should be closed to a polygon.</string>
             </property>
             <property name="text">
              <string>Lines</string>
@@ -308,7 +308,7 @@ Simply setting the tolerance lower produces better results for the UAV data, but
              <bool>false</bool>
             </property>
             <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Connect between lines’ endpoints&lt;/p&gt;&lt;p&gt;This is enabled only when it's considered to be computationally effective.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select vertices to be connected along least-cost-path based on selected attribute.&lt;/p&gt;&lt;p&gt;This is enabled only when it's considered to be computationally effective.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
             <property name="text">
              <string>Vertices</string>
@@ -336,7 +336,7 @@ Simply setting the tolerance lower produces better results for the UAV data, but
            <bool>false</bool>
           </property>
           <property name="toolTip">
-           <string>Select attribute to consider for least-cost-path calculation in ‘Connect along optimal path’ functionality</string>
+           <string>Select attribute to consider for least-cost-path calculation in ‘Vertices’ functionality.</string>
           </property>
           <property name="allowEmptyFieldName">
            <bool>true</bool>
@@ -425,7 +425,7 @@ Simply setting the tolerance lower produces better results for the UAV data, but
            <bool>false</bool>
           </property>
           <property name="toolTip">
-           <string>Update simplified segments layer according to edits in candidates </string>
+           <string>Update simplified segments layer according to edits in candidates.</string>
           </property>
           <property name="text">
            <string>Update edits</string>
@@ -513,7 +513,7 @@ Simply setting the tolerance lower produces better results for the UAV data, but
         <item row="8" column="2" colspan="2">
          <widget class="QCheckBox" name="polygonizeCheckBox">
           <property name="toolTip">
-           <string>Convert final layer to polygon to be saved as polygons vector layer</string>
+           <string>Convert final layer to polygon to be saved as polygons vector layer.</string>
           </property>
           <property name="text">
            <string>Polygonize final layer</string>
@@ -620,7 +620,7 @@ Simply setting the tolerance lower produces better results for the UAV data, but
            </font>
           </property>
           <property name="text">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;https://youtu.be/f6an86_-OaY&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Video Tutorial&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;https://youtu.be/GrDv8fW53Fs&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Video Tutorial&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="openExternalLinks">
            <bool>true</bool>
