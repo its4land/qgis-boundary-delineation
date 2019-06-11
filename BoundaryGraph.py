@@ -48,7 +48,7 @@ class NoSuitableGraphError(BoundaryDelineationError):
         self.message = message
 
 
-def prepare_graph_from_lines(layer: QgsVectorLayer, weight_expr_str: str = None, filter_expr: Union[QgsRectangle, str, List] = '') -> nx.MultiGraph:
+def prepare_graph_from_lines(layer: QgsVectorLayer, weight_expr_str: str = None, filter_expr: Union[QgsRectangle, str, List] = '1=1') -> nx.MultiGraph:
     if layer.geometryType() != QgsWkbTypes.LineGeometry:
         raise Exception('Only line layers are accepted')
 
