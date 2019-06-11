@@ -373,6 +373,24 @@ def polyginize_lines(vector_layer: QgsVectorLayer, name: str = None) -> QgsVecto
 
     return polygonizedResult['OUTPUT']
 
+
+def delete_duplicate_geometries(vector_layer: QgsVectorLayer, name: str = 'PolygonizedLines') -> QgsVectorLayer:
+    result = processing.run('qgis:deleteduplicategeometries', {
+        'INPUT': vector_layer,
+        'OUTPUT': 'memory:%s' % name,
+    })
+
+    return result['OUTPUT']
+
+def extract_specific_vertices(vector_layer: QgsVectorLayer, vertices: str = '0', name: str = 'Vertices') -> QgsVectorLayer:
+    verticesResult = processing.run('qgis:extractspecificvertices', {
+        'INPUT': vector_layer,
+        'VERTICES': vertices,
+        'OUTPUT': 'memory:%s' % name,
+    })
+
+    return verticesResult['OUTPUT']
+
 def lines_unique_vertices(vector_layer: QgsVectorLayer, feature_ids: typing.List[int] = None) -> typing.List[QgsPoint]:
     points: typing.Dict[QgsPoint, int] = defaultdict(int)
     features = vector_layer.getFeatures(feature_ids) if feature_ids else vector_layer.getFeatures()

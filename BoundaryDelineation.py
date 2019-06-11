@@ -304,6 +304,10 @@ class BoundaryDelineation:
             newFeature = QgsFeature(self.simplifiedSegmentsLayer.fields())
             newFeature.setGeometry(f.geometry())
 
+            for fieldName, field in self.simplifiedSegmentsNumericFields.items():
+                if newFeature.attribute(fieldName) is None:
+                    newFeature.setAttribute(fieldName, field['maxValue'])
+
             # this was used when the ./styles/segments.qml was a graduated style, however is no longer the case
             # # make the line visible, otherwise there is no value for such values in the QML style
             # newFeature.setAttribute(BOUNDARY_ATTR_NAME, 1)
@@ -315,7 +319,7 @@ class BoundaryDelineation:
         # update the supporting layers
         self.extractSegmentsVertices()
         self.polygonizeSegmentsLayer()
-        self.buildVerticesGraph()
+        self.buildVerticesGraph(True)
 
     def onLayerTreeWillRemoveChildren(self, node: QgsLayerTreeNode, startIndex: int, endIndex: int) -> None:
         # TODO try to fix this...
@@ -535,6 +539,18 @@ class BoundaryDelineation:
             self.layerTree.findLayer(self.segmentsLayer.id()).setItemVisibilityChecked(False)
 
         self.simplifiedSegmentsLayer = result['OUTPUT']
+        self.simplifiedSegmentsNumericFields = dict()
+
+        for field in self.simplifiedSegmentsLayer.fields():
+            if not field.isNumeric():
+                continue
+
+            fieldIdx = self.simplifiedSegmentsLayer.fields().indexFromName(field.name())
+
+            self.simplifiedSegmentsNumericFields[field.name()] = {
+                'idx': fieldIdx,
+                'maxValue': self.simplifiedSegmentsLayer.maximumValue(fieldIdx)
+            }
 
         weight_attribute = None
 
@@ -663,18 +679,11 @@ class BoundaryDelineation:
         # if there is already created vertices layer, remove it
         utils.remove_layer(self.verticesLayer)
 
-        verticesResult = processing.run('qgis:extractspecificvertices', {
-            'INPUT': self.simplifiedSegmentsLayer,
-            'VERTICES': '0',
-            'OUTPUT': 'memory:extract',
-        })
+        # 0, -1 mean last and first vertex
+        verticesLayer = utils.extract_specific_vertices(self.simplifiedSegmentsLayer, '0, -1')
+        verticesLayer = utils.delete_duplicate_geometries(verticesLayer)
 
-        verticesNoDuplicatesResult = processing.run('qgis:deleteduplicategeometries', {
-            'INPUT': verticesResult['OUTPUT'],
-            'OUTPUT': 'memory:vertices',
-        })
-
-        self.verticesLayer = verticesNoDuplicatesResult['OUTPUT']
+        self.verticesLayer = verticesLayer
 
         utils.add_layer(self.verticesLayer, self.verticesLayerName, color=(255, 0, 0), size=1.3, parent=get_group(), index=0)
 
@@ -685,12 +694,17 @@ class BoundaryDelineation:
 
         self.polygonizedLayer = utils.polyginize_lines(self.simplifiedSegmentsLayer)
 
-    def buildVerticesGraph(self) -> None:
+    def buildVerticesGraph(self, force: bool = False) -> None:
         assert self.verticesLayer
         assert self.simplifiedSegmentsLayer
 
         extent = self.canvas.extent()
-        count = len(list(self.verticesLayer.getFeatures(extent)))
+        if force:
+            print('buildVerticesGraph2')
+            self.graph = None
+            self.subgraphs = None
+            self.metricClosureGraphs[self.edgesWeightField] = None
+
 
         if self.verticesLayer.featureCount() <= MODE_VERTICES_LIMIT:
             if not self.graph:
@@ -698,6 +712,14 @@ class BoundaryDelineation:
                 self.subgraphs = prepare_subgraphs(self.graph)
                 self.metricClosureGraphs[self.edgesWeightField] = self.calculateMetricClosure(self.subgraphs) if PRECALCULATE_METRIC_CLOSURES else None
         elif count <= MODE_VERTICES_EXTENT_LIMIT:
+
+            return None
+
+
+        extent = self.canvas.extent()
+        count = len(list(self.verticesLayer.getFeatures(extent)))
+
+        if count <= MODE_VERTICES_EXTENT_LIMIT:
             self.graph = prepare_graph_from_lines(self.simplifiedSegmentsLayer, filter_expr=extent)
             self.subgraphs = prepare_subgraphs(self.graph)
             self.metricClosureGraphs[self.edgesWeightField] = self.calculateMetricClosure(self.subgraphs) if PRECALCULATE_METRIC_CLOSURES else None
