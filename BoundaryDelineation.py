@@ -136,6 +136,7 @@ class BoundaryDelineation:
         self.metricClosureGraphs: typing.Dict[str, typing.Any] = {}
         self.graph: Optional[nx.MultiGraph] = None
         self.subgraphs: Optional[Collection[nx.Graph]] = None
+        self.simplifiedSegmentsNumericFields: Optional[typing.Dict[str, typing.Any]] = None
 
         self.mapSelectionTool = MapSelectionTool(self.canvas)
         self.mapSelectionTool.polygonCreated.connect(self.onPolygonSelectionCreated)
@@ -287,6 +288,7 @@ class BoundaryDelineation:
     def updateLayersTopology(self) -> None:
         assert self.finalLayer
         assert self.simplifiedSegmentsLayer
+        assert self.simplifiedSegmentsNumericFields
 
         splittedLayer = utils.split_with_lines(self.finalLayer, self.simplifiedSegmentsLayer)
         diffLayer = utils.difference(splittedLayer, self.simplifiedSegmentsLayer)
@@ -306,7 +308,7 @@ class BoundaryDelineation:
 
             for fieldName, field in self.simplifiedSegmentsNumericFields.items():
                 if newFeature.attribute(fieldName) is None:
-                    newFeature.setAttribute(fieldName, field['maxValue'])
+                    newFeature.setAttribute(fieldName, field['minValue'])
 
             # this was used when the ./styles/segments.qml was a graduated style, however is no longer the case
             # # make the line visible, otherwise there is no value for such values in the QML style
@@ -315,6 +317,23 @@ class BoundaryDelineation:
             assert self.simplifiedSegmentsLayer.addFeature(newFeature), 'Unable to add new feature'
 
         assert self.simplifiedSegmentsLayer.commitChanges(), 'Unable to commit newly added features'
+
+        newSimplifiedLayer = utils.split_with_lines(self.simplifiedSegmentsLayer, mergedLinesLayer)
+
+        utils.add_layer(mergedLinesLayer)
+
+        print(str(mergedLinesLayer.featureCount()))
+        print(str(self.simplifiedSegmentsLayer.featureCount()))
+        print(str(newSimplifiedLayer.featureCount()))
+        # print('old:' + str(self.simplifiedSegmentsLayer.featureCount()) + ',' + self.simplifiedSegmentsLayer.id() + ',' + self.simplifiedSegmentsLayer.source())
+        # print('new:' + str(newSimplifiedLayer.featureCount()) + ',' + newSimplifiedLayer.id() + ',' + newSimplifiedLayer.source())
+
+        self.setSimplifiedSegmentsLayer(newSimplifiedLayer)
+        # print('\n\n\n')
+        # utils.set_data_source(self.simplifiedSegmentsLayer, newSimplifiedLayer.source())
+        # self.simplifiedSegmentsLayer.setDataSource(newSimplifiedLayer.source(), self.simplifiedSegmentsLayer.name(), self.simplifiedSegmentsLayer.dataProvider().name())
+        # print('\n\n\n')
+        # print('ups:' + str(self.simplifiedSegmentsLayer.featureCount()) + ',' + self.simplifiedSegmentsLayer.id() + ',' + self.simplifiedSegmentsLayer.source())
 
         # update the supporting layers
         self.extractSegmentsVertices()
@@ -524,7 +543,6 @@ class BoundaryDelineation:
     @processing_cursor()
     def simplifySegmentsLayer(self) -> None:
         assert self.segmentsLayer
-        assert self.dockWidget
 
         tolerance = self.dockWidget.getSimplificationValue()
         result = processing.run('qgis:simplifygeometries', {
@@ -538,7 +556,15 @@ class BoundaryDelineation:
         if self.layerTree.findLayer(self.segmentsLayer.id()):
             self.layerTree.findLayer(self.segmentsLayer.id()).setItemVisibilityChecked(False)
 
-        self.simplifiedSegmentsLayer = result['OUTPUT']
+        self.setSimplifiedSegmentsLayer(result['OUTPUT'])
+
+    def setSimplifiedSegmentsLayer(self, layer: QgsVectorLayer) -> None:
+        assert self.dockWidget
+
+        if self.simplifiedSegmentsLayer:
+            utils.remove_layer(self.simplifiedSegmentsLayer)
+
+        self.simplifiedSegmentsLayer = layer
         self.simplifiedSegmentsNumericFields = dict()
 
         for field in self.simplifiedSegmentsLayer.fields():
@@ -549,7 +575,7 @@ class BoundaryDelineation:
 
             self.simplifiedSegmentsNumericFields[field.name()] = {
                 'idx': fieldIdx,
-                'maxValue': self.simplifiedSegmentsLayer.maximumValue(fieldIdx)
+                'minValue': self.simplifiedSegmentsLayer.minimumValue(fieldIdx)
             }
 
         weight_attribute = None
@@ -699,25 +725,20 @@ class BoundaryDelineation:
         assert self.simplifiedSegmentsLayer
 
         extent = self.canvas.extent()
+        count = len(list(self.verticesLayer.getFeatures(extent)))
+
         if force:
-            print('buildVerticesGraph2')
             self.graph = None
             self.subgraphs = None
             self.metricClosureGraphs[self.edgesWeightField] = None
-
 
         if self.verticesLayer.featureCount() <= MODE_VERTICES_LIMIT:
             if not self.graph:
                 self.graph = prepare_graph_from_lines(self.simplifiedSegmentsLayer)
                 self.subgraphs = prepare_subgraphs(self.graph)
                 self.metricClosureGraphs[self.edgesWeightField] = self.calculateMetricClosure(self.subgraphs) if PRECALCULATE_METRIC_CLOSURES else None
-        elif count <= MODE_VERTICES_EXTENT_LIMIT:
 
             return None
-
-
-        extent = self.canvas.extent()
-        count = len(list(self.verticesLayer.getFeatures(extent)))
 
         if count <= MODE_VERTICES_EXTENT_LIMIT:
             self.graph = prepare_graph_from_lines(self.simplifiedSegmentsLayer, filter_expr=extent)
@@ -730,6 +751,8 @@ class BoundaryDelineation:
 
     @processing_cursor()
     def calculateMetricClosure(self, subgraphs: Collection) -> typing.List[typing.Any]:
+        assert self.subgraphs
+
         show_info(__('It may take some time to precalculate the most optimal boundaries...'))
         return calculate_subgraphs_metric_closures(self.subgraphs, weight=self.edgesWeightField)
 
