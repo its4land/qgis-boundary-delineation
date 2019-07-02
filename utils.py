@@ -1,3 +1,31 @@
+"""Utility functions and definitions.
+
+Attributes:
+    APP_NAME (str): application name
+    GROUP_NAME (str): layer tree group name
+    PLUGIN_DIR (TYPE): plugin directory absolute path
+    TMP_DIR (str): temporary directory path
+
+Notes:
+    begin                : 2019-02-14
+    git sha              : $Format:%H$
+
+    development          : 2019, Ivan Ivanov @ ITC, University of Twente
+    email                : ivan.ivanov@suricactus.com
+    copyright            : (C) 2019 by Ivan Ivanov
+
+License:
+    /***************************************************************************
+     *                                                                         *
+     *   This program is free software; you can redistribute it and/or modify  *
+     *   it under the terms of the GNU General Public License as published by  *
+     *   the Free Software Foundation; either version 2 of the License, or     *
+     *   (at your option) any later version.                                   *
+     *                                                                         *
+    /***************************************************************************
+
+"""
+
 import functools
 import collections.abc
 import typing
@@ -13,7 +41,7 @@ from PyQt5.QtWidgets import QApplication, QPushButton, QLabel
 
 import processing
 
-from qgis.core import Qgis, QgsProject, QgsMarkerSymbol, QgsLineSymbol, QgsSingleSymbolRenderer, QgsGraduatedSymbolRenderer, QgsLayerTreeNode, QgsVectorLayer, QgsRasterLayer, QgsMapLayer, QgsPoint, QgsVectorFileWriter, QgsCoordinateReferenceSystem, QgsLayerTreeGroup
+from qgis.core import Qgis, QgsProject, QgsMarkerSymbol, QgsLineSymbol, QgsSingleSymbolRenderer, QgsGraduatedSymbolRenderer, QgsLayerTreeNode, QgsLayerTreeLayer, QgsVectorLayer, QgsRasterLayer, QgsMapLayer, QgsPoint, QgsVectorFileWriter, QgsCoordinateReferenceSystem, QgsLayerTreeGroup
 from qgis.utils import iface
 
 PLUGIN_DIR = os.path.dirname(__file__)
@@ -173,7 +201,7 @@ def add_group(group: QgsLayerTreeNode, name: str = None, index: int = -1, parent
     parent = parent if parent else QgsProject.instance().layerTreeRoot()
     parent.insertGroup(index, group)
 
-def add_layer(layer: QgsMapLayer, name: str = None, index: int = -1, color: typing.Tuple[int, int, int] = None, size: float = None, file: str = None, parent: QgsLayerTreeNode = None) -> None:
+def add_layer(layer: QgsMapLayer, name: str = None, index: int = -1, color: typing.Tuple[int, int, int] = None, size: float = None, file: str = None, parent: QgsLayerTreeNode = None, show_feature_count: bool = True) -> None:
     if name:
         layer.setName(name)
 
@@ -187,8 +215,11 @@ def add_layer(layer: QgsMapLayer, name: str = None, index: int = -1, color: typi
     instance = QgsProject.instance()
     instance.addMapLayer(layer, False)
 
+    layerTreeNode = QgsLayerTreeLayer(layer)
+    layerTreeNode.setCustomProperty('showFeatureCount', show_feature_count)
+
     parent = parent if parent else instance.layerTreeRoot()
-    parent.insertLayer(index, layer)
+    parent.insertChildNode(index, layerTreeNode)
 
 def update_symbology(layer: QgsMapLayer, color: typing.Tuple[int, int, int] = None, size: float = None, file: str = None) -> None:
     assert layer, 'Layer is not defined'
@@ -341,6 +372,24 @@ def polyginize_lines(vector_layer: QgsVectorLayer, name: str = None) -> QgsVecto
     })
 
     return polygonizedResult['OUTPUT']
+
+
+def delete_duplicate_geometries(vector_layer: QgsVectorLayer, name: str = 'PolygonizedLines') -> QgsVectorLayer:
+    result = processing.run('qgis:deleteduplicategeometries', {
+        'INPUT': vector_layer,
+        'OUTPUT': 'memory:%s' % name,
+    })
+
+    return result['OUTPUT']
+
+def extract_specific_vertices(vector_layer: QgsVectorLayer, vertices: str = '0', name: str = 'Vertices') -> QgsVectorLayer:
+    verticesResult = processing.run('qgis:extractspecificvertices', {
+        'INPUT': vector_layer,
+        'VERTICES': vertices,
+        'OUTPUT': 'memory:%s' % name,
+    })
+
+    return verticesResult['OUTPUT']
 
 def lines_unique_vertices(vector_layer: QgsVectorLayer, feature_ids: typing.List[int] = None) -> typing.List[QgsPoint]:
     points: typing.Dict[QgsPoint, int] = defaultdict(int)

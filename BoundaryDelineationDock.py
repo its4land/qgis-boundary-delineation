@@ -1,27 +1,40 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- BoundaryDelineation
-                                 A QGIS plugin
- BoundaryDelineation
-                             -------------------
-        begin                : 2018-05-23
-        git sha              : $Format:%H$
-        copyright            : (C) 2018 by Sophie Crommelinck
-        email                : s.crommelinck@utwente.nl
-        development          : Reiner Borchert, Hansa Luftbild AG Münster
-        email                : borchert@hansaluftbild.de
-        development          : 2019, Ivan Ivanov @ ITC, University of Twente <ivan.ivanov@suricactus.com>
- ***************************************************************************/
+"""UI controller of the dock.
 
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
+Attributes:
+    SC_ACCEPT (str): shortcut for accepting candidates
+    SC_EDIT (str): shortcut for editing candidates
+    SC_MODE_LINES (str): shortcut for toggling lines mode
+    SC_MODE_MANUAL (str): shortcut for toggling manual mode
+    SC_MODE_POLYGONS (str): shortcut for toggling polygons mode
+    SC_MODE_VERTICES (str): shortcut for toggling vertices mode
+    SC_REJECT (str): shortcut for rejecting candidate
+    SC_UPDATE (str): shortcut for updating the candidates layer
+
+Notes:
+    begin                : 2018-05-23
+    git sha              : $Format:%H$
+
+    development          : Sophie Crommelinck
+    email                : s.crommelinck@utwente.nl
+    copyright            : (C) 2018 by Sophie Crommelinck
+
+    development          : Reiner Borchert, Hansa Luftbild AG Münster
+    email                : borchert@hansaluftbild.de
+
+    development          : 2019, Ivan Ivanov @ ITC, University of Twente
+    email                : ivan.ivanov@suricactus.com
+    copyright            : (C) 2019 by Ivan Ivanov
+
+License:
+    /***************************************************************************
+     *                                                                         *
+     *   This program is free software; you can redistribute it and/or modify  *
+     *   it under the terms of the GNU General Public License as published by  *
+     *   the Free Software Foundation; either version 2 of the License, or     *
+     *   (at your option) any later version.                                   *
+     *                                                                         *
+    /***************************************************************************
+
 """
 
 import os
@@ -440,5 +453,8 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
 
         return enabled
 
-    def setComboboxLayer(self, layer: QgsVectorLayer) -> None:
+    def setComboboxLayer(self, layer: QgsVectorLayer, weight_attribute: str = None) -> None:
         self.weightComboBox.setLayer(layer)
+
+        if weight_attribute is not None:
+            self.weightComboBox.setField(weight_attribute)

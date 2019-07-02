@@ -1,32 +1,52 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- BoundaryDelineation
-                                 A QGIS plugin
- BoundaryDelineation
-                             -------------------
-        begin                : 2018-05-23
-        git sha              : $Format:%H$
-        copyright            : (C) 2018 by Sophie Crommelinck
-        email                : s.crommelinck@utwente.nl
-        development          : Reiner Borchert, Hansa Luftbild AG Münster
-        email                : borchert@hansaluftbild.de
-        development          : 2019, Ivan Ivanov @ ITC, University of Twente <ivan.ivanov@suricactus.com>
- ***************************************************************************/
+"""Main file boundary delineation.
 
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
+Attributes:
+    API_KEY (str): ITS4LAND API key
+    API_URL (str): its4land API url
+    BOUNDARY_ATTR_NAME (str): default boundary weight attribute, that comes from the extraction algorithm
+    DEFAULT_SELECTION_MODE (SelectionMode): the default values that is preselected as candidate selection mode
+    MODE_VERTICES_EXTENT_LIMIT (int): the maximum number of vertices in the current map extent, when the NODES mode can be enabled
+    MODE_VERTICES_LIMIT (int): the maximum number of vertices in the whole map, when the NODES mode graph can be precalculated
+    PRECALCULATE_METRIC_CLOSURES (bool): should precalculate vertices graphs, or delay it until immediate need
+    SelectBehaviour (TYPE): Default select behaviour
+
+Notes:
+    begin                : 2018-05-23
+    git sha              : $Format:%H$
+
+    development          : Sophie Crommelinck
+    email                : s.crommelinck@utwente.nl
+    copyright            : (C) 2018 by Sophie Crommelinck
+
+    development          : Reiner Borchert, Hansa Luftbild AG Münster
+    email                : borchert@hansaluftbild.de
+
+    development          : 2019, Ivan Ivanov @ ITC, University of Twente
+    email                : ivan.ivanov@suricactus.com
+    copyright            : (C) 2019 by Ivan Ivanov
+
+License:
+    /***************************************************************************
+     *                                                                         *
+     *   This program is free software; you can redistribute it and/or modify  *
+     *   it under the terms of the GNU General Public License as published by  *
+     *   the Free Software Foundation; either version 2 of the License, or     *
+     *   (at your option) any later version.                                   *
+     *                                                                         *
+    /***************************************************************************
+
 """
 
 import os
+import sys
 import typing
 from typing import Optional, Collection
+
+if os.path.join(os.path.dirname(__file__) + '/lib') not in sys.path:
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__) + '/lib'))
+
+import networkx as nx
+import processing
 
 from PyQt5.QtCore import QSettings, QTranslator, Qt, QVariant, QCoreApplication
 from PyQt5.QtWidgets import QAction, QToolBar, QMessageBox
@@ -39,11 +59,8 @@ from qgis.gui import QgisInterface, QgsMapTool
 from qgis.utils import iface
 from qgis.utils import *
 
-
-import processing
-
 # Initialize Qt resources from file resources.py
-from .resources import *
+# from .resources import *
 
 from .Its4landAPI import Its4landAPI
 from .BoundaryDelineationDock import BoundaryDelineationDock
@@ -60,7 +77,6 @@ MODE_VERTICES_EXTENT_LIMIT = 300
 MODE_VERTICES_LIMIT = 1000
 
 SelectBehaviour = int
-MessageLevel = int
 
 API_URL = 'http://i4ldev1dmz.hansaluftbild.de/sub/'
 API_KEY = '1'
@@ -70,6 +86,7 @@ class BoundaryDelineation:
     """Functions created by Plugin Builder"""
     def __init__(self, iface: QgisInterface):
         """Constructor.
+
         :param iface: An interface instance that will be passed to this class
             which provides the hook by which you can manipulate the QGIS
             application at run time.
@@ -117,7 +134,9 @@ class BoundaryDelineation:
         self.edgesWeightField = DEFAULT_WEIGHT_NAME
         self.lengthAttributeName = 'BD_LEN'
         self.metricClosureGraphs: typing.Dict[str, typing.Any] = {}
-        self.graph = None
+        self.graph: Optional[nx.MultiGraph] = None
+        self.subgraphs: Optional[Collection[nx.Graph]] = None
+        self.simplifiedSegmentsNumericFields: Optional[typing.Dict[str, typing.Any]] = None
 
         self.mapSelectionTool = MapSelectionTool(self.canvas)
         self.mapSelectionTool.polygonCreated.connect(self.onPolygonSelectionCreated)
@@ -190,6 +209,9 @@ class BoundaryDelineation:
         # self.layerTree.willRemoveChildren.disconnect(self.onLayerTreeWillRemoveChildren)
 
         self.toggleMapSelectionTool(False)
+
+        self.canvas.mapToolSet.disconnect(self.onMapToolSet)
+        self.canvas.extentsChanged.disconnect(self.onExtentsChanged)
 
         if self.dockWidget:
             self.iface.removeDockWidget(self.dockWidget)
@@ -266,6 +288,7 @@ class BoundaryDelineation:
     def updateLayersTopology(self) -> None:
         assert self.finalLayer
         assert self.simplifiedSegmentsLayer
+        assert self.simplifiedSegmentsNumericFields
 
         splittedLayer = utils.split_with_lines(self.finalLayer, self.simplifiedSegmentsLayer)
         diffLayer = utils.difference(splittedLayer, self.simplifiedSegmentsLayer)
@@ -283,6 +306,10 @@ class BoundaryDelineation:
             newFeature = QgsFeature(self.simplifiedSegmentsLayer.fields())
             newFeature.setGeometry(f.geometry())
 
+            for fieldName, field in self.simplifiedSegmentsNumericFields.items():
+                if newFeature.attribute(fieldName) is None:
+                    newFeature.setAttribute(fieldName, field['minValue'])
+
             # this was used when the ./styles/segments.qml was a graduated style, however is no longer the case
             # # make the line visible, otherwise there is no value for such values in the QML style
             # newFeature.setAttribute(BOUNDARY_ATTR_NAME, 1)
@@ -291,10 +318,27 @@ class BoundaryDelineation:
 
         assert self.simplifiedSegmentsLayer.commitChanges(), 'Unable to commit newly added features'
 
+        newSimplifiedLayer = utils.split_with_lines(self.simplifiedSegmentsLayer, mergedLinesLayer)
+
+        utils.add_layer(mergedLinesLayer)
+
+        print(str(mergedLinesLayer.featureCount()))
+        print(str(self.simplifiedSegmentsLayer.featureCount()))
+        print(str(newSimplifiedLayer.featureCount()))
+        # print('old:' + str(self.simplifiedSegmentsLayer.featureCount()) + ',' + self.simplifiedSegmentsLayer.id() + ',' + self.simplifiedSegmentsLayer.source())
+        # print('new:' + str(newSimplifiedLayer.featureCount()) + ',' + newSimplifiedLayer.id() + ',' + newSimplifiedLayer.source())
+
+        self.setSimplifiedSegmentsLayer(newSimplifiedLayer)
+        # print('\n\n\n')
+        # utils.set_data_source(self.simplifiedSegmentsLayer, newSimplifiedLayer.source())
+        # self.simplifiedSegmentsLayer.setDataSource(newSimplifiedLayer.source(), self.simplifiedSegmentsLayer.name(), self.simplifiedSegmentsLayer.dataProvider().name())
+        # print('\n\n\n')
+        # print('ups:' + str(self.simplifiedSegmentsLayer.featureCount()) + ',' + self.simplifiedSegmentsLayer.id() + ',' + self.simplifiedSegmentsLayer.source())
+
         # update the supporting layers
         self.extractSegmentsVertices()
         self.polygonizeSegmentsLayer()
-        self.buildVerticesGraph()
+        self.buildVerticesGraph(True)
 
     def onLayerTreeWillRemoveChildren(self, node: QgsLayerTreeNode, startIndex: int, endIndex: int) -> None:
         # TODO try to fix this...
@@ -499,7 +543,6 @@ class BoundaryDelineation:
     @processing_cursor()
     def simplifySegmentsLayer(self) -> None:
         assert self.segmentsLayer
-        assert self.dockWidget
 
         tolerance = self.dockWidget.getSimplificationValue()
         result = processing.run('qgis:simplifygeometries', {
@@ -513,9 +556,34 @@ class BoundaryDelineation:
         if self.layerTree.findLayer(self.segmentsLayer.id()):
             self.layerTree.findLayer(self.segmentsLayer.id()).setItemVisibilityChecked(False)
 
-        self.simplifiedSegmentsLayer = result['OUTPUT']
+        self.setSimplifiedSegmentsLayer(result['OUTPUT'])
 
-        self.dockWidget.setComboboxLayer(self.simplifiedSegmentsLayer)
+    def setSimplifiedSegmentsLayer(self, layer: QgsVectorLayer) -> None:
+        assert self.dockWidget
+
+        if self.simplifiedSegmentsLayer:
+            utils.remove_layer(self.simplifiedSegmentsLayer)
+
+        self.simplifiedSegmentsLayer = layer
+        self.simplifiedSegmentsNumericFields = dict()
+
+        for field in self.simplifiedSegmentsLayer.fields():
+            if not field.isNumeric():
+                continue
+
+            fieldIdx = self.simplifiedSegmentsLayer.fields().indexFromName(field.name())
+
+            self.simplifiedSegmentsNumericFields[field.name()] = {
+                'idx': fieldIdx,
+                'minValue': self.simplifiedSegmentsLayer.minimumValue(fieldIdx)
+            }
+
+        weight_attribute = None
+
+        if self.simplifiedSegmentsLayer.fields().indexFromName(BOUNDARY_ATTR_NAME) != -1:
+            weight_attribute = BOUNDARY_ATTR_NAME
+
+        self.dockWidget.setComboboxLayer(self.simplifiedSegmentsLayer, weight_attribute)
 
         layerTreeIndex = utils.get_tree_node_index(self.verticesLayer) + 1 if self.verticesLayer else 0
 
@@ -554,6 +622,9 @@ class BoundaryDelineation:
         self.edgesWeightField = name or DEFAULT_WEIGHT_NAME
 
         if PRECALCULATE_METRIC_CLOSURES:
+            if not self.graph:
+                self.buildVerticesGraph()
+
             self.metricClosureGraphs[self.edgesWeightField] = calculate_subgraphs_metric_closures(self.subgraphs, weight=self.edgesWeightField)
         else:
             self.metricClosureGraphs[self.edgesWeightField] = None
@@ -585,7 +656,7 @@ class BoundaryDelineation:
         assert self.dockWidget
 
         filename = self.dockWidget.getOutputLayer()
-        crs = self.__getCrs()
+        crs = self.__getCrs(self.segmentsLayer)
 
         if os.path.isfile(filename):
             finalLayer = QgsVectorLayer(filename, self.finalLayerName, 'ogr')
@@ -634,18 +705,11 @@ class BoundaryDelineation:
         # if there is already created vertices layer, remove it
         utils.remove_layer(self.verticesLayer)
 
-        verticesResult = processing.run('qgis:extractspecificvertices', {
-            'INPUT': self.simplifiedSegmentsLayer,
-            'VERTICES': '0',
-            'OUTPUT': 'memory:extract',
-        })
+        # 0, -1 mean last and first vertex
+        verticesLayer = utils.extract_specific_vertices(self.simplifiedSegmentsLayer, '0, -1')
+        verticesLayer = utils.delete_duplicate_geometries(verticesLayer)
 
-        verticesNoDuplicatesResult = processing.run('qgis:deleteduplicategeometries', {
-            'INPUT': verticesResult['OUTPUT'],
-            'OUTPUT': 'memory:vertices',
-        })
-
-        self.verticesLayer = verticesNoDuplicatesResult['OUTPUT']
+        self.verticesLayer = verticesLayer
 
         utils.add_layer(self.verticesLayer, self.verticesLayerName, color=(255, 0, 0), size=1.3, parent=get_group(), index=0)
 
@@ -656,19 +720,27 @@ class BoundaryDelineation:
 
         self.polygonizedLayer = utils.polyginize_lines(self.simplifiedSegmentsLayer)
 
-    def buildVerticesGraph(self) -> None:
+    def buildVerticesGraph(self, force: bool = False) -> None:
         assert self.verticesLayer
         assert self.simplifiedSegmentsLayer
 
         extent = self.canvas.extent()
         count = len(list(self.verticesLayer.getFeatures(extent)))
 
+        if force:
+            self.graph = None
+            self.subgraphs = None
+            self.metricClosureGraphs[self.edgesWeightField] = None
+
         if self.verticesLayer.featureCount() <= MODE_VERTICES_LIMIT:
             if not self.graph:
                 self.graph = prepare_graph_from_lines(self.simplifiedSegmentsLayer)
                 self.subgraphs = prepare_subgraphs(self.graph)
                 self.metricClosureGraphs[self.edgesWeightField] = self.calculateMetricClosure(self.subgraphs) if PRECALCULATE_METRIC_CLOSURES else None
-        elif count <= MODE_VERTICES_EXTENT_LIMIT:
+
+            return None
+
+        if count <= MODE_VERTICES_EXTENT_LIMIT:
             self.graph = prepare_graph_from_lines(self.simplifiedSegmentsLayer, filter_expr=extent)
             self.subgraphs = prepare_subgraphs(self.graph)
             self.metricClosureGraphs[self.edgesWeightField] = self.calculateMetricClosure(self.subgraphs) if PRECALCULATE_METRIC_CLOSURES else None
@@ -679,6 +751,8 @@ class BoundaryDelineation:
 
     @processing_cursor()
     def calculateMetricClosure(self, subgraphs: Collection) -> typing.List[typing.Any]:
+        assert self.subgraphs
+
         show_info(__('It may take some time to precalculate the most optimal boundaries...'))
         return calculate_subgraphs_metric_closures(self.subgraphs, weight=self.edgesWeightField)
 
@@ -719,6 +793,11 @@ class BoundaryDelineation:
     def syntheticFeatureSelection(self, startPoint: QgsPointXY, endPoint: QgsPointXY, modifiers: Qt.KeyboardModifiers) -> None:
         if startPoint is None or endPoint is None:
             raise Exception('Something went very bad, unable to create selection without start or end point')
+
+        assert self.simplifiedSegmentsLayer
+
+        if self.selectionMode != SelectionModes.LINES:
+            self.simplifiedSegmentsLayer.removeSelection()
 
         # check the Shift and Control modifiers to reproduce the navive selection
         if modifiers & Qt.ShiftModifier:
@@ -794,14 +873,19 @@ class BoundaryDelineation:
 
         points = list(points_dict.values())
 
-        if len(points) != 2 or len(points[0]) != 2 or len(points[1]) != 2:
-            show_info(__('Selected lines can have exactly four unconnected endpoints'))
+        if len(points) == 1 and len(points[0]) == 2:
+            pointX1 = points[0][0]
+            pointY1 = points[0][0]
+            pointX2 = points[0][1]
+            pointY2 = points[0][1]
+        elif len(points) == 2 and len(points[0]) == 2 and len(points[1]) == 2:
+            pointX1 = points[0][0]
+            pointY1 = points[0][1]
+            pointX2 = points[1][0]
+            pointY2 = points[1][1]
+        else:
+            show_info(__('Selected lines can have exactly two or four unconnected endpoints'))
             return tuple(enclosingLineFeatures)
-
-        pointX1 = points[0][0]
-        pointY1 = points[0][1]
-        pointX2 = points[1][0]
-        pointY2 = points[1][1]
 
         selectedLinesLayer.startEditing()
 
@@ -825,11 +909,16 @@ class BoundaryDelineation:
 
         return tuple(dissolvedLinesLayer2.getFeatures())
 
-    def getLinesSelectionModeVertices(self, selectBehaviour: SelectBehaviour, rect: QgsRectangle) -> Optional[typing.Tuple]:
+    def getLinesSelectionModeVertices(self, selectBehaviour: SelectBehaviour, rect: QgsRectangle) -> Optional[Collection]:
         assert self.verticesLayer
         assert self.simplifiedSegmentsLayer
         assert self.candidatesLayer
+
+        if not self.graph:
+            self.buildVerticesGraph()
+
         assert self.graph
+        assert self.subgraphs
 
         rect = self.__getCoordinateTransform(self.polygonizedLayer).transform(rect)
 
@@ -852,7 +941,7 @@ class BoundaryDelineation:
             self.candidatesLayer.rollBack()
             # TODO there are self enclosing blocks that can be handled here (one vertex that is conected to itself)
             show_info(__('Please select two or more vertices to be connected'))
-            return
+            return None
 
         try:
             if self.metricClosureGraphs[self.edgesWeightField] is None:
@@ -861,7 +950,7 @@ class BoundaryDelineation:
             T = find_steiner_tree(self.subgraphs, selectedPoints, metric_closures=self.metricClosureGraphs[self.edgesWeightField])
         except NoSuitableGraphError:
             # this is hapenning when the user selects vertices from two separate graphs
-            return
+            return None
 
         # edge[2] stays for the line ids
         featureIds = [edge[2] for edge in T.edges(keys=True)]
@@ -869,7 +958,7 @@ class BoundaryDelineation:
 
         if len(points) != 2:
             show_info(__('Unable to find the shortest path'))
-            return
+            return None
 
         if self.graph.has_edge(*points):
             edgesDict = self.graph[points[0]][points[1]]

@@ -1,5 +1,0 @@
-<RCC>
-    <qresource prefix="/plugins/BoundaryDelineation" >
-        <file>icon.png</file>
-    </qresource>
-</RCC>

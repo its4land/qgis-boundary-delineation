@@ -1,23 +1,26 @@
-# -*- coding: utf-8 -*-
-"""
-/***************************************************************************
- BoundaryDelineation
-                                 A QGIS plugin
- BoundaryDelineation
-                             -------------------
-        begin                : 2019-05-23
-        git sha              : $Format:%H$
-        development          : 2019, Ivan Ivanov @ ITC, University of Twente <ivan.ivanov@suricactus.com>
- ***************************************************************************/
+"""UI controller of the its4land window.
 
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
+Attributes:
+    HL_HARDCODED_PROJECTION (str): the hardcoded projection expected by Hansaluft (officially part of the geojson RFC)
+
+Notes:
+    begin                : 2019-05-23
+    git sha              : $Format:%H$
+
+    development          : 2019, Ivan Ivanov @ ITC, University of Twente
+    email                : ivan.ivanov@suricactus.com
+    copyright            : (C) 2019 by Ivan Ivanov
+
+License:
+    /***************************************************************************
+     *                                                                         *
+     *   This program is free software; you can redistribute it and/or modify  *
+     *   it under the terms of the GNU General Public License as published by  *
+     *   the Free Software Foundation; either version 2 of the License, or     *
+     *   (at your option) any later version.                                   *
+     *                                                                         *
+    /***************************************************************************
+
 """
 
 import os
@@ -76,11 +79,12 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         self.boundaryStringsUploadButton.clicked.connect(self.onBoundaryStringsUploadButtonClicked)
         # self.__setIcon(self.uploadButton, 'icon.png')
 
-
     def onLoginInputChanged(self, text: str) -> None:
+        """Dummy, currently not used due to lack of authentication in its4land."""
         pass
 
     def onPasswordInputChanged(self, text: str) -> None:
+        """Dummy, currently not used due to lack of authentication in its4land."""
         pass
 
     def onConnectButtonClicked(self) -> None:
@@ -88,6 +92,7 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         self.onLoginButtonClicked()
 
     def onLoginButtonClicked(self) -> None:
+        """Responsible for login of the user."""
         self.loginInput.setEnabled(False)
         self.passwordInput.setEnabled(False)
         self.loginButton.setEnabled(False)
