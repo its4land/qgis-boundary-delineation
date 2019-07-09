@@ -75,7 +75,7 @@
    <item>
     <widget class="QPushButton" name="connectButton">
      <property name="toolTip">
-      <string>connectButton</string>
+      <string>Connect to its4land platform</string>
      </property>
      <property name="text">
       <string>Connect</string>
@@ -112,7 +112,7 @@
          </size>
         </property>
         <property name="toolTip">
-         <string>projectsListWidget</string>
+         <string>Projects on its4land platform</string>
         </property>
        </widget>
       </item>
@@ -122,7 +122,7 @@
          <bool>false</bool>
         </property>
         <property name="toolTip">
-         <string>projectsErrorLabel</string>
+         <string>Unable to load project from its4land platform</string>
         </property>
         <property name="styleSheet">
          <string notr="true">color : red;</string>
@@ -147,7 +147,7 @@
          </size>
         </property>
         <property name="toolTip">
-         <string>projectsDetailsGroupBox</string>
+         <string>Details about its4land project</string>
         </property>
         <property name="title">
          <string>Project details</string>
@@ -158,7 +158,7 @@
            <item row="1" column="0">
             <widget class="QLabel" name="projectsNameLabel">
              <property name="toolTip">
-              <string>projectsNameLabel</string>
+              <string>Project name</string>
              </property>
              <property name="text">
               <string>Name</string>
@@ -168,7 +168,7 @@
            <item row="1" column="1">
             <widget class="QLabel" name="projectsNameValueLabel">
              <property name="toolTip">
-              <string>projectsNameValueLabel</string>
+              <string>Project name</string>
              </property>
              <property name="text">
               <string/>
@@ -184,7 +184,7 @@
            <item row="2" column="0">
             <widget class="QLabel" name="projectsDescriptionLabel">
              <property name="toolTip">
-              <string>projectsDescriptionLabel</string>
+              <string>Project description</string>
              </property>
              <property name="text">
               <string>Description</string>
@@ -194,7 +194,7 @@
            <item row="2" column="1">
             <widget class="QLabel" name="projectsDescriptionValueLabel">
              <property name="toolTip">
-              <string>projectsDescriptionValueLabel</string>
+              <string>Project description</string>
              </property>
              <property name="text">
               <string/>
@@ -210,7 +210,7 @@
            <item row="3" column="0">
             <widget class="QLabel" name="projectsTagsLabel">
              <property name="toolTip">
-              <string>projectsTagsLabel</string>
+              <string>Project tags</string>
              </property>
              <property name="text">
               <string>Tags</string>
@@ -220,7 +220,7 @@
            <item row="3" column="1">
             <widget class="QLabel" name="projectsTagsValueLabel">
              <property name="toolTip">
-              <string>projectsTagsValueLabel</string>
+              <string>Project tags</string>
              </property>
              <property name="text">
               <string/>
@@ -236,7 +236,7 @@
            <item row="4" column="0">
             <widget class="QLabel" name="projectsModelsLabel">
              <property name="toolTip">
-              <string>projectsModelsLabel</string>
+              <string>Project models</string>
              </property>
              <property name="text">
               <string>Models</string>
@@ -246,7 +246,7 @@
            <item row="4" column="1">
             <widget class="QLabel" name="projectsModelsValueLabel">
              <property name="toolTip">
-              <string>projectsModelsValueLabel</string>
+              <string>Project models</string>
              </property>
              <property name="text">
               <string/>
@@ -259,7 +259,7 @@
            <item row="5" column="0">
             <widget class="QLabel" name="projectsSpatialSourcesLabel">
              <property name="toolTip">
-              <string>projectsSpatialSourcesLabel</string>
+              <string>Project spatial source</string>
              </property>
              <property name="text">
               <string>Spatial Sources</string>
@@ -272,7 +272,7 @@
            <item row="5" column="1">
             <widget class="QLabel" name="projectsSpatialSourcesValueLabel">
              <property name="toolTip">
-              <string>projectsSpatialSourcesValueLabel</string>
+              <string>Project spatial source</string>
              </property>
              <property name="text">
               <string/>
@@ -299,13 +299,13 @@
       <bool>false</bool>
      </property>
      <property name="toolTip">
-      <string>validationSetsGroupBox</string>
+      <string>Image segmentation lines</string>
      </property>
      <property name="autoFillBackground">
       <bool>false</bool>
      </property>
      <property name="title">
-      <string>WP5 validation sets</string>
+      <string>Image segmentation lines</string>
      </property>
      <property name="flat">
       <bool>true</bool>
@@ -323,7 +323,7 @@
          </size>
         </property>
         <property name="toolTip">
-         <string>validationSetsListWidget</string>
+         <string>Image segmentation lines on its4land platform</string>
         </property>
        </widget>
       </item>
@@ -333,7 +333,7 @@
          <bool>false</bool>
         </property>
         <property name="toolTip">
-         <string>validationSetsErrorLabel</string>
+         <string>Unable to load image segmentation lines from its4land platform</string>
         </property>
         <property name="styleSheet">
          <string notr="true">color : red;</string>
@@ -358,10 +358,10 @@
          </size>
         </property>
         <property name="toolTip">
-         <string>validationSetsDetailsGroupBox</string>
+         <string>Details about its4land image segmenation lines</string>
         </property>
         <property name="title">
-         <string>Validation set details</string>
+         <string>Image segmentation details</string>
         </property>
         <layout class="QGridLayout" name="gridLayout">
          <item row="0" column="0">
@@ -369,7 +369,7 @@
            <item row="1" column="0">
             <widget class="QLabel" name="validationSetsNameLabel">
              <property name="toolTip">
-              <string>validationSetsNameLabel</string>
+              <string>Segment layer name</string>
              </property>
              <property name="text">
               <string>Name</string>
@@ -379,7 +379,7 @@
            <item row="1" column="1">
             <widget class="QLabel" name="validationSetsNameValueLabel">
              <property name="toolTip">
-              <string>validationSetsNameValueLabel</string>
+              <string>Segment layer name</string>
              </property>
              <property name="text">
               <string/>
@@ -395,7 +395,7 @@
            <item row="2" column="0">
             <widget class="QLabel" name="validationSetsDescriptionLabel">
              <property name="toolTip">
-              <string>validationSetsDescriptionLabel</string>
+              <string>Segment layer description</string>
              </property>
              <property name="text">
               <string>Description</string>
@@ -405,7 +405,7 @@
            <item row="2" column="1">
             <widget class="QLabel" name="validationSetsDescriptionValueLabel">
              <property name="toolTip">
-              <string>validationSetsDescriptionValueLabel</string>
+              <string>Segment layer tags</string>
              </property>
              <property name="text">
               <string/>
@@ -421,7 +421,7 @@
            <item row="3" column="0">
             <widget class="QLabel" name="validationSetsTagsLabel">
              <property name="toolTip">
-              <string>validationSetsTagsLabel</string>
+              <string>Segment layer tags</string>
              </property>
              <property name="text">
               <string>Tags</string>
@@ -431,7 +431,7 @@
            <item row="3" column="1">
             <widget class="QLabel" name="validationSetsTagsValueLabel">
              <property name="toolTip">
-              <string>validationSetsTagsValueLabel</string>
+              <string>Segment layer tags</string>
              </property>
              <property name="text">
               <string/>
@@ -447,7 +447,7 @@
            <item row="4" column="0">
             <widget class="QLabel" name="validationSetsModelsLabel">
              <property name="toolTip">
-              <string>validationSetsModelsLabel</string>
+              <string>Segment layer models</string>
              </property>
              <property name="text">
               <string>Models</string>
@@ -457,17 +457,17 @@
            <item row="5" column="0">
             <widget class="QLabel" name="validationSetsSizeLabel">
              <property name="toolTip">
-              <string>validationSetsSizeLabel</string>
+              <string>Segment layer feature count</string>
              </property>
              <property name="text">
-              <string>Size (B)</string>
+              <string>Feature count</string>
              </property>
             </widget>
            </item>
            <item row="4" column="1">
             <widget class="QLabel" name="validationSetsModelsValueLabel">
              <property name="toolTip">
-              <string>validationSetsModelsValueLabel</string>
+              <string>Segment layer models</string>
              </property>
              <property name="text">
               <string/>
@@ -480,7 +480,7 @@
            <item row="5" column="1">
             <widget class="QLabel" name="validationSetsSizeValueLabel">
              <property name="toolTip">
-              <string>validationSetsSizeValueLabel</string>
+              <string>Segment layer feature count</string>
              </property>
              <property name="text">
               <string/>
@@ -498,10 +498,10 @@
             <bool>false</bool>
            </property>
            <property name="toolTip">
-            <string>validationSetsLoadButton</string>
+            <string>Load segment layer from its4land platform</string>
            </property>
            <property name="text">
-            <string>Load as segments layer</string>
+            <string>Load segment layer</string>
            </property>
           </widget>
          </item>
@@ -523,10 +523,10 @@
       </size>
      </property>
      <property name="toolTip">
-      <string>boundaryStringsGroupBox</string>
+      <string>Boundary lines</string>
      </property>
      <property name="title">
-      <string>Boundary face strings</string>
+      <string>Boundary lines</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
@@ -535,7 +535,7 @@
          <bool>false</bool>
         </property>
         <property name="toolTip">
-         <string>boundaryStringsErrorLabel</string>
+         <string>Unable to load boundary lines from its4land platform</string>
         </property>
         <property name="styleSheet">
          <string notr="true">color : red;</string>
@@ -550,7 +550,7 @@
         <item row="1" column="0">
          <widget class="QLabel" name="boundaryStringsNameLabel">
           <property name="toolTip">
-           <string>boundaryStringsNameLabel</string>
+           <string>Boundary layer name</string>
           </property>
           <property name="text">
            <string>Name</string>
@@ -560,7 +560,7 @@
         <item row="1" column="1">
          <widget class="QLabel" name="boundaryStringsNameValueLabel">
           <property name="toolTip">
-           <string>boundaryStringsNameValueLabel</string>
+           <string>Boundary layer name</string>
           </property>
           <property name="text">
            <string/>
@@ -576,7 +576,7 @@
         <item row="2" column="0">
          <widget class="QLabel" name="boundaryStringsFeaturesLabel">
           <property name="toolTip">
-           <string>boundaryStringsFeaturesLabel</string>
+           <string>Boundary layer features</string>
           </property>
           <property name="text">
            <string>Features</string>
@@ -586,7 +586,7 @@
         <item row="2" column="1">
          <widget class="QLabel" name="boundaryStringsFeaturesValueLabel">
           <property name="toolTip">
-           <string>boundaryStringsFeaturesValueLabel</string>
+           <string>Boundary layer features</string>
           </property>
           <property name="text">
            <string/>
@@ -602,17 +602,17 @@
         <item row="3" column="0">
          <widget class="QLabel" name="boundaryStringsSizeLabel">
           <property name="toolTip">
-           <string>boundaryStringsSizeLabel</string>
+           <string>Boundary layer feature count</string>
           </property>
           <property name="text">
-           <string>Size (B)</string>
+           <string>Feature count</string>
           </property>
          </widget>
         </item>
         <item row="3" column="1">
          <widget class="QLabel" name="boundaryStringsSizeValueLabel">
           <property name="toolTip">
-           <string>boundaryStringsSizeValueLabel</string>
+           <string>Boundary layer feature count</string>
           </property>
           <property name="text">
            <string/>
@@ -630,7 +630,7 @@
          <bool>false</bool>
         </property>
         <property name="toolTip">
-         <string>boundaryStringsLoadButton</string>
+         <string>Load boundary layer from its4land platform</string>
         </property>
         <property name="text">
          <string>Load layer</string>
@@ -666,13 +666,13 @@
          </font>
         </property>
         <property name="toolTip">
-         <string>Upload final layer to its4land platform</string>
+         <string>Upload boundary layer to its4land platform</string>
         </property>
         <property name="layoutDirection">
          <enum>Qt::LeftToRight</enum>
         </property>
         <property name="text">
-         <string>Upload final layer</string>
+         <string>Upload boundary layer</string>
         </property>
        </widget>
       </item>
