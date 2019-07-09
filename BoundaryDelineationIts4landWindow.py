@@ -40,6 +40,7 @@ from PyQt5.QtWidgets import QDialog
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'BoundaryDelineationIts4landWindow.ui'))
 HL_HARDCODED_PROJECTION = 'urn:ogc:def:crs:OGC:1.3:CRS84'
+BD_HARDCODED_BASEMAP_UID = 'ece25171-6137-4514-94e4-b36006baf97a'
 
 class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
     # login = pyqtSignal()
@@ -77,6 +78,7 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         self.validationSetsLoadButton.clicked.connect(self.onValidationSetsLoadButtonClicked)
         self.boundaryStringsLoadButton.clicked.connect(self.onBoundaryStringsLoadButtonClicked)
         self.boundaryStringsUploadButton.clicked.connect(self.onBoundaryStringsUploadButtonClicked)
+        self.projectsLoadBaseLayerButton.clicked.connect(self._onProjectsLoadBaseLayerButtonClicked)
         # self.__setIcon(self.uploadButton, 'icon.png')
 
     def onLoginInputChanged(self, text: str) -> None:
@@ -303,6 +305,14 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
             show_info(__('[%s] Error has occured! %s' % ('???', str(e))))
             self.boundaryStringsUploadButton.setEnabled(True)
 
+    def _onProjectsLoadBaseLayerButtonClicked(self) -> None:
+        baseLayerFilename = os.path.join(get_tmp_dir(), BD_HARDCODED_BASEMAP_UID)
+
+        self.service.download_content_item(BD_HARDCODED_BASEMAP_UID, baseLayerFilename)
+
+        self.plugin.setBaseRasterLayer(baseLayerFilename)
+        self.plugin.zoomToLayer(self.plugin.baseRasterLayer)
+
     def updateEnabledBoundaryStringButtons(self) -> None:
         upload_enabled = bool(self.project and self.plugin.finalLayer)
         self.boundaryStringsUploadButton.setEnabled(upload_enabled)
@@ -336,6 +346,7 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
             self.projectsModelsValueLabel.setText('')
             self.projectsSpatialSourcesValueLabel.setText('')
             self.projectsTagsValueLabel.setText('')
+            self.projectsLoadBaseLayerButton.setEnabled(False)
             return
 
         self.projectsNameValueLabel.setText(project['properties']['Name'])
@@ -343,6 +354,7 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         self.projectsModelsValueLabel.setText(str(len(project['properties']['Models'])))
         self.projectsSpatialSourcesValueLabel.setText(str(len(project['properties']['SpatialSources'])))
         self.projectsTagsValueLabel.setText(','.join(project['properties']['Tags']))
+        self.projectsLoadBaseLayerButton.setEnabled(True)
 
     def _updateValidationSetDetails(self, validationSet: Optional[Dict[str, str]], contentItem: Optional[Dict[str, str]]) -> None:
         self.updateEnabledBoundaryStringButtons()
