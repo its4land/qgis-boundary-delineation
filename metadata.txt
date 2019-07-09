@@ -2,8 +2,8 @@
 [general]
 name=BoundaryDelineation
 qgisMinimumVersion=3.0
-description=facilitates manual digitization from remote sensing imagery
-version=4.0
+description=This plugin simplifies manual digitization from remote sensing imagery.
+version=5.0
 author=Sophie Crommelink, Ivan Ivanov
 email=s.crommelinck@utwente.nl
 
