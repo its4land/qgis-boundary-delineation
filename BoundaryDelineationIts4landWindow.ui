@@ -369,7 +369,7 @@
            <item row="1" column="0">
             <widget class="QLabel" name="validationSetsNameLabel">
              <property name="toolTip">
-              <string>Segment layer name</string>
+              <string>Segments layer name</string>
              </property>
              <property name="text">
               <string>Name</string>
@@ -379,7 +379,7 @@
            <item row="1" column="1">
             <widget class="QLabel" name="validationSetsNameValueLabel">
              <property name="toolTip">
-              <string>Segment layer name</string>
+              <string>Segments layer name</string>
              </property>
              <property name="text">
               <string/>
@@ -395,7 +395,7 @@
            <item row="2" column="0">
             <widget class="QLabel" name="validationSetsDescriptionLabel">
              <property name="toolTip">
-              <string>Segment layer description</string>
+              <string>Segments layer description</string>
              </property>
              <property name="text">
               <string>Description</string>
@@ -405,7 +405,7 @@
            <item row="2" column="1">
             <widget class="QLabel" name="validationSetsDescriptionValueLabel">
              <property name="toolTip">
-              <string>Segment layer tags</string>
+              <string>Segments layer tags</string>
              </property>
              <property name="text">
               <string/>
@@ -421,7 +421,7 @@
            <item row="3" column="0">
             <widget class="QLabel" name="validationSetsTagsLabel">
              <property name="toolTip">
-              <string>Segment layer tags</string>
+              <string>Segments layer tags</string>
              </property>
              <property name="text">
               <string>Tags</string>
@@ -431,7 +431,7 @@
            <item row="3" column="1">
             <widget class="QLabel" name="validationSetsTagsValueLabel">
              <property name="toolTip">
-              <string>Segment layer tags</string>
+              <string>Segments layer tags</string>
              </property>
              <property name="text">
               <string/>
@@ -447,7 +447,7 @@
            <item row="4" column="0">
             <widget class="QLabel" name="validationSetsModelsLabel">
              <property name="toolTip">
-              <string>Segment layer models</string>
+              <string>Segments layer models</string>
              </property>
              <property name="text">
               <string>Models</string>
@@ -457,7 +457,7 @@
            <item row="5" column="0">
             <widget class="QLabel" name="validationSetsSizeLabel">
              <property name="toolTip">
-              <string>Segment layer feature count</string>
+              <string>Segments layer feature count</string>
              </property>
              <property name="text">
               <string>Feature count</string>
@@ -467,7 +467,7 @@
            <item row="4" column="1">
             <widget class="QLabel" name="validationSetsModelsValueLabel">
              <property name="toolTip">
-              <string>Segment layer models</string>
+              <string>Segments layer models</string>
              </property>
              <property name="text">
               <string/>
@@ -480,7 +480,7 @@
            <item row="5" column="1">
             <widget class="QLabel" name="validationSetsSizeValueLabel">
              <property name="toolTip">
-              <string>Segment layer feature count</string>
+              <string>Segments layer feature count</string>
              </property>
              <property name="text">
               <string/>
@@ -498,10 +498,10 @@
             <bool>false</bool>
            </property>
            <property name="toolTip">
-            <string>Load segment layer from its4land platform</string>
+            <string>Load segments layer from its4land platform</string>
            </property>
            <property name="text">
-            <string>Load segment layer</string>
+            <string>Load segments layer</string>
            </property>
           </widget>
          </item>
