@@ -221,6 +221,11 @@ class Its4landAPI:
             'uid': uid
         }, url=urljoin(self.url, 'contentitems'))
 
+    def get_base_layers(self, project_id: str):
+        return self.get({
+            'projects': project_id,
+        }, url=urljoin(self.url, 'DDILayers'))
+
     def download_content_item(self, uid: str, filename: str):
         url = urljoin(self.url, 'contentitems/%s' % quote(uid, safe=''))
 

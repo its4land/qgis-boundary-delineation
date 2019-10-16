@@ -42,14 +42,14 @@ import os
 from typing import Callable
 
 from PyQt5 import uic
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import (pyqtSignal, QUrl)
 from PyQt5.QtGui import QCloseEvent, QKeySequence
 from PyQt5.QtWidgets import QDockWidget, QAction, QFileDialog, QWidget, QMessageBox, QShortcut
 
 from qgis.core import QgsMapLayerProxyModel, QgsFieldProxyModel, QgsVectorLayer, QgsRasterLayer
 from qgis.utils import iface
 
-from .utils import SelectionModes, __, create_icon, set_button_icon, set_label_icon
+from .utils import SelectionModes, __, create_icon, set_button_icon, set_label_icon, zoom_to_layer
 from .BoundaryDelineationIts4landWindow import BoundaryDelineationIts4landWindow
 
 SC_MODE_POLYGONS = 'Ctrl+Alt+1'
@@ -145,6 +145,16 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
         self.createShortcut(SC_EDIT, self.editButton, self.onShortcutEdit)
         self.createShortcut(SC_UPDATE, self.updateEditsButton, self.onShortcutUpdate)
 
+        try:
+            from PyQt5.QtWebKitWidgets import QWebView
+
+            helpView = QWebView()
+            helpView.setUrl(QUrl('https://its4land.com/automate-it-wp5/'))
+            self.helpWrapper.addWidget(helpView)
+        except Exception as err:
+            print(err)
+            pass
+
     def createShortcut(self, sequence: str, widget: QWidget, callback: Callable):
         """Create shortcut and add the key sequence to the tooltip.
 
@@ -231,7 +241,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
 
         self.isLoadingLayer = False
 
-        self.plugin.zoomToLayer(layer)
+        zoom_to_layer(layer)
 
     def onSegmentsLayerComboBoxChanged(self, layer: QgsVectorLayer) -> None:
         if self.isLoadingLayer:
@@ -246,7 +256,7 @@ class BoundaryDelineationDock(QDockWidget, FORM_CLASS):
 
         self.isLoadingLayer = False
 
-        self.plugin.zoomToLayer(layer)
+        zoom_to_layer(layer)
 
         if not self.isBeingProcessed:
             self.processButton.setEnabled(True)

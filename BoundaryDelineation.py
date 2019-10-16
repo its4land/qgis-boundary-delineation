@@ -78,7 +78,7 @@ MODE_VERTICES_LIMIT = 1000
 
 SelectBehaviour = int
 
-API_URL = 'http://i4ldev1dmz.hansaluftbild.de/sub/'
+API_URL = 'https://platform.its4land.com/api/'
 API_KEY = '1'
 
 
@@ -101,7 +101,7 @@ class BoundaryDelineation:
 
         self._initLocale()
 
-        self.baseRasterLayerName = __('Raster')
+        self.baseRasterLayerName = __('Base')
         self.segmentsLayerName = __('Segments')
         self.simplifiedSegmentsLayerName = __('Simplified Segments')
         self.verticesLayerName = __('Vertices')
@@ -467,15 +467,7 @@ class BoundaryDelineation:
         self.verticesLayer = None
         self.candidatesLayer = None
 
-    def zoomToLayer(self, layer: QgsMapLayer) -> None:
-        self.iface.setActiveLayer(layer)
-        self.iface.actionZoomToLayer().trigger()
-        # rect = self.__getCoordinateTransform(layer).transform(layer.extent())
-
-        # self.canvas.setExtent(rect)
-        # self.canvas.refresh()
-
-    def setBaseRasterLayer(self, baseRasterLayer: typing.Union[QgsRasterLayer, str]) -> None:
+    def setBaseRasterLayer(self, baseRasterLayer: typing.Union[QgsRasterLayer, str], layer_type: str = 'gdal') -> None:
         if self.baseRasterLayer is baseRasterLayer:
             return
 
@@ -484,9 +476,9 @@ class BoundaryDelineation:
                 utils.remove_layer(self.baseRasterLayer)
 
             self.wasBaseRasterLayerInitiallyInLegend = False
-            baseRasterLayer = QgsRasterLayer(baseRasterLayer, self.baseRasterLayerName, )
+            baseRasterLayer = QgsRasterLayer(baseRasterLayer, self.baseRasterLayerName, layer_type)
 
-            utils.add_layer(baseRasterLayer, self.baseRasterLayerName, index=-1)
+            utils.add_layer(baseRasterLayer, self.baseRasterLayerName, index=-1, parent=get_group())
             self.project.addMapLayer(baseRasterLayer)
         else:
             self.wasBaseRasterLayerInitiallyInLegend = True
