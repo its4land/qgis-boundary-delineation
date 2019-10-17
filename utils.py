@@ -129,6 +129,10 @@ def get_group(index: int = 0) -> QgsLayerTreeGroup:
 
     return group
 
+def zoom_to_layer(layer: QgsMapLayer) -> None:
+    iface.setActiveLayer(layer)
+    iface.actionZoomToLayer().trigger()
+
 def processing_cursor(cursor=QCursor(Qt.WaitCursor)) -> typing.Callable:
     def processing_cursor_decorator(func):
         @functools.wraps(func)
@@ -417,19 +421,22 @@ def lines_unique_vertices(vector_layer: QgsVectorLayer, feature_ids: typing.List
     return [k for k, v in points.items() if v == 1]
 
 # get temporary directory
-def get_tmp_dir() -> str:
-    tmpDir = str(os.path.join(QDir.tempPath(), TMP_DIR))
+def get_tmp_path(filename: str = None) -> str:
+    path = str(os.path.join(QDir.tempPath(), TMP_DIR))
 
-    if not QDir(tmpDir).exists():
-        os.makedirs(tmpDir)
+    if not QDir(path).exists():
+        os.makedirs(path)
 
-    return tmpDir
+    if str is not None:
+        path = os.path.join(path, filename)
+
+    return path
 
 def utf8len(s: str) -> int:
     return len(s.encode('utf-8'))
 
 def get_geojson(layer: QgsVectorLayer) -> dict:
-    filename = get_tmp_dir() + '/final'
+    filename = get_tmp_path('final')
     error, msg = QgsVectorFileWriter.writeAsVectorFormat(layer, filename, 'utf-8', driverName='GeoJSON')
 
     if error != QgsVectorFileWriter.NoError:
@@ -443,7 +450,7 @@ def get_geojson(layer: QgsVectorLayer) -> dict:
     return geojson
 
 def load_geojson(geojson: dict, name: str = 'geojson') -> QgsVectorLayer:
-    filename = os.path.join(get_tmp_dir(), name + '.geojson')
+    filename = get_tmp_path(name + '.geojson')
 
     with open(filename, 'w') as file:
         print(json.dumps(geojson), file=file)

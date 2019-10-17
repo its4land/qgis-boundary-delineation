@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>493</width>
-    <height>683</height>
+    <height>788</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -284,13 +284,27 @@
            </item>
           </layout>
          </item>
+         <item row="2" column="0">
+          <layout class="QHBoxLayout" name="horizontalLayout_4">
+           <item>
+            <widget class="QComboBox" name="projectsBaseLayersComboBox"/>
+           </item>
+           <item>
+            <widget class="QPushButton" name="projectsLoadBaseLayerButton">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="text">
+              <string>Load base layer</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
          <item row="1" column="0">
-          <widget class="QPushButton" name="projectsLoadBaseLayerButton">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
+          <widget class="QLabel" name="label">
            <property name="text">
-            <string>Load base layer</string>
+            <string>Select base layer:</string>
            </property>
           </widget>
          </item>

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>471</width>
-    <height>257</height>
+    <height>290</height>
    </rect>
   </property>
   <property name="floating">
@@ -190,10 +190,10 @@
           <property name="toolTip">
            <string>Load input orthoimage as raster image.</string>
           </property>
-          <property name="allowEmptyLayer">
+          <property name="allowEmptyLayer" stdset="0">
            <bool>true</bool>
           </property>
-          <property name="showCrs">
+          <property name="showCrs" stdset="0">
            <bool>true</bool>
           </property>
          </widget>
@@ -238,7 +238,7 @@ Simply setting the tolerance lower produces better results for the UAV data, but
           <property name="toolTip">
            <string>Load input image segmentation as vector.</string>
           </property>
-          <property name="showCrs">
+          <property name="showCrs" stdset="0">
            <bool>true</bool>
           </property>
          </widget>
@@ -338,7 +338,7 @@ Simply setting the tolerance lower produces better results for the UAV data, but
           <property name="toolTip">
            <string>Select attribute to consider for least-cost-path calculation in ‘Vertices’ functionality.</string>
           </property>
-          <property name="allowEmptyFieldName">
+          <property name="allowEmptyFieldName" stdset="0">
            <bool>true</bool>
           </property>
          </widget>
@@ -527,35 +527,34 @@ Simply setting the tolerance lower produces better results for the UAV data, but
         <string>Help</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_Help">
-        <item row="2" column="0" colspan="2">
-         <widget class="Line" name="lineHorizontal">
+        <item row="0" column="0">
+         <widget class="QLabel" name="labeltext7">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+           <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>5</height>
-           </size>
-          </property>
           <property name="maximumSize">
            <size>
             <width>16777215</width>
-            <height>5</height>
+            <height>20</height>
            </size>
           </property>
           <property name="font">
            <font>
-            <pointsize>17</pointsize>
-            <weight>75</weight>
-            <bold>true</bold>
+            <pointsize>10</pointsize>
+            <weight>50</weight>
+            <italic>false</italic>
+            <bold>false</bold>
+            <underline>true</underline>
            </font>
           </property>
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
+          <property name="text">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;https://youtu.be/GrDv8fW53Fs&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Video Tutorial&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="openExternalLinks">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -596,59 +595,40 @@ Simply setting the tolerance lower produces better results for the UAV data, but
           </property>
          </widget>
         </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="labeltext7">
+        <item row="2" column="0" colspan="2">
+         <widget class="Line" name="lineHorizontal">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>5</height>
+           </size>
           </property>
           <property name="maximumSize">
            <size>
             <width>16777215</width>
-            <height>20</height>
+            <height>5</height>
            </size>
           </property>
           <property name="font">
            <font>
-            <pointsize>10</pointsize>
-            <weight>50</weight>
-            <italic>false</italic>
-            <bold>false</bold>
-            <underline>true</underline>
+            <pointsize>17</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
            </font>
           </property>
-          <property name="text">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;https://youtu.be/GrDv8fW53Fs&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Video Tutorial&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-          </property>
-          <property name="openExternalLinks">
-           <bool>true</bool>
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
           </property>
          </widget>
         </item>
-        <item row="3" column="0" rowspan="2" colspan="2">
-         <widget class="QWebView" name="webView">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Ignored" vsizetype="Expanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="font">
-           <font>
-            <family>8514oem</family>
-           </font>
-          </property>
-          <property name="url">
-           <url>
-            <string>https://its4land.com/automate-it-wp5/</string>
-           </url>
-          </property>
-          <property name="zoomFactor">
-           <double>1.000000000000000</double>
-          </property>
-         </widget>
+        <item row="3" column="0" colspan="2">
+         <layout class="QVBoxLayout" name="helpWrapper"/>
         </item>
        </layout>
       </widget>
@@ -667,11 +647,6 @@ Simply setting the tolerance lower produces better results for the UAV data, but
    <class>QgsMapLayerComboBox</class>
    <extends>QComboBox</extends>
    <header>qgsmaplayercombobox.h</header>
-  </customwidget>
-  <customwidget>
-   <class>QWebView</class>
-   <extends>QWidget</extends>
-   <header location="global">QtWebKitWidgets/QWebView</header>
   </customwidget>
  </customwidgets>
  <resources/>

@@ -26,13 +26,12 @@ License:
 import os
 import json
 from typing import List, Dict, Optional
+import urllib
 
 from .Its4landAPI import Its4landException
-from .utils import get_tmp_dir
 from . import utils
-from .utils import __, show_info, show_error, get_group
 
-from qgis.core import QgsVectorLayer, QgsWkbTypes, QgsVectorFileWriter
+from qgis.core import QgsVectorLayer, QgsWkbTypes, QgsRasterLayer
 from PyQt5 import uic
 # from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QShowEvent
@@ -40,7 +39,8 @@ from PyQt5.QtWidgets import QDialog
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'BoundaryDelineationIts4landWindow.ui'))
 HL_HARDCODED_PROJECTION = 'urn:ogc:def:crs:OGC:1.3:CRS84'
-BD_HARDCODED_BASEMAP_UID = 'ece25171-6137-4514-94e4-b36006baf97a'
+
+__ = utils.__
 
 class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
     # login = pyqtSignal()
@@ -64,6 +64,8 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         self.project: Optional[str] = None
         self.projects = None
         self.validationSets = None
+        self.baseLayers = None
+        self.baseLayerRemoteName = None
         self.contentItem = None
         self.contentItemFilename = None
         self.boundaryStrings: Optional[Dict] = None
@@ -78,7 +80,8 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         self.validationSetsLoadButton.clicked.connect(self.onValidationSetsLoadButtonClicked)
         self.boundaryStringsLoadButton.clicked.connect(self.onBoundaryStringsLoadButtonClicked)
         self.boundaryStringsUploadButton.clicked.connect(self.onBoundaryStringsUploadButtonClicked)
-        self.projectsLoadBaseLayerButton.clicked.connect(self._onProjectsLoadBaseLayerButtonClicked)
+        self.projectsLoadBaseLayerButton.clicked.connect(self.onProjectsLoadBaseLayerButtonClicked)
+        self.projectsBaseLayersComboBox.currentTextChanged.connect(self.onprojectsBaseLayersComboBoxChanged)
         # self.__setIcon(self.uploadButton, 'icon.png')
 
     def onLoginInputChanged(self, text: str) -> None:
@@ -105,7 +108,8 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         except Exception as e:
             msg = e.msg if 'msg' in e else __('Unable to login')
 
-            show_error(msg)
+            utils.show_error(msg)
+
             self.loginInput.setEnabled(True)
             self.passwordInput.setEnabled(True)
             self.loginButton.setEnabled(True)
@@ -121,16 +125,16 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         except Its4landException as e:
             msg = __('[%s] %s' % (str(e.code), str(e)))
             self.setProjectsError(msg)
-            show_info(msg)
+            utils.show_info(msg)
             return
         except Exception as e:
             self.setProjectsError(__('[%s] Error has occured!' % '???'))
-            show_info(str(e))
+            utils.show_info(str(e))
             return
 
         self.projectsGroupBox.setEnabled(True)
 
-        assert projects.get('features'), 'Please contact HansaLuftbild, there is "features" missing from ./projects'
+        assert projects.get('features'), 'Please contact its4land, there is "features" missing from ./projects'
 
         self.projects = projects['features']
         self.setProjects(self.projects)
@@ -162,6 +166,20 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
             self.project = None
         except Exception as e:
             raise e
+        try:
+            self.projectsBaseLayersComboBox.clear()
+            self.baseLayers = self.service.get_base_layers(self.project['properties']['UID'])
+            self.setBaseLayers(self.project, self.baseLayers)
+        except Its4landException as e:
+            if e.code == 404:
+                msg = __('No basemaps for this project')
+            else:
+                msg = str(__('[%s] %s' % (str(e.code), str(e))))
+
+            self.setProjectsError(msg)
+        except Exception as e:
+            self.setValidationSetsError(__('[%s] Error has occured!' % '???'))
+            utils.show_info(str(e))
 
         self._updateProjectDetails(self.project)
         self.validationSetsListWidget.clear()
@@ -180,7 +198,7 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
             self.setValidationSetsError(msg)
         except Exception as e:
             self.setValidationSetsError(__('[%s] Error has occured!' % '???'))
-            show_info(str(e))
+            utils.show_info(str(e))
         finally:
             if self.project:
                 self.validationSetsGroupBox.setEnabled(True)
@@ -196,7 +214,6 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         try:
             if index >= 0:
                 self.validationSet = self.validationSets[index]
-                self.validationSetsLoadButton.setEnabled(True)
             else:
                 self.validationSet = None
         except ValueError:
@@ -209,7 +226,16 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
                 self.contentItem = self.service.get_content_item(self.validationSet['ContentItem'])
                 self.contentItem = self.contentItem[0] if len(self.contentItem) else None
 
+                self.validationSetsLoadButton.setEnabled(True)
                 self.setValidationSetsError('')
+            except Its4landException as e:
+                if e.code == 404:
+                    msg = __('Validation set details failed to load')
+                else:
+                    msg = str(__('[%s] %s' % (str(e.code), str(e))))
+
+                self.setValidationSetsError(msg)
+                return
             except Exception as e:
                 self.setValidationSetsError(str(e))
                 raise e
@@ -220,7 +246,7 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         assert self.contentItem
         assert self.contentItem['ContentID']
 
-        self.contentItemFilename = os.path.join(get_tmp_dir(), self.contentItem['ContentID'])
+        self.contentItemFilename = os.path.join(utils.get_tmp_dir(), self.contentItem['ContentID'])
 
         # TODO this lock is not working for some reason :/
         self.loginGroupBox.setEnabled(False)
@@ -233,10 +259,10 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
             layer = QgsVectorLayer(self.contentItemFilename, self.validationSet['Name'], 'ogr')
 
             if layer.geometryType() != QgsWkbTypes.LineGeometry:
-                show_info(__('Validation set file is not with line geometries'))
+                utils.show_info(__('Validation set file is not with line geometries'))
                 return
 
-            utils.add_layer(layer, self.validationSet['Name'], parent=get_group(), index=0)
+            utils.add_layer(layer, self.validationSet['Name'], parent=utils.get_group(), index=0)
             layer = self.plugin.setSegmentsLayer(layer, name=self.validationSet['Name'])
 
             if layer:
@@ -244,7 +270,7 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
                 self.plugin.dockWidget.segmentsLayerComboBox.setLayer(layer)
         except Its4landException as e:
             if e.code == 404:
-                show_info(__('Unable to load the selected validation set, check the web interface for more information'))
+                utils.show_info(__('Unable to load the selected validation set, check the web interface for more information'))
                 return
             else:
                 raise e
@@ -260,10 +286,10 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         layer = utils.load_geojson(self.boundaryStrings, self.boundaryStrings['name'])
 
         if layer.geometryType() != QgsWkbTypes.LineGeometry:
-            show_info(__('Boundary face strings file is not with line geometries'))
+            utils.show_info(__('Boundary face strings file is not with line geometries'))
             return
 
-        utils.add_layer(layer, self.boundaryStrings['name'], parent=get_group(), index=0)
+        utils.add_layer(layer, self.boundaryStrings['name'], parent=utils.get_group(), index=0)
 
     def _prepareBoundaryStringsGeojson(self, layer: QgsVectorLayer, project_id: str) -> dict:
         layer = utils.multipart_to_singleparts(layer)
@@ -295,23 +321,28 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
 
         try:
             self.service.post_boundary_strings(geojson)
-            show_info(__('Successfully uploaded boundary face strings!'))
+            utils.show_info(__('Successfully uploaded boundary face strings!'))
 
             self.getAndUpdateDataForBoundaryStrings(self.project['properties']['UID'])
         except Its4landException as e:
-            show_info(__('[%s] %s' % (str(e.code), str(e))))
+            utils.show_info(__('[%s] %s' % (str(e.code), str(e))))
             self.boundaryStringsUploadButton.setEnabled(True)
         except Exception as e:
-            show_info(__('[%s] Error has occured! %s' % ('???', str(e))))
+            utils.show_info(__('[%s] Error has occured! %s' % ('???', str(e))))
             self.boundaryStringsUploadButton.setEnabled(True)
 
-    def _onProjectsLoadBaseLayerButtonClicked(self) -> None:
-        baseLayerFilename = os.path.join(get_tmp_dir(), BD_HARDCODED_BASEMAP_UID)
+    def onProjectsLoadBaseLayerButtonClicked(self) -> None:
+        quotedName = urllib.parse.quote(self.baseLayerRemoteName)
+        urlWithParams = 'crs=EPSG:4326&dpiMode=7&format=image/png&layers=%s&styles&url=https://platform.its4land.com/DDI/wms' % quotedName
 
-        self.service.download_content_item(BD_HARDCODED_BASEMAP_UID, baseLayerFilename)
+        self.plugin.setBaseRasterLayer(urlWithParams, layer_type='wms')
 
-        self.plugin.setBaseRasterLayer(baseLayerFilename)
-        self.plugin.zoomToLayer(self.plugin.baseRasterLayer)
+    def onprojectsBaseLayersComboBoxChanged(self, layerName: str) -> None:
+        if layerName:
+            self.baseLayerRemoteName = layerName
+            self.projectsLoadBaseLayerButton.setEnabled(True)
+        else:
+            self.projectsLoadBaseLayerButton.setEnabled(False)
 
     def updateEnabledBoundaryStringButtons(self) -> None:
         upload_enabled = bool(self.project and self.plugin.finalLayer)
@@ -354,7 +385,6 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         self.projectsModelsValueLabel.setText(str(len(project['properties']['Models'])))
         self.projectsSpatialSourcesValueLabel.setText(str(len(project['properties']['SpatialSources'])))
         self.projectsTagsValueLabel.setText(','.join(project['properties']['Tags']))
-        self.projectsLoadBaseLayerButton.setEnabled(True)
 
     def _updateValidationSetDetails(self, validationSet: Optional[Dict[str, str]], contentItem: Optional[Dict[str, str]]) -> None:
         self.updateEnabledBoundaryStringButtons()
@@ -393,7 +423,7 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         list_items = []
 
         for validation_set in validation_sets:
-            assert validation_set.get('Name'), 'Please contact HansaLuftbild, there is "Name" missing from a single validationSet'
+            assert validation_set.get('Name'), 'Please contact its4land, there is "Name" missing from a single validationSet'
 
             list_items.append(validation_set['Name'])
 
@@ -405,12 +435,24 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
 
         for project in projects:
             assert project.get('properties')
-            assert project['properties'].get('Name'), 'Please contact HansaLuftbild, there is "Name" missing from a single Project'
+            assert project['properties'].get('Name'), 'Please contact its4land, there is "Name" missing from a single Project'
 
             list_items.append(project['properties']['Name'])
 
         self.projectsListWidget.clear()
         self.projectsListWidget.addItems(list_items)
+
+    def setBaseLayers(self, project: Dict, baseLayers: List):
+        list_items = []
+
+        for baseLayer in baseLayers:
+            assert baseLayer.get('Name'), 'Please contact its4land, there is "Name" missing from a single baseLayer'
+
+            list_items.append(baseLayer['Name'])
+
+        self.projectsBaseLayersComboBox.clear()
+        self.projectsBaseLayersComboBox.addItems(list_items)
+
 
     def getAndUpdateDataForBoundaryStrings(self, project_id: str) -> None:
         try:
@@ -429,7 +471,7 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
             self.boundaryStrings = None
 
             self.setBoundaryStringsError(__('[%s] Error has occured!' % '???'))
-            show_info(str(e))
+            utils.show_info(str(e))
         finally:
             self.boundaryStringsLoadButton.setEnabled(bool(self.boundaryStrings))
             self._updateBoundaryStringDetails(self.boundaryStrings)
