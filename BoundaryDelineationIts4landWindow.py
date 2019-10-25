@@ -27,6 +27,7 @@ import os
 import json
 from typing import List, Dict, Optional
 import urllib
+import tempfile
 
 from .Its4landAPI import Its4landException
 from . import utils
@@ -246,7 +247,7 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
         assert self.contentItem
         assert self.contentItem['ContentID']
 
-        self.contentItemFilename = os.path.join(utils.get_tmp_dir(), self.contentItem['ContentID'])
+        self.contentItemFilename = tempfile.NamedTemporaryFile().name
 
         # TODO this lock is not working for some reason :/
         self.loginGroupBox.setEnabled(False)
