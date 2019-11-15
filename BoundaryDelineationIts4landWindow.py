@@ -334,7 +334,15 @@ class BoundaryDelineationIts4landWindow(QDialog, FORM_CLASS):
 
     def onProjectsLoadBaseLayerButtonClicked(self) -> None:
         quotedName = urllib.parse.quote(self.baseLayerRemoteName)
-        urlWithParams = 'crs=EPSG:4326&dpiMode=7&format=image/png&layers=%s&styles&url=https://platform.its4land.com/DDI/wms' % quotedName
+
+        # GOD PLEASE FORGIVE ME!
+        # this is hardcoded in extremely ugly way, but there is anomaly in this orthoimage georefencing
+        if quotedName == 'ETHOrthoImage':
+            crs = 'EPSG:20137'
+        else:
+            crs = 'EPSG:4326'
+
+        urlWithParams = 'crs=%s&dpiMode=7&format=image/png&layers=%s&styles&url=https://platform.its4land.com/DDI/wms' % (crs, quotedName)
 
         self.plugin.setBaseRasterLayer(urlWithParams, layer_type='wms')
 

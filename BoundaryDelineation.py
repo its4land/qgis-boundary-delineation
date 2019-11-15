@@ -801,8 +801,9 @@ class BoundaryDelineation:
 
         if startPoint.x() == endPoint.x() and startPoint.y() == endPoint.y():
             tolerance = QgsTolerance.defaultTolerance(iface.activeLayer(), QgsMapSettings())
-            startPoint = QgsPointXY(startPoint.x() - tolerance/20, startPoint.y() - tolerance/20)
-            endPoint = QgsPointXY(endPoint.x() + tolerance/20, endPoint.y() + tolerance/20)
+            tolerance = tolerance * self.canvas.mapUnitsPerPixel()
+            startPoint = QgsPointXY(startPoint.x() - tolerance, startPoint.y() - tolerance)
+            endPoint = QgsPointXY(endPoint.x() + tolerance, endPoint.y() + tolerance)
 
         lines = None
         rect = QgsRectangle(startPoint, endPoint)
