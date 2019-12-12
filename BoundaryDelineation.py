@@ -54,7 +54,7 @@ from PyQt5.QtGui import QIcon
 
 from qgis.core import QgsProject, QgsCoordinateReferenceSystem, QgsLayerTree, QgsLayerTreeNode, QgsPointXY, QgsVectorLayer, \
     QgsRasterLayer, QgsMapLayer, QgsWkbTypes, QgsVectorFileWriter, QgsCoordinateTransform, QgsField, QgsDefaultValue, QgsRectangle, QgsFeatureIterator, \
-    QgsFeature, QgsGeometry, QgsTolerance, QgsMapSettings
+    QgsFeature, QgsGeometry, QgsTolerance, QgsMapSettings, QgsUnitTypes
 from qgis.gui import QgisInterface, QgsMapTool
 from qgis.utils import iface
 from qgis.utils import *
@@ -66,7 +66,7 @@ from .Its4landAPI import Its4landAPI
 from .BoundaryDelineationDock import BoundaryDelineationDock
 from .MapSelectionTool import MapSelectionTool
 from . import utils
-from .utils import PLUGIN_DIR, APP_NAME, SelectionModes, processing_cursor, __, show_info, get_group
+from .utils import PLUGIN_DIR, APP_NAME, SelectionModes, processing_cursor, __, show_info, get_group, reproject
 from .BoundaryGraph import NoSuitableGraphError, prepare_graph_from_lines, prepare_subgraphs, calculate_subgraphs_metric_closures, \
     find_steiner_tree, DEFAULT_WEIGHT_NAME
 
@@ -536,9 +536,14 @@ class BoundaryDelineation:
     def simplifySegmentsLayer(self) -> None:
         assert self.segmentsLayer
 
+        segmentsLayer = self.segmentsLayer
+
+        if self.segmentsLayer.crs() != QgsUnitTypes.DistanceMeters:
+            segmentsLayer = reproject(segmentsLayer, 'EPSG:3857')
+
         tolerance = self.dockWidget.getSimplificationValue()
         result = processing.run('qgis:simplifygeometries', {
-            'INPUT': self.segmentsLayer,
+            'INPUT': segmentsLayer,
             'METHOD': 0,
             'TOLERANCE': tolerance,
             'OUTPUT': 'memory:simplifygeometries'
