@@ -653,7 +653,7 @@ class BoundaryDelineation:
         assert self.dockWidget
 
         filename = self.dockWidget.getOutputLayer()
-        crs = self.__getCrs(self.segmentsLayer)
+        crs = self.__getCrs(self.simplifiedSegmentsLayer)
 
         if os.path.isfile(filename):
             finalLayer = QgsVectorLayer(filename, self.finalLayerName, 'ogr')
@@ -674,7 +674,7 @@ class BoundaryDelineation:
         return finalLayer
 
     def createCandidatesLayer(self) -> QgsVectorLayer:
-        crs = self.__getCrs(self.segmentsLayer).authid()
+        crs = self.__getCrs(self.simplifiedSegmentsLayer).authid()
         candidatesLayer = QgsVectorLayer('MultiLineString?crs=%s' % crs, self.candidatesLayerName, 'memory')
         finalLayer = self.createFinalLayer()
         # lineLayerFields = self.simplifiedSegmentsLayer.dataProvider().fields().toList()
