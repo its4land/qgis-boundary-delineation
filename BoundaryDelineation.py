@@ -722,6 +722,8 @@ class BoundaryDelineation:
         assert self.simplifiedSegmentsLayer
 
         extent = self.canvas.extent()
+        extent = self.__getCoordinateTransform(self.polygonizedLayer).transform(extent)
+
         count = len(list(self.verticesLayer.getFeatures(extent)))
 
         if force:
