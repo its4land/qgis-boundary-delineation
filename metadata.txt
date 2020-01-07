@@ -16,7 +16,7 @@ repository=https://github.com/SCrommelinck/BoundaryDelineation
 # changelog=
 
 tags=cadastre, digitizing, processing, vector, boundary, delineation
-homepage=https://its4land.com/
+homepage=https://its4land.com/automate-it-wp5/
 icon=icons/icon.png
 experimental=True
 
